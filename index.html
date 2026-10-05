@@ -1,0 +1,2729 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sihyun Clicker v3.3V (Admin Fast-Pass & Rules Relaxed Edition)</title>
+    
+    <link rel="icon" type="image/jpeg" href="1000000883.jpg">
+    <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
+
+    <script>
+        // 🛡️ URL 강제 접근 방어 시스템
+        if (window.location.pathname.endsWith('/admin')) {
+            if (sessionStorage.getItem('admin_access_granted') !== 'true') {
+                window.location.replace('/');
+            }
+        }
+    </script>
+
+    <link rel="manifest" href="manifest.json">
+    
+    <meta name="theme-color" content="#0c1017">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('서비스 워커 등록 성공!', reg))
+                    .catch(err => console.log('서비스 워커 등록 실패', err));
+            });
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-main: #0c1017;
+            --bg-panel: #090d14;
+            --bg-nav: #06090e;
+            --bg-item: #0f1622;
+            --bg-item-hover: #141d2f;
+            --input-bg: #121824;
+            --border-color: #222c3c;
+            --text-main: #ffffff;
+            --text-sub: #8b9bb4;
+            --modal-bg: #0c1017;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-main: #f0f2f5;
+                --bg-panel: #ffffff;
+                --bg-nav: #e4e6eb;
+                --bg-item: #f7f8fa;
+                --bg-item-hover: #eef0f3;
+                --input-bg: #ffffff;
+                --border-color: #ccd0d5;
+                --text-main: #1c1e21;
+                --text-sub: #606770;
+                --modal-bg: #ffffff;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            position: relative;
+        }
+
+        #topNavBar {
+            height: 45px;
+            background-color: var(--bg-nav);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 13px;
+            z-index: 10;
+        }
+
+        .nav-left { color: var(--text-sub); }
+        .nav-left .user-highlight { color: #00ffcc; font-weight: bold; }
+
+        .nav-center-btn {
+            background: linear-gradient(180deg, #2b3a4a, #1a232e);
+            border: 1px solid #41556c;
+            color: #a4b8cf;
+            padding: 5px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .nav-center-btn:hover { border-color: #ff0055; color: #ffffff; }
+
+        .nav-logout-btn {
+            background-color: #cc3333; color: #ffffff; border: none;
+            padding: 6px 14px; font-size: 12px; font-weight: bold;
+            border-radius: 4px; cursor: pointer;
+        }
+        .nav-logout-btn:hover { background-color: #ff4444; }
+
+        #globalNoticeTickerBar {
+            background: linear-gradient(90deg, #1e1b10, #0a0f1d);
+            border-bottom: 1px solid #eab308;
+            padding: 6px 20px;
+            font-size: 12px;
+            color: #facc15;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            z-index: 9;
+        }
+        .notice-badge {
+            background-color: #eab308;
+            color: #000000;
+            padding: 2px 6px;
+            font-weight: bold;
+            border-radius: 3px;
+            font-size: 11px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        #liveNoticeContentText { 
+            color: #e2e8f0; 
+            font-weight: bold; 
+            word-break: break-all;
+            flex: 1;
+            max-height: 40px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        #liveNoticeContentText::-webkit-scrollbar { width: 4px; }
+        #liveNoticeContentText::-webkit-scrollbar-thumb { background: #eab308; border-radius: 2px; }
+
+        #authOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(6, 9, 14, 0.98); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .auth-container {
+            background-color: var(--bg-panel); border: 1px solid var(--border-color);
+            padding: 40px; border-radius: 10px; width: 400px; max-width: 90%;
+            position: relative;
+        }
+        .auth-tab-buttons { display: flex; margin-bottom: 30px; border-bottom: 2px solid var(--border-color); }
+        .auth-tab {
+            flex: 1; padding: 12px; background: none; border: none;
+            color: var(--text-sub); font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+        .auth-tab.active { color: #00ffcc; border-bottom: 2px solid #00ffcc; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .auth-input-group { margin-bottom: 20px; }
+        .auth-input-group label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
+        .auth-input-group input {
+            width: 100%; background-color: var(--input-bg); border: 1px solid var(--border-color);
+            padding: 12px; color: var(--text-main); font-size: 16px; border-radius: 5px; outline: none;
+        }
+        
+        .auth-external-link-wrap { text-align: center; margin-top: 25px; padding-top: 5px; }
+        .auth-external-toggle-btn {
+            background: none; border: none; color: var(--text-sub);
+            font-size: 13px; cursor: pointer; padding-bottom: 2px;
+            border-bottom: 1px dotted var(--text-sub); font-weight: normal;
+        }
+        .auth-external-toggle-btn:hover { color: #00ffcc; border-bottom-color: #00ffcc; }
+
+        .auth-btn {
+            width: 100%; background-color: #00ffcc; color: #000000; border: none;
+            padding: 14px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .auth-btn:disabled { background-color: #334455; color: #8899aa; cursor: not-allowed; }
+
+        #serverExplosionOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000; z-index: 100000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            color: #ff3333; text-align: center; padding: 20px;
+        }
+        .explosion-title { font-size: 40px; font-weight: bold; margin-bottom: 15px; letter-spacing: 2px; text-shadow: 0 0 15px #ff0000; }
+        .explosion-desc { color: #888888; font-size: 15px; margin-bottom: 40px; line-height: 1.6; }
+        .explosion-restore-box { background-color: #0a0a0a; border: 1px solid #331111; padding: 25px; border-radius: 6px; width: 340px; max-width: 90%; }
+        .explosion-restore-box input {
+            width: 100%; background-color: #151515; border: 1px solid #442222; padding: 10px;
+            color: #ff3333; text-align: center; font-size: 18px; font-weight: bold; letter-spacing: 3px; border-radius: 4px; outline: none; margin-bottom: 15px;
+        }
+        .explosion-restore-btn { width: 100%; background-color: #ff2222; color: #000000; font-weight: bold; border: none; padding: 12px; border-radius: 4px; cursor: pointer; }
+        .explosion-restore-btn:hover { background-color: #ff5555; }
+
+        #hackerOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000; z-index: 999999; justify-content: center; align-items: center;
+            flex-direction: column; text-align: center;
+        }
+        .hacker-title { color: #ff0000; font-size: 30px; font-weight: bold; text-shadow: 0 0 10px #ff0000; margin-bottom: 20px; }
+        .hacker-desc { color: #ffffff; font-size: 16px; line-height: 1.6; }
+
+        #mainContainer { flex: 1; display: flex; overflow: hidden; }
+
+        #leftPanel {
+            width: 25%; border-right: 1px solid var(--border-color); padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            background-color: var(--bg-panel); text-align: center; position: relative;
+            padding-bottom: max(100px, env(safe-area-inset-bottom));
+        }
+        .left-meta-author { font-size: 12px; color: var(--text-sub); align-self: flex-start; margin-bottom: 40px; }
+        .left-meta-author span { color: #00ffcc; }
+        .bakery-title { font-size: 26px; font-weight: bold; color: var(--text-main); margin-bottom: 10px; }
+        #scoreDisplay { font-size: 32px; font-weight: bold; color: #38bdf8; margin-bottom: 40px; }
+        #cookieContainer { position: relative; cursor: pointer; transition: transform 0.05s; margin-top: 20px; }
+        #cookieContainer:active { transform: scale(0.96); }
+        #cookieImg { width: 260px; height: 260px; border-radius: 50%; object-fit: cover; border: 4px solid var(--border-color); }
+
+        .golden-cookie-entity {
+            position: absolute; width: 55px; height: 55px; background-color: #eab308;
+            border: 3px solid #facc15; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 24px; cursor: pointer; z-index: 999;
+            box-shadow: 0 0 20px #eab308; animation: pulseGlow 0.5s infinite alternate;
+        }
+        @keyframes pulseGlow { 0% { transform: scale(1); box-shadow: 0 0 10px #eab308; } 100% { transform: scale(1.15); box-shadow: 0 0 25px #facc15; } }
+
+        /* 버그 퇴치 시스템 애니메이션 */
+        .bug-entity { position: absolute; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: crosshair; z-index: 998; animation: scurry 0.2s infinite alternate; filter: drop-shadow(0 0 5px #ef4444); }
+        @keyframes scurry { 0% { transform: translate(0, 0) rotate(-10deg); } 100% { transform: translate(5px, 5px) rotate(10deg); } }
+
+        #centerPanel {
+            width: 40%; display: flex; flex-direction: column; padding: 15px 20px;
+            background-color: var(--bg-main); overflow-y: auto;
+            padding-bottom: max(100px, env(safe-area-inset-bottom));
+        }
+        .center-toggle-bar {
+            text-align: center; border: 1px solid var(--border-color); background-color: var(--bg-panel);
+            padding: 10px; color: var(--text-sub); font-size: 15px; font-weight: bold; cursor: pointer;
+        }
+        
+        #toggleSubPanel { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-top: none; padding: 15px; margin-bottom: 15px; display: none; }
+        .panel-section-title { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; font-weight: bold; }
+        
+        .user-id-change-box, .user-pw-change-box, .user-msg-admin-box { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 15px; }
+        .user-id-change-box input, .user-pw-change-box input, .user-msg-admin-box input { flex: 1; background-color: var(--input-bg); border: 1px solid var(--border-color); padding: 8px; color: var(--text-main); border-radius: 4px; outline: none; font-size: 13px; }
+        .user-id-change-btn, .user-pw-change-btn { background-color: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .user-msg-admin-btn { background-color: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .user-msg-admin-btn:hover { background-color: #059669; }
+        .reset-game-btn { background-color: #b91c1c; color: #ffffff; border: 1px solid #ef4444; padding: 8px 16px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%; }
+
+        .raid-boss-container {
+            border: 2px solid #ef4444; background: linear-gradient(180deg, #2d0b0b, #0f0303);
+            border-radius: 6px; padding: 15px; text-align: center; margin-bottom: 15px; display: none;
+        }
+        .boss-name-tag { font-size: 16px; font-weight: bold; color: #f87171; text-shadow: 0 0 8px #ef4444; margin-bottom: 4px; }
+        .boss-hp-frame { background-color: #1e0505; border: 1px solid #7f1d1d; height: 18px; border-radius: 9px; overflow: hidden; position: relative; margin-bottom: 6px; }
+        .boss-hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #dc2626, #ef4444); transition: width 0.2s ease-out; }
+        .boss-hp-text { position: absolute; width: 100%; height: 100%; top: 0; left: 0; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #ffffff; }
+
+        .prestige-altar-box { border: 2px solid #a855f7; background: linear-gradient(180deg, #1e1135, #0f081d); border-radius: 6px; padding: 20px; text-align: center; margin-bottom: 15px; }
+        .altar-title { color: #e9d5ff; font-size: 15px; font-weight: bold; margin-bottom: 6px; }
+        .altar-desc { color: #c084fc; font-size: 11px; margin-bottom: 15px; }
+        .altar-btn { background-color: #a855f7; color: #ffffff; border: none; width: 70%; padding: 10px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+
+        .global-ranking-container { border: 1px solid #38bdf8; background-color: var(--bg-panel); border-radius: 6px; padding: 12px; margin-bottom: 15px; }
+        .ranking-title { font-size: 13px; font-weight: bold; color: #38bdf8; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .ranking-scroll-area { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .ranking-scroll-area::-webkit-scrollbar { width: 4px; }
+        .ranking-scroll-area::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+        .ranking-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 8px; background-color: var(--input-bg); border-radius: 4px; color: var(--text-main); }
+        .ranking-row.top-rank { background: linear-gradient(90deg, #1e2638, #0f1622); border-left: 3px solid #eab308; color: #ffffff; }
+
+        .status-info-box { background-color: var(--bg-panel); border: 1px solid var(--border-color); padding: 15px; border-radius: 5px; margin-bottom: 15px; font-size: 13px; line-height: 1.8; }
+
+        .gacha-box { border: 1px dashed #1d4ed8; background-color: var(--bg-panel); border-radius: 6px; padding: 15px; text-align: center; margin-bottom: 15px; }
+        .gacha-title { color: #3b82f6; font-size: 15px; font-weight: bold; margin-bottom: 6px; }
+        .gacha-desc { color: #60a5fa; font-size: 11px; margin-bottom: 12px; }
+
+        /* 업적 보드 시스템 전용 스타일 추가 */
+        .achievement-box { border: 1px dashed #10b981; background-color: var(--bg-panel); border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+        .achievement-title { color: #10b981; font-size: 15px; font-weight: bold; margin-bottom: 10px; text-align: center; }
+        .achievement-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        .achievement-grid::-webkit-scrollbar { width: 4px; }
+        .achievement-grid::-webkit-scrollbar-thumb { background: #10b981; border-radius: 2px; }
+        .achievement-item { background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px 8px; text-align: center; opacity: 0.5; filter: grayscale(100%); transition: all 0.3s; display: flex; flex-direction: column; justify-content: center;}
+        .achievement-item.unlocked { opacity: 1; filter: grayscale(0%); border-color: #10b981; background-color: #064e3b; box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.2); }
+        .achieve-name { font-size: 12px; font-weight: bold; color: var(--text-main); margin-bottom: 4px; }
+        .achieve-cond { font-size: 10px; color: #8b9bb4; margin-bottom: 4px; }
+        .achieve-desc { font-size: 9px; color: #34d399; }
+
+        .chat-room-container { border: 1px solid var(--border-color); background-color: var(--bg-panel); border-radius: 6px; display: flex; flex-direction: column; height: 230px; margin-top: auto; }
+        .chat-header { background-color: var(--input-bg); padding: 8px 12px; font-size: 12px; font-weight: bold; color: #00ffcc; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .chat-messages { flex: 1; padding: 10px; overflow-y: auto; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .chat-msg-row { line-height: 1.4; word-break: break-all; }
+        .chat-user { color: #38bdf8; font-weight: bold; cursor: pointer; text-decoration: underline; }
+        .chat-admin-user { color: #ff0055; font-weight: bold; cursor: pointer; text-decoration: underline; }
+        .chat-dm-label { color: #ffaa00; font-weight: bold; background-color: #2a1a00; padding: 1px 4px; border-radius: 3px; margin-right: 4px; }
+        .chat-clear-btn { background-color: #b91c1c; color: white; border: none; padding: 2px 8px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer; display: none; }
+        .chat-clear-btn:hover { background-color: #ef4444; }
+        .chat-input-row { display: flex; border-top: 1px solid var(--border-color); background-color: var(--bg-main); }
+        .chat-input-row input { flex: 1; background: none; border: none; padding: 10px; color: var(--text-main); outline: none; font-size: 13px; }
+        .chat-send-btn { background-color: var(--input-bg); border: none; color: var(--text-sub); padding: 0 15px; cursor: pointer; font-size: 12px; }
+        .chat-send-btn:hover { color: var(--text-main); background-color: var(--border-color); }
+
+        #rightPanel { width: 35%; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; background-color: var(--bg-panel); overflow: hidden; }
+        .store-header-title { font-size: 22px; font-weight: bold; text-align: center; padding: 15px 0 10px 0; letter-spacing: 2px; color: var(--text-main); }
+        
+        .store-control-bar { display: flex; flex-direction: column; padding: 0 15px; margin-bottom: 12px; gap: 8px; }
+        .store-main-tabs { display: flex; background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; }
+        .store-tab-btn { flex: 1; padding: 8px; font-size: 12px; font-weight: bold; background: none; border: none; color: var(--text-sub); cursor: pointer; text-align: center; }
+        .store-tab-btn.active.mode-buy { background-color: #10b981; color: #ffffff; }
+        .store-tab-btn.active.mode-sell { background-color: #ef4444; color: #ffffff; }
+        
+        .store-amount-tabs { display: flex; background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; }
+        .amount-tab-btn { flex: 1; padding: 6px; font-size: 11px; font-weight: bold; background: none; border: none; color: var(--text-sub); cursor: pointer; text-align: center; }
+        .amount-tab-btn.active { background-color: #2563eb; color: #ffffff; }
+
+        .scroll-container { flex: 1; overflow-y: auto; padding: 0 15px max(100px, env(safe-area-inset-bottom)) 15px; }
+        .scroll-container::-webkit-scrollbar { width: 6px; }
+        .scroll-container::-webkit-scrollbar-track { background: var(--bg-panel); }
+        .scroll-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        .scroll-container::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+        .shop-item { display: flex; align-items: center; background-color: var(--bg-item); border: 1px solid var(--border-color); padding: 10px 12px; margin-bottom: 8px; border-radius: 4px; cursor: pointer; }
+        .shop-item:hover { border-color: var(--border-color); background-color: var(--bg-item-hover); }
+        .shop-item.disabled { opacity: 0.4; }
+        .item-icon-placeholder { width: 36px; height: 36px; background-color: var(--input-bg); border-radius: 4px; margin-right: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .item-info { flex: 1; }
+        .item-name { font-size: 14px; font-weight: bold; color: var(--text-main); margin-bottom: 2px; }
+        .item-cost { font-size: 12px; color: var(--text-main); display: flex; align-items: center; gap: 4px; }
+        .item-cost::before { content: "🍪"; font-size: 11px; }
+        .item-count { font-size: 22px; font-weight: bold; color: #38bdf8; }
+
+        .spec-upgrade-row { display: flex; gap: 8px; margin-bottom: 12px; justify-content: flex-end; padding: 0 15px; }
+        .spec-mini-card { background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+        .spec-mini-card.owned { border-color: #eab308; background-color: #231f13; }
+
+        .floating-text { position: absolute; color: #38bdf8; font-weight: bold; font-size: 22px; pointer-events: none; animation: floatUp 0.8s ease-out forwards; text-shadow: 0 0 6px rgba(0,0,0,1); z-index: 1000; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-80px) scale(0.8); opacity: 0; } }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-overlay.user-screen { z-index: 10001; }
+        
+        .modal-box { background-color: var(--modal-bg); border: 1px solid #ff0055; width: 540px; max-height: 95vh; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-panel); }
+        .modal-title { font-size: 14px; font-weight: bold; color: #ff0055; letter-spacing: 1px; }
+        
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-body::-webkit-scrollbar { width: 6px; }
+        .modal-body::-webkit-scrollbar-thumb { background: #ff0055; border-radius: 3px; }
+
+        .admin-bulk-user-list { background-color: var(--bg-nav); border: 1px solid var(--border-color); border-radius: 4px; max-height: 150px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .bulk-user-item { display: flex; justify-content: space-between; align-items: center; background-color: var(--input-bg); padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 12px; color: var(--text-main); }
+        .bulk-user-label-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; }
+        .bulk-user-label-wrap input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+
+        .admin-action-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .admin-action-btn { 
+            flex: 1; 
+            padding: 11px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            color: #ffffff !important; 
+            text-align: center;
+            text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.8);
+            border: 1px solid transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            transition: all 0.15s ease;
+        }
+        
+        .btn-plus { background-color: #047857 !important; border-color: #059669 !important; }
+        .btn-plus:hover { background-color: #059669 !important; }
+        .btn-minus { background-color: #b91c1c !important; border-color: #dc2626 !important; }
+        .btn-minus:hover { background-color: #dc2626 !important; }
+        .btn-ban { background-color: #c2410c !important; border-color: #ea580c !important; }
+        .btn-ban:hover { background-color: #ea580c !important; }
+        .btn-unban { background-color: #1d4ed8 !important; border-color: #2563eb !important; }
+        .btn-unban:hover { background-color: #2563eb !important; }
+        .btn-purple { background-color: #6d28d9 !important; border-color: #7c3aed !important; }
+        .btn-purple:hover { background-color: #7c3aed !important; }
+
+        .admin-btn-danger { background-color: #991b1b; color: white; width: 100%; padding: 12px; border: 1px solid #b91c1c; border-radius: 4px; font-weight: bold; font-size: 13px; margin-top: 5px; cursor: pointer; }
+        .admin-btn-danger:hover { background-color: #b91c1c; }
+        
+        .admin-section-title { font-size: 12px; color: var(--text-sub); margin: 18px 0 8px 0; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; font-weight: bold; }
+        .admin-footer-controls { display: flex; gap: 10px; padding: 15px 20px; background-color: var(--bg-panel); border-top: 1px solid var(--border-color); }
+        .footer-exit-btn { flex: 1; padding: 12px; font-size: 13px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; }
+        .exit-keep { background-color: #2563eb; color: white; }
+        .exit-turnoff { background-color: #4b5563; color: white; }
+
+        .admin-ticket-feed { background-color: var(--bg-nav); border: 1px dashed #ff0055; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .ticket-row { background-color: var(--input-bg); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; font-size: 12px; line-height: 1.4; color: var(--text-main); }
+        .ticket-meta { font-size: 10px; color: var(--text-sub); margin-bottom: 4px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
+
+        /* AI 챗봇 전용 스타일 추가 */
+        #chatbotToggleBtn {
+            position: fixed; bottom: 20px; left: 20px;
+            background-color: #38bdf8; color: #000; border: none; padding: 12px 18px;
+            border-radius: 20px; font-weight: bold; cursor: pointer; z-index: 99999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        #chatbotToggleBtn:hover { background-color: #0ea5e9; transform: scale(1.05); }
+
+        #chatbotContainer {
+            display: none; position: fixed; bottom: 70px; left: 20px;
+            width: 320px; height: 450px; background-color: var(--bg-panel);
+            border: 2px solid #38bdf8; border-radius: 10px; z-index: 99999;
+            flex-direction: column; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+        }
+        .chatbot-header {
+            background-color: #38bdf8; color: #000; padding: 10px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        #chatbotMessages {
+            flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+            font-size: 13px; color: var(--text-main); background-color: var(--bg-main);
+            scroll-behavior: smooth;
+        }
+        #chatbotMessages::-webkit-scrollbar { width: 5px; }
+        #chatbotMessages::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 2px; }
+        .chatbot-msg { padding: 8px 12px; border-radius: 8px; max-width: 85%; word-break: break-all; line-height: 1.5; }
+        .chatbot-msg.user { background-color: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+        .chatbot-msg.bot { background-color: #1e293b; color: #e2e8f0; align-self: flex-start; border: 1px solid #334155; border-bottom-left-radius: 0; }
+        .chatbot-input-area {
+            display: flex; border-top: 1px solid var(--border-color); height: 45px;
+        }
+        .chatbot-input-area input {
+            flex: 1; padding: 10px; border: none; background-color: var(--input-bg); color: white; outline: none; font-size: 13px;
+        }
+        .chatbot-input-area button {
+            padding: 0 15px; background-color: #38bdf8; border: none; color: #000; font-weight: bold; cursor: pointer; transition: background 0.2s;
+        }
+        .chatbot-input-area button:hover { background-color: #0ea5e9; }
+
+        @media (max-width: 768px) {
+            #mainContainer { flex-direction: column; overflow-y: auto; display: block; }
+            #leftPanel, #centerPanel, #rightPanel { 
+                width: 100%; border: none; border-bottom: 2px solid var(--border-color); 
+                height: auto; padding-bottom: 30px; 
+            }
+            #rightPanel { padding-bottom: max(100px, env(safe-area-inset-bottom)); }
+            .scroll-container { overflow-y: visible; max-height: none; padding-bottom: max(100px, env(safe-area-inset-bottom)); }
+            .chat-room-container { min-height: 350px; margin-top: 20px; }
+            .modal-box { width: 95%; max-height: 90dvh; }
+            #chatbotContainer { width: calc(100% - 40px); left: 20px; right: 20px; bottom: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="topNavBar">
+        <div class="nav-left">
+            현재 로그인 계정: <span id="navUserId" class="user-highlight">-</span>
+            <span id="adminCheatBadge" style="display:none; margin-left: 10px; background-color: #ff0055; color: white; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">👑 관리자 치트 활성화 (상점/환생 무료)</span>
+        </div>
+        <button class="nav-logout-btn" onclick="handleLogout()">로그아웃 (정지)</button>
+    </div>
+
+    <button id="reopenAdminBtn" onclick="openAdminModal()" style="display:none; position:fixed; bottom:20px; right:20px; background-color:#ff0055; color:white; border:2px solid #b91c1c; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; z-index:9000; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">⚙️ 관리자 패널 다시열기</button>
+
+    <button id="chatbotToggleBtn" onclick="toggleChatbot()">🤖 AI 비서</button>
+    
+    <div id="chatbotContainer">
+        <div class="chatbot-header">
+            <span>🤖 시현클리커 시즌2 공식 가이드</span>
+            <button onclick="toggleChatbot()" style="background:none;border:none;color:black;font-size:16px;cursor:pointer;font-weight:bold;">✕</button>
+        </div>
+        <div id="chatbotMessages">
+            <div class="chatbot-msg bot">안녕하세요! 시현클리커 시즌2(v3.3V)에 대해 무엇이든 물어보세요! 환생 방법, 레이드 보스, 아이템 설명 등을 도와드릴게요.</div>
+        </div>
+        <div class="chatbot-input-area">
+            <input type="text" id="chatbotInput" placeholder="게임에 대해 물어보세요..." onkeydown="if(event.key==='Enter') sendChatbotMessage()">
+            <button onclick="sendChatbotMessage()">전송</button>
+        </div>
+    </div>
+    <div id="globalNoticeTickerBar">
+        <span class="notice-badge">Notice</span>
+        <div id="liveNoticeContentText">공지사항 데이터 스트리밍을 파싱하고 있습니다...</div>
+    </div>
+
+    <div id="serverExplosionOverlay">
+        <div class="explosion-title">🚨 SERVER CRITICAL DETONATED 🚨</div>
+        <div class="explosion-desc">관리자에 의해 전 서버가 임시 폐쇄 및 폭발 상태로 제어되었습니다.<br>복구 암호 승인이 떨어질 때까지 허가되지 않은 접근은 전면 동결 처리됩니다.</div>
+        <div class="explosion-restore-box">
+            <input type="password" id="serverExplosionRestoreKey" placeholder="ENTER RESTORE KEY">
+            <button class="explosion-restore-btn" onclick="executeManualServerRecovery()">서버 인프라 복구 승인</button>
+        </div>
+    </div>
+
+    <div id="hackerOverlay">
+        <div class="hacker-title">🚫 시스템 접근 제한</div>
+        <div class="hacker-desc">관리자 권한이 없는 비정상적 개발자 도구 진입이 감지되었습니다.<br>게임을 다시 진행하려면 페이지를 새로고침하세요.</div>
+    </div>
+
+    <div id="authOverlay">
+        <div class="auth-container">
+            <div class="auth-tab-buttons">
+                <button class="auth-tab active" id="tabLoginHead" onclick="switchAuthTab('login')">로그인 / 회원가입</button>
+                <button class="auth-tab" id="tabReqHead" onclick="switchAuthTab('ticket')">가입요청</button>
+            </div>
+
+            <div id="loginForm" class="auth-form active">
+                <div class="auth-input-group">
+                    <label>아이디 (ID)</label>
+                    <input type="text" id="loginId" autocomplete="off" placeholder="ex: admin">
+                </div>
+                <div class="auth-input-group">
+                    <label>비밀번호 (6자리 이상)</label>
+                    <input type="password" id="loginPw" placeholder="ex: 123456">
+                </div>
+                <button class="auth-btn" id="mainLoginBtn" onclick="handleLogin()">게임 접속하기</button>
+                
+                <div class="auth-external-link-wrap">
+                    <button class="auth-external-toggle-btn" onclick="switchAuthTab('ticket')">관리자에게 일반 회원가입 요청 보내기</button>
+                </div>
+            </div>
+
+            <div id="registerForm" class="auth-form">
+                <div style="font-size:12px; color:var(--text-sub); margin-bottom:15px; text-align:center; line-height:1.5;">관리자 통제 레이어로 신규 가입 승인 요청 쪽지를 직통 발송합니다.</div>
+                <div class="auth-input-group">
+                    <label>요청할 아이디 (ID)</label>
+                    <input type="text" id="regTicketId" autocomplete="off" placeholder="생성할 계정 아이디 기입">
+                </div>
+                <div class="auth-input-group">
+                    <label>요청할 비밀번호 (PW)</label>
+                    <input type="password" id="regTicketPw" placeholder="생성할 계정 비밀번호 기입">
+                </div>
+                <button class="auth-btn" style="background-color: #10b981; color: white;" onclick="handleRegisterTicketSend()">관리자에게 가입요청 쪽지보내기</button>
+            </div>
+        </div>
+
+        <div id="adminSecretShield" onclick="showAdminLoginModal()" style="position: absolute; bottom: 25px; right: 25px; font-size: 45px; cursor: pointer; filter: drop-shadow(0 0 10px rgba(255, 50, 0, 0.8)); transition: transform 0.2s z-index: 10001;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="System Core">☢️🛡️</div>
+    </div>
+
+    <div id="customAdminLoginModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100000; justify-content: center; align-items: center;">
+        <div style="background-color: #fdfaf6; border-radius: 16px; padding: 25px 30px; width: 380px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; color: #333; font-family: sans-serif;">
+            <button onclick="document.getElementById('customAdminLoginModal').style.display='none'" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 20px; color: #666; cursor: pointer;">✕</button>
+            <div style="display: flex; align-items: center; margin-bottom: 10px; gap: 10px;">
+                <div style="width: 36px; height: 36px; border: 1px solid #d4c0a5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;">✨</div>
+                <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #4a3c31;">관리자 모드</h2>
+            </div>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b5d54;">설정해 둔 관리자 비밀번호를 입력하세요.</p>
+            <label style="display: block; font-size: 14px; font-weight: bold; color: #2c5253; margin-bottom: 8px;">비밀번호</label>
+            <div style="position: relative; margin-bottom: 25px;">
+                <input type="password" id="customAdminPwdInput" placeholder="비밀번호" style="width: 100%; padding: 14px 15px; border: 2px solid #e0d5c1; border-radius: 10px; font-size: 15px; outline: none; box-sizing: border-box; background-color: #fff; color: #333;">
+            </div>
+            <button onclick="submitCustomAdminLogin()" style="width: 100%; background: linear-gradient(180deg, #5c9df5, #3b82f6); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);">로그인</button>
+        </div>
+    </div>
+
+    <div id="mainContainer">
+        
+        <div id="leftPanel">
+            <div class="left-meta-author">Made by <span>시현, 이수</span> 3.3V</div>
+            <div class="bakery-title">이시현의 제과점</div>
+            <div id="scoreDisplay">0 시현</div>
+            
+            <div id="cookieContainer" onclick="handleCookieClick(event)">
+                <img id="cookieImg" src="1000000883.jpg" alt="Clicker Target">
+            </div>
+        </div>
+
+        <div id="centerPanel">
+            <div class="center-toggle-bar" onclick="toggleSettingArea()">설정 영역 토글</div>
+            
+            <div id="toggleSubPanel">
+                <div class="panel-section-title">👤 현재 계정 아이디(닉네임) 변경</div>
+                <div class="user-id-change-box">
+                    <input type="text" id="userNewIdInput" placeholder="변경할 새 계정 아이디 입력">
+                    <button class="user-id-change-btn" onclick="executeUserIdentityChange()">변경하기</button>
+                </div>
+
+                <div class="panel-section-title">🔒 현재 계정 비밀번호 변경</div>
+                <div class="user-pw-change-box">
+                    <input type="password" id="userNewPwInput" placeholder="변경할 새 비밀번호 입력">
+                    <button class="user-pw-change-btn" onclick="executeUserPasswordChange()">변경하기</button>
+                </div>
+
+                <div class="panel-section-title">📬 관리자에게 1:1 건의/문의 메시지 전송</div>
+                <div class="user-msg-admin-box">
+                    <input type="text" id="userToAdminMsgInput" placeholder="관리자에게 전달할 문의 내용을 입력하세요...">
+                    <button class="user-msg-admin-btn" onclick="sendTicketToAdmin()">보내기</button>
+                </div>
+
+                <div class="panel-section-title">⚠️ 데이터 위기 관리</div>
+                <button class="reset-game-btn" onclick="triggerResetGame()">게임 데이터 전체 초기화</button>
+            </div>
+
+            <div class="gacha-box" style="border-color:#eab308; margin-bottom:15px; background-color: #1e1b10;">
+                <div class="gacha-title" style="color:#facc15;">🎲 시현 도박장</div>
+                <div class="gacha-desc" style="color:#fde047;">운을 시험해보세요! (확률 기반 랜덤 보상)</div>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <input type="number" id="gambleAmountInput" placeholder="베팅할 시현 입력" style="flex:1; background-color:var(--input-bg); border:1px solid #eab308; padding:8px; color:var(--text-main); border-radius:4px; outline:none; font-size:13px;">
+                    <button style="background-color:#eab308; color:black; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="executeGambling()">도박하기</button>
+                </div>
+            </div>
+
+            <div class="raid-boss-container" id="raidBossUIPanel">
+                <div class="boss-name-tag">😈 전 서버 월드 레이드 보스: [진·보스시현] 😈</div>
+                <div class="boss-hp-frame">
+                    <div class="boss-hp-bar" id="bossHpBarFill"></div>
+                    <div class="boss-hp-text" id="bossHpBarText">1,000,000,000,000,000,000 / 1,000,000,000,000,000,000</div>
+                </div>
+                <div style="font-size: 11px; color: #fca5a5;">※ 전 서버 유저들과 합심하여 타격하세요! 클릭 및 SPS가 대미지로 치환됩니다.</div>
+            </div>
+            
+            <div class="prestige-altar-box">
+                <div class="altar-title">✨ 은하계 환생 제단</div>
+                <div class="altar-desc">환생 시 소지금은 초기화되지만 기본 효율이 영구히 상승합니다.</div>
+                <button class="altar-btn" id="prestigeBtn" onclick="triggerPrestige()">다음 환생 비용: 10,000,000 시현</button>
+            </div>
+
+            <div class="global-ranking-container">
+                <div class="ranking-title">
+                    <span>🌍 전 서버 실시간 통합 전체 유저 랭킹 보드</span>
+                    <span style="color:#00ffcc; font-size:11px;">LIVE ALL (0.1초 동기화)</span>
+                </div>
+                <div class="ranking-scroll-area" id="globalRankingScrollBoard">
+                    <div style="color:var(--text-sub); font-size:11px; text-align:center; padding:5px;">랭킹 데이터를 집계하고 있습니다...</div>
+                </div>
+            </div>
+
+            <div class="status-info-box">
+                <div>초당 생산량 (SPS) : <span id="centerSpsVal" style="color:#00ffcc; font-weight:bold;">0</span></div>
+                <div>총 환생 횟수 : <span id="centerPrestigeVal" style="color:#a855f7; font-weight:bold;">0</span>회</div>
+                <div style="margin-top: 3px; font-size:11px; color:var(--text-sub);">누적 원격 클릭수: <span id="centerClicksVal">0</span>회</div>
+                <div style="margin-top: 3px; font-size:11px; color:#ef4444;">누적 퇴치한 버그: <span id="centerBugsVal">0</span>마리</div>
+            </div>
+
+            <div class="achievement-box">
+                <div class="achievement-title">🏆 업적 보드</div>
+                <div class="achievement-grid" id="achievementGrid">
+                    </div>
+            </div>
+
+            <div class="chat-room-container">
+                <div class="chat-header">
+                    <span>🌐 실시간 커뮤니티 대화방 (아이디 클릭시 귓속말)</span>
+                    <button class="chat-clear-btn" id="adminChatClearBtn" onclick="executeAdminClearAllChatLogs()">🧹 로그 전체 삭제</button>
+                </div>
+                <div class="chat-messages" id="chatMsgArea"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="메시지를 입력하세요... (귓속말: @아이디 내용)" onkeydown="if(event.key==='Enter') sendChatMessage()">
+                    <button class="chat-send-btn" onclick="sendChatMessage()">전송</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="rightPanel">
+            <div class="store-header-title">Store</div>
+            
+            <div class="spec-upgrade-row">
+                <div class="spec-mini-card" id="cardCookieUpgrade" onclick="buySpecial('cookie')" title="🔥 황금 시현 쿠키 수련">🔥</div>
+                <div class="spec-mini-card" id="cardScrollUpgrade" onclick="buySpecial('scroll')" title="💫 최적화 알고리즘 비급 (SPS 대폭 상승)">💫</div>
+            </div>
+
+            <div class="store-control-bar">
+                <div class="store-main-tabs">
+                    <button class="store-tab-btn active mode-buy" id="storeTabBuy" onclick="setStoreMode('BUY')">BUY (구매)</button>
+                    <button class="store-tab-btn mode-sell" id="storeTabSell" onclick="setStoreMode('SELL')">SELL (판매)</button>
+                </div>
+                <div class="store-amount-tabs">
+                    <button class="amount-tab-btn active" id="amtTab1" onclick="setStoreAmount(1)">x1</button>
+                    <button class="amount-tab-btn" id="amtTab10" onclick="setStoreAmount(10)">x10</button>
+                    <button class="amount-tab-btn" id="amtTab100" onclick="setStoreAmount(100)">x100</button>
+                </div>
+            </div>
+
+            <div class="scroll-container" id="shopItemsRoot"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (v3.3V)</div>
+            </div>
+            <div class="modal-box-scroll" style="flex: 1; overflow-y: auto;">
+                <div class="modal-body">
+                    
+                    <div id="adminSectionRanking">
+                        <div class="admin-section-title" style="color: #facc15; border-color: #facc15;">💰 랭킹 보상 자동 지급 시스템 (최고관리자 전용)</div>
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn" style="background-color: #eab308 !important; border-color: #facc15 !important; color: black !important;" onclick="executeRankingRewards()">🏆 1~3등 보상 즉시 지급 (30만/20만/10만)</button>
+                        </div>
+                    </div>
+
+                    <div id="adminSectionGambling">
+                        <div class="admin-section-title" style="color: #a855f7; border-color: #a855f7;">🎲 도박 승률 제어 (최고관리자 전용)</div>
+                        <div class="form-group" style="display:flex; gap:8px;">
+                            <input type="number" id="admWinRateInput" placeholder="현재 확률 (예: 0.5 = 50%)" step="0.1" style="flex:1; background-color:var(--input-bg); border:1px solid #a855f7; padding:8px; color:var(--text-main); border-radius:4px; outline:none; font-size:13px;">
+                            <button class="admin-action-btn btn-purple" style="flex:0.3; margin:0;" onclick="setGamblingRate()">승률 적용</button>
+                        </div>
+                    </div>
+
+                    <div id="adminSectionCreateUser">
+                        <div class="admin-section-title" style="color: #38bdf8; border-color: #38bdf8;">👤 신규 유저 강제 생성 (최고관리자 전용)</div>
+                        <div class="form-group" style="display:flex; gap:8px; margin-bottom:10px;">
+                            <input type="text" id="admNewUserId" placeholder="아이디" style="flex:1; background-color:var(--input-bg); border:1px solid #38bdf8; padding:8px; color:var(--text-main); border-radius:4px; outline:none; font-size:13px;">
+                            <input type="password" id="admNewUserPw" placeholder="비밀번호" style="flex:1; background-color:var(--input-bg); border:1px solid #38bdf8; padding:8px; color:var(--text-main); border-radius:4px; outline:none; font-size:13px;">
+                        </div>
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn" style="background-color: #0284c7 !important; border-color: #0369a1 !important;" onclick="adminCreateUser()">✨ 유저 강제 생성 (로그아웃 안됨)</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label style="color:#00ffcc; font-weight:bold; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👥 제어 및 일괄 밴 유저 멀티 피드 선택 (비밀번호/화면 열람 포함)</span>
+                            <label style="color:white; font-size: 11px; cursor: pointer; background: #2563eb; padding: 3px 6px; border-radius: 3px; font-weight: normal;">
+                                <input type="checkbox" id="admBulkSelectAll" onclick="toggleSelectAllBulkUsers(this.checked)" style="vertical-align: middle; margin-right: 3px;">전체선택
+                            </label>
+                        </label>
+                        <div class="admin-bulk-user-list" id="admBulkUserListArea"></div>
+                    </div>
+
+                    <div class="admin-section-title" style="color: #eab308; border-color: #eab308;">📢 전 서버 실시간 글로벌 공지사항 제어 센터</div>
+                    <div class="form-group">
+                        <label>전 유저 실시간 공지사항 메시지 원격 강제 인젝션</label>
+                        <input type="text" id="admNoticeInput" placeholder="입력 후 배포 시 전 서버 상단 공지 배너에 실시간 적용됩니다.">
+                    </div>
+                    <div class="admin-action-row">
+                        <button class="admin-action-btn" style="background-color: #eab308 !important; border-color: #facc15 !important; color: #000000 !important; font-weight: bold;" onclick="executeAdminPublishNotice()">📢 공지사항 전 서버 실시간 주입</button>
+                    </div>
+
+                    <div class="admin-section-title" style="color: #ff3333; border-color: #ff3333;">🚨 원격 글로벌 코어 하이퍼 인프라 제어</div>
+                    <div class="admin-action-row">
+                        <button class="admin-action-btn" style="background-color: #b91c1c !important; border-color: #ff3333 !important; font-weight: bold;" onclick="executeAdminDetonateServer(true)">🚨 전 서버 실시간 폭발 집행</button>
+                        <button class="admin-action-btn" style="background-color: #1e3a8a !important; border-color: #3b82f6 !important;" onclick="executeAdminDetonateServer(false)">✅ 폭발 강제 해제/정상화</button>
+                    </div>
+
+                    <div class="admin-section-title" style="color: #ef4444; border-color: #ef4444;">⚔️ 월드 보스 레이드 원격 제어 센터</div>
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label style="color:#f87171;">보스 체력 조절 (현재 체력 실시간 덮어쓰기 변경)</label>
+                        <input type="number" id="admBossHpInput" placeholder="변경할 체력 입력 (예: 5000000)" style="width:100%; background-color:var(--input-bg); border:1px solid #ef4444; padding:8px; color:var(--text-main); border-radius:4px; outline:none; font-size:13px; margin-top: 5px;">
+                    </div>
+                    <div class="admin-action-row">
+                        <button class="admin-action-btn" style="background-color: #991b1b !important; border-color: #b91c1c !important;" onclick="executeAdminSetBossHp()">🩸 입력 체력으로 수정</button>
+                        <button class="admin-action-btn" style="background-color: #dc2626 !important; border-color: #ef4444 !important;" onclick="executeAdminControlRaid('START')">⚔️ 레이드 강제 시작</button>
+                        <button class="admin-action-btn" style="background-color: #4b5563 !important; border-color: #6b7280 !important;" onclick="executeAdminControlRaid('STOP')">🛑 레이드 즉시 중지</button>
+                    </div>
+                    
+                    <div id="adminSectionStats">
+                        <div class="admin-section-title">📊 라이브 스탯 인젝션 제어 (최고관리자 전용)</div>
+                        <div class="form-group">
+                            <label>변동할 수치 (쿠키 점수 / SPS / 환생 일괄 적용 수치)</label>
+                            <input type="number" id="admAmountInput" placeholder="수치를 입력하세요 (예: 5000)">
+                        </div>
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn btn-plus" onclick="adjustUserStat('score', 'plus')">점수 (+)</button>
+                            <button class="admin-action-btn btn-minus" onclick="adjustUserStat('score', 'minus')">점수 (-)</button>
+                            <button class="admin-action-btn btn-plus" onclick="adjustUserStat('sps', 'plus')">SPS (+)</button>
+                            <button class="admin-action-btn btn-minus" onclick="adjustUserStat('sps', 'minus')">SPS (-)</button>
+                        </div>
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn" style="background-color: #f59e0b !important; border-color: #d97706 !important; color: black !important;" onclick="executeAdminBulkScoreReset()">🔄 선택유저 점수 0으로 일괄 초기화</button>
+                        </div>
+                    </div>
+
+                    <div id="adminSectionItems">
+                        <div class="admin-section-title">🎁 원격 아이템 수량 조절 제어 (최고관리자 전용 / 체크된 전체 대상 적용)</div>
+                        <div class="form-group">
+                            <label>지급/차수 처리할 아이템 종류 선택</label>
+                            <select id="admItemSelect" style="background-color:var(--input-bg); color:var(--text-main); padding:5px; border:1px solid var(--border-color);">
+                                <option value="item1">👆 Cursor</option>
+                                <option value="item2">👵 Grandma</option>
+                                <option value="item3">🌱 Farm</option>
+                                <option value="item4">⛏️ Mine</option>
+                                <option value="item5">🤖 AI 직원</option>
+                                <option value="item6">🏛️ Temple</option>
+                                <option value="item7">👹 괴물시현</option>
+                                <option value="item8">👑 보스시현</option>
+                                <option value="item9">☠️ 불가능보스</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>조정할 아이템 개수</label>
+                            <input type="number" id="admItemCountInput" placeholder="개수를 입력하세요 (예: 10)">
+                        </div>
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn btn-plus" onclick="adjustUserItem('plus')">아이템 (+)</button>
+                            <button class="admin-action-btn btn-minus" onclick="adjustUserItem('minus')">아이템 (-)</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section-title">🔐 원격 유저 비밀번호 강제 변경 제어</div>
+                    <div class="form-group">
+                        <label>선택한 유저들의 새로운 비밀번호 강제 주입 (체크된 전체 대상 적용)</label>
+                        <input type="password" id="admTargetNewPwInput" placeholder="강제로 설정할 새 비밀번호 입력">
+                    </div>
+                    <div class="admin-action-row">
+                        <button class="admin-action-btn btn-ban" style="background-color: #ea580c !important; border-color: #f97316 !important;" onclick="executeAdminUserPasswordOverride()">⚠️ 선택한 유저 비밀번호 무조건 강제 덮어쓰기</button>
+                    </div>
+
+                    <div id="adminSectionBan">
+                        <div class="admin-section-title" style="color: #e11d48; font-weight: bold; border-color: #e11d48;">🛑 원격 일괄 시스템 제재 및 차단 제어 (최고관리자 전용)</div>
+                        <div class="form-group">
+                            <label>⏱️ 기간제 밴 시간 설정 (초 단위)</label>
+                            <input type="number" id="admBanSecondsInput" placeholder="정지시킬 시간 입력 (예: 60)">
+                        </div>
+                        
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn btn-ban" onclick="executeAdminBulkTimeBan()">⏳ 선택유저 일괄 타임 밴 집행</button>
+                            <button class="admin-action-btn btn-minus" onclick="executeAdminBulkPermBan()">🔴 선택유저 일괄 영구 밴 집행</button>
+                            <button class="admin-action-btn btn-unban" onclick="executeAdminBulkUnban()">🔓 선택유저 일괄 모든 밴 해제</button>
+                        </div>
+                        
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn btn-purple" onclick="executeBulkToggleChatBan(true)">🚫 일괄 월드 채팅 차단</button>
+                            <button class="admin-action-btn btn-unban" onclick="executeBulkToggleChatBan(false)">✅ 일괄 월드 채팅 허용</button>
+                        </div>
+
+                        <div class="admin-action-row">
+                            <button class="admin-action-btn btn-minus" onclick="executeBulkToggleScoreLock(true)">🔒 일괄 점수획득 불가(관전자) 지정</button>
+                            <button class="admin-action-btn btn-unban" onclick="executeBulkToggleScoreLock(false)">🔓 일괄 점수획득 허용</button>
+                        </div>
+
+                        <button class="admin-btn-danger" onclick="executeBulkDeleteUserAccounts()">❌ 선택한 유저 데이터 일괄 영구 삭제 (계정 파쇄)</button>
+                        <button class="admin-btn-danger" style="background-color: #d97706; border-color: #b45309; margin-top: 5px;" onclick="executeCleanCorruptedAccounts()">🧹 'undefined' 오류/유령 계정 원클릭 일괄 청소</button>
+                    </div>
+
+                    <div class="admin-section-title" style="color: #00ffcc; border-color: #00ffcc; display:flex; justify-content:space-between; align-items:center;">
+                        <span>📬 실시간 유저 접수 메시지 라이브 피드</span>
+                        <button class="chat-clear-btn" style="display:inline-block; background-color:#b91c1c; color:white; border:none; padding:2px 8px; border-radius:3px; cursor:pointer;" onclick="executeAdminClearAllTickets()">🧹 모두 지우기</button>
+                    </div>
+                    <div class="admin-ticket-feed" id="admTicketFeedArea">
+                        <div style="color: var(--text-sub); font-size: 11px; text-align: center; padding: 10px;">접수된 내역이 없습니다.</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="admin-footer-controls">
+                <button class="footer-exit-btn exit-turnoff" onclick="exitAdminConsole(false)">나가기</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay user-screen" id="userScreenModal">
+        <div class="modal-box" style="width: 400px;">
+            <div class="modal-header" style="background-color: var(--bg-nav);">
+                <div class="modal-title" style="color:#00ffcc;">👀 [<span id="viewUserName"></span>] 유저 화면 보기</div>
+                <button onclick="document.getElementById('userScreenModal').classList.remove('active')" style="background:none; border:none; color:white; font-size:18px; cursor:pointer; font-weight:bold;">X</button>
+            </div>
+            <div class="modal-body" id="userScreenBody" style="color:var(--text-main); font-size:13px; line-height:1.6; background-color: var(--bg-main);">
+                </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // 우클릭 및 단축키 차단
+        window.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+
+        window.addEventListener('keydown', function (e) {
+            if (e.key === "F12" || 
+               (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "i" || e.key === "C" || e.key === "c" || e.key === "J" || e.key === "j")) || 
+               (e.ctrlKey && (e.key === "U" || e.key === "u"))) {
+                e.preventDefault();
+                e.stopPropagation();
+                document.getElementById('hackerOverlay').style.display = 'flex';
+                return false;
+            }
+        });
+
+        // --- Supabase 초기화 설정 ---
+        const supabaseUrl = 'https://efwymlndmqkpgxuuwhvu.supabase.co';
+        const supabaseKey = 'sb_publishable_h-nNfui1DG8yG4VdhsLapg_yIGClTBw';
+        
+        const rawGameDB = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // DB는 snake_case 컬럼을 사용하고, 게임 코드의 camelCase와 자동 변환합니다.
+        const DB_FIELD_MAP = {
+            userId: 'user_id', gameSave: 'game_save', isAdmin: 'is_admin',
+            isSuperAdmin: 'is_super_admin', isScoreLocked: 'is_score_locked',
+            isPermanentBan: 'is_permanent_ban', banExpiry: 'ban_expiry',
+            isChatBanned: 'is_chat_banned', isDMBanned: 'is_dm_banned',
+            senderId: 'sender_id', isDM: 'is_dm', updatedBy: 'updated_by',
+            isDetonated: 'is_detonated', triggeredBy: 'triggered_by',
+            restoredAt: 'restored_at', currentHp: 'current_hp', startedAt: 'started_at'
+        };
+        const DB_FIELD_REVERSE = Object.fromEntries(Object.entries(DB_FIELD_MAP).map(([k,v]) => [v,k]));
+
+        function mapDbKeys(value) {
+            if (Array.isArray(value)) return value.map(mapDbKeys);
+            if (!value || typeof value !== 'object') return value;
+            const out = {};
+            for (const [k, v] of Object.entries(value)) out[DB_FIELD_REVERSE[k] || k] = v;
+            return out;
+        }
+        function mapDbPayload(value) {
+            if (Array.isArray(value)) return value.map(mapDbPayload);
+            if (!value || typeof value !== 'object') return value;
+            const out = {};
+            for (const [k, v] of Object.entries(value)) out[DB_FIELD_MAP[k] || k] = v;
+            return out;
+        }
+
+        // Supabase query builder를 감싸 DB 컬럼명과 게임 코드의 필드명을 자동 변환합니다.
+        function wrapQuery(builder) {
+            const methods = ['select','eq','neq','gt','gte','lt','lte','in','order','match','not','is','like','ilike','contains','containedBy','filter','update','insert','upsert','maybeSingle','single','limit','range'];
+            return new Proxy(builder, {
+                get(target, prop, receiver) {
+                    const value = Reflect.get(target, prop, receiver);
+                    if (typeof value !== 'function') return value;
+                    if (methods.includes(prop)) {
+                        return (...args) => {
+                            let a = args;
+                            if (prop === 'select' && typeof a[0] === 'string') {
+                                // select('*')는 그대로, 명시적 컬럼만 변환
+                                a = a[0] === '*' ? a : [a[0].split(',').map(x => DB_FIELD_MAP[x.trim()] || x.trim()).join(','), ...a.slice(1)];
+                            } else if (['eq','neq','gt','gte','lt','lte','order','is','like','ilike','contains','containedBy'].includes(prop) && typeof a[0] === 'string') {
+                                a = [DB_FIELD_MAP[a[0]] || a[0], ...a.slice(1)];
+                            } else if (prop === 'in' && typeof a[0] === 'string') {
+                                a = [DB_FIELD_MAP[a[0]] || a[0], ...a.slice(1)];
+                            } else if (prop === 'match' && a[0] && typeof a[0] === 'object') {
+                                a = [mapDbPayload(a[0]), ...a.slice(1)];
+                            } else if (['update','insert','upsert'].includes(prop)) {
+                                a = [mapDbPayload(a[0]), ...a.slice(1)];
+                            }
+                            const result = value.apply(target, a);
+                            return wrapQuery(result);
+                        };
+                    }
+                    // then/catch/finally에서 반환되는 data/error의 필드를 camelCase로 변환
+                    if (prop === 'then') {
+                        return (onFulfilled, onRejected) => target.then(
+                            res => onFulfilled ? onFulfilled({ ...res, data: mapDbKeys(res.data) }) : res,
+                            onRejected
+                        );
+                    }
+                    return value.bind(target);
+                }
+            });
+        }
+
+        const gameDB = new Proxy(rawGameDB, {
+            get(target, prop, receiver) {
+                if (prop === 'from') return table => wrapQuery(target.from(table));
+                if (prop === 'channel') {
+                    return (...args) => {
+                        const channel = target.channel(...args);
+                        const originalOn = channel.on.bind(channel);
+                        channel.on = (event, filter, callback) => {
+                            if (typeof callback === 'function') {
+                                return originalOn(event, filter, payload => callback({ ...payload, new: mapDbKeys(payload.new), old: mapDbKeys(payload.old) }));
+                            }
+                            return originalOn(event, filter, callback);
+                        };
+                        return channel;
+                    };
+                }
+                return Reflect.get(target, prop, receiver);
+            }
+        });
+        
+        // 관리자 우회를 위한 2차 백그라운드 클라이언트 세팅
+        const secondarySupabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+            auth: { persistSession: false, autoRefreshToken: false }
+        });
+
+        let isUserSuperAdmin = false;
+        let isUserAdminPrivilege = false;
+        let isUserScoreLocked = false;
+
+        let score = 0;
+        let totalClicks = 0;
+        let prestigeCount = 0;
+        let cheatBonusSps = 0;
+        let ownedCookieUpgrade = false;
+        let ownedScrollUpgrade = false;
+        let winRate = 0.5;
+
+        let currentUserSession = null;
+        let currentUserId = "";
+        let isAdminAuthenticated = false;
+
+        let currentStoreMode = "BUY"; 
+        let currentStoreAmount = 1;   
+
+        let goldenCookieBuffTimer = 0;
+        let globalRaidActive = false;
+        const MAX_BOSS_HP = 1000000000000000000; 
+        let globalRaidHp = MAX_BOSS_HP;
+
+        // 아이템
+        const items = {
+            item1: { name: "Cursor", cost: 15, count: 0, spsValue: 0.1, baseCost: 15, icon: "👆" },
+            item2: { name: "Grandma", cost: 100, count: 0, spsValue: 1, baseCost: 100, icon: "👵" },
+            item3: { name: "Farm", cost: 1100, count: 0, spsValue: 8, baseCost: 1100, icon: "🌱" },
+            item4: { name: "Mine", cost: 12000, count: 0, spsValue: 47, baseCost: 12000, icon: "⛏️" },
+            item5: { name: "AI 직원", cost: 130000, count: 0, spsValue: 260, baseCost: 130000, icon: "🤖" },
+            item6: { name: "Temple", cost: 1000000, count: 0, spsValue: 1500, baseCost: 1000000, icon: "🏛️" },
+            item7: { name: "괴물시현", cost: 100000000, count: 0, spsValue: 150000, baseCost: 100000000, icon: "👹" },
+            item8: { name: "보스시현", cost: 1000000000, count: 0, spsValue: 2000000, baseCost: 1000000000, icon: "👑" },
+            item9: { name: "불가능보스", cost: 100000000000000000000000, count: 0, spsValue: 999999999999999, baseCost: 100000000000000000000000, icon: "☠️" }
+        };
+
+        // 업적 데이터
+        const achievementData = [
+            { id: 'helloWorld', name: "Hello World", condition: "첫 클릭", desc: "모든 위대한 프로젝트는 여기서 시작된다.", type: "일반" },
+            { id: 'keyboardWarrior', name: "키보드 워리어", condition: "100번 클릭", desc: "손가락에 불이 붙기 시작했다.", type: "일반" },
+            { id: 'caffeine', name: "카페인 충전", condition: "1,000번 클릭", desc: "커피 없이는 못 살아.", type: "일반" },
+            { id: 'nightDev', name: "밤샘 개발", condition: "10,000번 클릭", desc: "해가 떴는데 왜 아직도 코딩 중이지?", type: "일반" },
+            { id: 'codeMaster', name: "코드 장인", condition: "100,000번 클릭", desc: "코드가 예술이 되었다.", type: "일반" },
+            { id: 'bugHunter', name: "버그 헌터", condition: "버그 10개 제거", desc: "버그가 널 두려워한다.", type: "일반" },
+            { id: 'debuggingGod', name: "디버깅의 신", condition: "버그 1,000개 제거", desc: "Stack Overflow가 널 검색한다.", type: "희귀" },
+            { id: 'firstDeploy', name: "첫 배포", condition: "첫 업그레이드 구매", desc: "제발 안 터지길...", type: "일반" },
+            { id: 'noDowntime', name: "무중단 배포", condition: "업그레이드 50개 구매", desc: "기적이 일어났다.", type: "희귀" },
+            { id: 'serverAdmin', name: "서버 관리자", condition: "자동 생산 시작", desc: "이제 기계가 일한다.", type: "일반" },
+            { id: 'devOps', name: "DevOps 입문", condition: "자동 생산량 100 달성", desc: "배포 버튼이 무섭지 않다.", type: "일반" },
+            { id: 'aiUser', name: "AI 활용러", condition: "AI 직원 고용", desc: "이제 혼자가 아니다.", type: "일반" },
+            { id: 'aiAddict', name: "AI 중독", condition: "AI 직원 100명 보유", desc: "누가 개발자인지 모르겠다.", type: "희귀" },
+            { id: 'startup', name: "스타트업 창업", condition: "생산량 1,000 달성", desc: "꿈은 크게 가져라.", type: "일반" },
+            { id: 'investment', name: "투자 유치", condition: "생산량 10,000 달성", desc: "축하합니다. 이제 투자자 눈치 봅니다.", type: "희귀" }
+        ];
+
+        let unlockedAchievements = {}; 
+        let bugsRemovedCount = 0;
+
+        window.toggleChatbot = function() {
+            const cb = document.getElementById('chatbotContainer');
+            cb.style.display = cb.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        window.sendChatbotMessage = async function() {
+            const input = document.getElementById('chatbotInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            addChatbotMessage('user', text);
+            input.value = '';
+
+            const loadingId = 'bot_loading_' + Date.now();
+            addChatbotMessage('bot', 'AI가 답변을 생성 중입니다...', loadingId);
+
+            setTimeout(() => {
+                document.getElementById(loadingId)?.remove();
+                let reply = "";
+                
+                if (text.includes("환생") || text.includes("초월")) {
+                    reply = "✨ 환생(초월)을 하시면 현재 소지한 시현(점수)과 아이템이 초기화되지만, SPS(초당 생산량) 기본 효율이 영구히 대폭 상승합니다! 오른쪽 하단의 제단에서 진행할 수 있어요.";
+                } else if (text.includes("레이드") || text.includes("보스")) {
+                    reply = "⚔️ 월드 레이드 보스는 전 서버 유저들이 힘을 합쳐 체력을 깎는 콘텐츠입니다. 클릭 대미지와 SPS가 보스의 체력을 깎으며, 처치 시 엄청난 보상(점수 50억, 환생 3회)이 주어집니다!";
+                } else if (text.includes("도박") || text.includes("확률")) {
+                    reply = "🎲 도박은 운을 시험하여 보유한 시현을 늘릴 수 있는 시스템입니다. 성공 시 베팅액만큼 얻고, 실패 시 잃게 됩니다. (관리자가 승률을 조정할 수 있습니다)";
+                } else if (text.includes("아이템") || text.includes("상점") || text.includes("구매") || text.includes("SPS")) {
+                    reply = "🛒 우측 상점에서는 SPS(초당 생산량)를 늘려주는 다양한 아이템을 살 수 있습니다. 보유 개수가 늘어날수록 다음 구매 비용이 15%씩 증가하니 전략적으로 구매하세요.";
+                } else if (text.includes("업적") || text.includes("뱃지")) {
+                    reply = "🏆 게임 내 여러 행동(클릭, 아이템 구매, 버그 퇴치 등)을 통해 총 15종의 다양한 업적을 달성할 수 있습니다. 수집의 재미를 느껴보세요!";
+                } else if (text.includes("황금") || text.includes("쿠키")) {
+                    reply = "⭐ 화면에 무작위로 나타나는 '황금 쿠키'를 클릭하면 7초 동안 모든 클릭 대미지와 자동 생산 효율이 77배로 폭증하는 엄청난 축복을 받습니다!";
+                } else if (text.includes("관리자") || text.includes("어드민") || text.includes("치트")) {
+                    reply = "👑 관리자 모드는 최고 권한을 가진 유저(이시현, admin)만 접근 가능한 하이퍼 컨트롤 패널입니다. 점수 조작, 밴, 레이드 제어 등 서버의 모든 것을 통제할 수 있습니다.";
+                } else if (text.includes("안녕") || text.includes("반갑") || text.includes("하이")) {
+                    reply = "안녕하세요, 시현님! 시현클리커 시즌2를 플레이해주셔서 감사합니다. 게임에 대해 궁금한 점이 있다면 무엇이든 물어보세요!";
+                } else {
+                    const defaultReplies = [
+                        "흥미로운 질문이네요! 시현클리커 시즌2의 환생, 레이드, 아이템, 업적 시스템 등에 대해 물어보시면 자세히 알려드릴게요.",
+                        "계속해서 쿠키를 클릭해 점수를 올리고, 상점에서 건물을 구매해 자동 생산량(SPS)을 높여보세요!",
+                        "저는 게임 공식 가이드 AI입니다. 특정 시스템에 대해 궁금한 단어를 포함해서 질문해주시면 더 정확한 답변을 드릴 수 있어요."
+                    ];
+                    reply = defaultReplies[Math.floor(Math.random() * defaultReplies.length)];
+                }
+                
+                addChatbotMessage('bot', reply);
+            }, 600);
+        };
+
+        function addChatbotMessage(sender, text, id = null) {
+            const msgArea = document.getElementById('chatbotMessages');
+            const div = document.createElement('div');
+            div.className = `chatbot-msg ${sender}`;
+            if(id) div.id = id;
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            msgArea.appendChild(div);
+            msgArea.scrollTop = msgArea.scrollHeight;
+        }
+
+        window.showAdminLoginModal = function() {
+            document.getElementById('customAdminLoginModal').style.display = 'flex';
+            document.getElementById('customAdminPwdInput').value = '';
+            document.getElementById('customAdminPwdInput').focus();
+        };
+
+        window.submitCustomAdminLogin = function() {
+            const pwd = document.getElementById('customAdminPwdInput').value.trim();
+            if (pwd === "102030") {
+                document.getElementById('customAdminLoginModal').style.display = 'none';
+                sessionStorage.setItem('admin_access_granted', 'true');
+                history.pushState(null, null, '/admin'); 
+                alert("관리자 권한 승인 완료. 자동으로 시스템에 접속합니다.");
+                
+                document.getElementById('loginId').value = 'admin';
+                document.getElementById('loginPw').value = '102030';
+                document.getElementById('mainLoginBtn').click(); 
+            } else {
+                alert("접근 거부: 인증 코드가 일치하지 않습니다.");
+            }
+        };
+
+        window.switchAuthTab = function(tab) {
+            document.getElementById('tabLoginHead').classList.remove('active');
+            document.getElementById('tabReqHead').classList.remove('active');
+            document.getElementById('loginForm').classList.remove('active');
+            document.getElementById('registerForm').classList.remove('active');
+            
+            if(tab === 'login') {
+                document.getElementById('tabLoginHead').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.getElementById('tabReqHead').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        };
+
+        window.toggleSettingArea = function() {
+            const panel = document.getElementById('toggleSubPanel');
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        };
+
+        window.setStoreMode = function(mode) {
+            currentStoreMode = mode;
+            document.getElementById('storeTabBuy').classList.remove('active');
+            document.getElementById('storeTabSell').classList.remove('active');
+            if(mode === "BUY") document.getElementById('storeTabBuy').classList.add('active');
+            else document.getElementById('storeTabSell').classList.add('active');
+            buildShopUI();
+        };
+
+        window.setStoreAmount = function(amt) {
+            currentStoreAmount = amt;
+            document.getElementById('amtTab1').classList.remove('active');
+            document.getElementById('amtTab10').classList.remove('active');
+            document.getElementById('amtTab100').classList.remove('active');
+            document.getElementById('amtTab' + amt).classList.add('active');
+            buildShopUI();
+        };
+
+        window.triggerResetGame = async function() {
+            if (!currentUserId) return;
+            if (confirm("🚨 경고: 정말로 모든 게임 진행 데이터(점수, 아이템, 업적, 환생)를 초기화하시겠습니까?")) {
+                score = 0; totalClicks = 0; prestigeCount = 0; cheatBonusSps = 0;
+                ownedCookieUpgrade = false; ownedScrollUpgrade = false;
+                unlockedAchievements = {};
+                bugsRemovedCount = 0;
+
+                for (const k in items) { items[k].count = 0; items[k].cost = items[k].baseCost; }
+                await saveGameToServer();
+                alert("🔄 초기화가 성공적으로 집행되었습니다.");
+                buildShopUI(); buildAchievementsUI(); updateDisplay();
+            }
+        };
+
+        window.handleRegisterTicketSend = async function() {
+            const targetId = document.getElementById('regTicketId').value.trim().toLowerCase();
+            const targetPw = document.getElementById('regTicketPw').value.trim();
+
+            if(!targetId || !targetPw || targetId === 'undefined' || targetPw === 'undefined') { 
+                alert("요청할 아이디와 비밀번호를 모두 올바르게 입력해주세요! (시스템어 사용 금지)"); 
+                return; 
+            }
+
+            try {
+                const { error } = await gameDB.from('admin_tickets').insert([
+                    { senderId: `(가입요청) ${targetId}`, message: `신규 가입 희망 요청 쪽지 보냄 -> 희망PW: [ ${targetPw} ]`, timestamp: Date.now() }
+                ]);
+                if (error) throw error;
+
+                alert("📬 관리자 콘솔 라이브 피드로 가입요청 쪽지가 안전하게 전송되었습니다!");
+                document.getElementById('regTicketId').value = '';
+                document.getElementById('regTicketPw').value = '';
+                switchAuthTab('login');
+            } catch(e) {
+                alert("전송 도중 시스템 통신 오류 발생: " + e.message);
+            }
+        };
+
+        window.handleLogin = async function() {
+            let id = document.getElementById('loginId').value.trim().toLowerCase().replace(/\s+/g, '');
+            const pw = document.getElementById('loginPw').value.trim();
+            const loginBtn = document.getElementById('mainLoginBtn');
+
+            // undefined 및 빈칸 가입/로그인 원천 차단 방어벽
+            if(!id || !pw || String(id) === 'undefined' || String(pw) === 'undefined' || String(id) === 'null') { 
+                alert("아이디와 비밀번호를 정확히 입력하세요. (undefined 등 특수 시스템어는 사용할 수 없습니다.)"); 
+                return; 
+            }
+
+            loginBtn.innerText = "로딩 중...";
+            loginBtn.disabled = true;
+
+            try {
+                let { error: authErr } = await gameDB.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
+                
+                if (authErr && (authErr.message.includes('Invalid login credentials') || authErr.message.includes('not found') || authErr.message.includes('Invalid'))) {
+                    const { error: signUpError } = await gameDB.auth.signUp({ email: `${id}@clicker.com`, password: pw });
+                    
+                    if (signUpError && !signUpError.message.includes('already registered')) throw signUpError;
+
+                    await gameDB.from('users').upsert({
+                        userId: id,
+                        gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                    });
+
+                    const { error: retryErr } = await gameDB.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
+                    if (retryErr) throw retryErr;
+                    authErr = null; 
+                } else if (authErr) {
+                    throw authErr; 
+                }
+                
+                const { data: ud, error: userErr } = await gameDB.from('users').select('*').eq('userId', id).maybeSingle();
+                
+                if(userErr || !ud) { 
+                    await gameDB.from('users').upsert({
+                        userId: id,
+                        gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                    });
+                } else {
+                    if(ud.isPermanentBan) { 
+                        alert("🔴 영구 정지 처리를 받은 계정입니다."); 
+                        await gameDB.auth.signOut();
+                        loginBtn.innerText = "게임 접속하기";
+                        loginBtn.disabled = false;
+                        return; 
+                    }
+                    if(ud.banExpiry && ud.banExpiry > Date.now()) {
+                        const leftSec = Math.ceil((ud.banExpiry - Date.now()) / 1000);
+                        alert(`🟡 아직 기간제 밴 상태입니다. 남은 시간: ${leftSec}초`);
+                        await gameDB.auth.signOut();
+                        loginBtn.innerText = "게임 접속하기";
+                        loginBtn.disabled = false;
+                        return;
+                    }
+                }
+            } catch(e) { 
+                alert("로그인/가입 실패: 비밀번호 오류이거나 계정에 문제가 있습니다. (" + e.message + ")"); 
+                loginBtn.innerText = "게임 접속하기";
+                loginBtn.disabled = false;
+            }
+        };
+
+        window.handleLogout = async function() {
+            await saveGameToServer();
+            await gameDB.auth.signOut();
+            location.reload();
+        };
+
+        window.executeGambling = function() {
+            if (isUserAdminPrivilege || isUserScoreLocked) return alert("관리자 권한 계정 또는 점수 획득 불가 계정은 도박을 진행할 수 없습니다.");
+            
+            const amount = parseInt(document.getElementById('gambleAmountInput').value);
+            if (isNaN(amount) || amount <= 0) return alert("올바른 베팅 금액을 입력하세요.");
+            if (score < amount) return alert("소지한 시현(점수)이 부족합니다.");
+
+            if (Math.random() < winRate) {
+                score += amount;
+                alert(`🎉 도박 성공! ${amount.toLocaleString()} 시현을 얻었습니다! (현재 승률: ${winRate*100}%)`);
+            } else {
+                score -= amount;
+                score = Math.max(0, score);
+                alert(`💀 도박 실패... ${amount.toLocaleString()} 시현을 잃었습니다. (현재 승률: ${winRate*100}%)`);
+            }
+            updateDisplay();
+            saveGameToServer();
+        };
+
+        window.setGamblingRate = function() {
+            if (!isAdminAuthenticated) return alert("관리자 권한이 없습니다.");
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 전용 권한입니다.");
+            const rate = parseFloat(document.getElementById('admWinRateInput').value);
+            if (isNaN(rate) || rate < 0 || rate > 1) return alert("0.0에서 1.0 사이의 값을 입력하세요. (예: 0.5)");
+            winRate = rate;
+            alert(`🎲 도박 승률이 ${winRate * 100}%로 변경되었습니다.`);
+        };
+
+        window.executeRankingRewards = async function() {
+            if (!isAdminAuthenticated) return;
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 전용 권한입니다.");
+            
+            try {
+                const { data: users, error } = await gameDB.from('users').select('*');
+                if (error) throw error;
+                
+                let usersList = users.filter(u => u.gameSave && !u.isAdmin && !u.isScoreLocked)
+                                     .map(u => ({ id: u.userId, score: u.gameSave.score || 0 }));
+                                     
+                usersList.sort((a, b) => b.score - a.score);
+
+                const rewards = [300000, 200000, 100000];
+                for (let i = 0; i < 3 && i < usersList.length; i++) {
+                    const newScore = Math.max(0, usersList[i].score + rewards[i]); 
+                    let uData = users.find(x => x.userId === usersList[i].id);
+                    let newSave = { ...uData.gameSave, score: newScore };
+                    await gameDB.from('users').update({ gameSave: newSave }).eq('userId', usersList[i].id);
+                }
+                alert("🏆 1~3등 유저에게 보상(30만, 20만, 10만)이 성공적으로 일괄 지급되었습니다!");
+            } catch (e) {
+                alert("보상 지급 에러: " + e.message);
+            }
+        };
+
+        window.adminCreateUser = async function() {
+            if (!isAdminAuthenticated) return;
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 전용 권한입니다.");
+            
+            const id = document.getElementById('admNewUserId').value.trim().toLowerCase().replace(/\s+/g, '');
+            const pw = document.getElementById('admNewUserPw').value.trim();
+            
+            if (!id || !pw || String(id) === 'undefined' || String(pw) === 'undefined') {
+                return alert("아이디와 비밀번호를 올바르게 입력해주세요. (undefined 불가)");
+            }
+            if (pw.length < 6) return alert("비밀번호는 6자리 이상이어야 합니다.");
+
+            try {
+                const { error: signUpError } = await secondarySupabase.auth.signUp({ email: `${id}@clicker.com`, password: pw });
+                
+                if (signUpError && signUpError.message.includes('already registered')) {
+                    throw new Error("auth/email-already-in-use");
+                }
+
+                await gameDB.from('users').upsert({
+                    userId: id,
+                    password: pw,
+                    gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                });
+                
+                await secondarySupabase.auth.signOut();
+                
+                alert(`✨ 유저 [${id}] 생성 및 DB 권한 우회 등록 완료! (초기 자본금 100 지급)`);
+                document.getElementById('admNewUserId').value = '';
+                document.getElementById('admNewUserPw').value = '';
+                await loadUserBulkList();
+            } catch (e) {
+                if (e.message.includes('auth/email-already-in-use')) {
+                    if (confirm(`❌ [${id}] 계정은 이미 시스템에 존재합니다.\n(과거 삭제 시 껍데기 DB만 지워진 유령 계정)\n\n입력하신 비밀번호 [ ${pw} ] 로 강제 접속하여\n유령 계정의 DB 데이터를 다시 복구하시겠습니까?`)) {
+                        try {
+                            const { error: loginErr } = await secondarySupabase.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
+                            if (loginErr) throw loginErr;
+                            
+                            await gameDB.from('users').upsert({
+                                userId: id,
+                                gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                            });
+                            await secondarySupabase.auth.signOut();
+                            
+                            alert(`✅ [${id}] 계정의 껍데기 DB가 성공적으로 복구되었습니다!`);
+                            document.getElementById('admNewUserId').value = '';
+                            document.getElementById('admNewUserPw').value = '';
+                            await loadUserBulkList();
+                        } catch(err) {
+                            await secondarySupabase.auth.signOut();
+                            alert(`❌ DB 복구 실패!\n기존에 가입했던 실제 비밀번호와 일치하지 않습니다.\n(${err.message})`);
+                        }
+                    }
+                } else {
+                    alert("유저 생성 실패: " + e.message);
+                }
+            }
+        };
+
+        window.executeUserIdentityChange = async function() {
+            const newId = document.getElementById('userNewIdInput').value.trim().toLowerCase().replace(/\s+/g, '');
+            if(!newId || newId === 'undefined') { alert("변경할 새 아이디를 올바르게 입력해주세요."); return; }
+            if(newId === currentUserId) { alert("현재 사용 중인 아이디와 같습니다."); return; }
+            if(confirm("아이디를 실시간 변경하시겠습니까?")) {
+                try {
+                    await gameDB.from('users').update({ userId: newId }).eq('userId', currentUserId);
+                    alert("👤 아이디가 성공적으로 실시간 변경되었습니다!");
+                    document.getElementById('userNewIdInput').value = '';
+                    location.reload();
+                } catch(e) { alert("아이디 변경 오류: " + e.message); }
+            }
+        };
+
+        window.executeUserPasswordChange = async function() {
+            const newPw = document.getElementById('userNewPwInput').value.trim();
+            if(!newPw || newPw === 'undefined') { alert("변경할 새 비밀번호를 올바르게 입력해주세요."); return; }
+            if(newPw.length < 6) { alert("비밀번호는 반드시 6자리 이상이어야 합니다."); return; }
+
+            if(confirm("정말로 비밀번호를 변경하시겠습니까? (변경 후 재로그인 필요)")) {
+                try {
+                    const { error: updateAuthErr } = await gameDB.auth.updateUser({ password: newPw });
+                    if (updateAuthErr) throw updateAuthErr;
+
+                    
+                    alert("🔒 비밀번호가 성공적으로 변경되었습니다! 다시 로그인해주세요.");
+                    await gameDB.auth.signOut();
+                    location.reload();
+                } catch(e) {
+                    console.error("비밀번호 변경 실패 로그: ", e);
+                    alert("비밀번호 변경 실패: 인증 정보가 꼬여있거나 세션 문제가 있습니다. (" + e.message + ")");
+                }
+            }
+        };
+
+        window.sendTicketToAdmin = async function() {
+            const msgText = document.getElementById('userToAdminMsgInput').value.trim();
+            if(!currentUserId) return;
+            if(!msgText) { alert("관리자에게 보낼 문의 내용을 입력해주세요."); return; }
+
+            try {
+                await gameDB.from('admin_tickets').insert([{ senderId: currentUserId, message: msgText, timestamp: Date.now() }]);
+                alert("📬 관리자 실시간 라이브 피드로 안전하게 메시지가 전송되었습니다!");
+                document.getElementById('userToAdminMsgInput').value = '';
+            } catch(e) {
+                alert("전송 실패: " + e.message);
+            }
+        };
+
+        window.saveGameToServer = async function() {
+            if(!currentUserId || currentUserId === 'undefined') return;
+            if(isUserAdminPrivilege || isUserScoreLocked) {
+                score = 0;
+                cheatBonusSps = 0;
+            }
+            
+            score = Math.max(0, Number(score) || 0);
+
+            try {
+                const itemCountsObj = {};
+                for(const k in items) { itemCountsObj[k] = items[k].count; }
+                const payload = {
+                    score: score,
+                    totalClicks: totalClicks,
+                    prestigeCount: prestigeCount,
+                    cheatBonusSps: cheatBonusSps,
+                    ownedCookieUpgrade: ownedCookieUpgrade,
+                    ownedScrollUpgrade: ownedScrollUpgrade,
+                    unlockedAchievements: unlockedAchievements,
+                    bugsRemovedCount: bugsRemovedCount,
+                    itemCounts: itemCountsObj
+                };
+                await gameDB.from('users').update({ gameSave: payload }).eq('userId', currentUserId);
+            } catch(e) { console.error("백업 에러:", e); }
+        };
+
+        let _noticeSub = false, _explosionSub = false, _rankingSub = false, _raidSub = false, _chatSub = false, _ticketSub = false, _mydataSub = false;
+
+        function listenToLiveGlobalNotice() {
+            if(_noticeSub) return; _noticeSub = true; 
+            const fetchNotice = async () => {
+                const { data } = await gameDB.from('system_notice').select('*').eq('id', 'live').maybeSingle();
+                document.getElementById('liveNoticeContentText').innerText = data?.content || "환영합니다! 시현클리커 시즌2 v3.3V 실시간 서버 네트워크 연동 완료.";
+            };
+            fetchNotice();
+            gameDB.channel('public:system_notice').on('postgres_changes', { event: '*', schema: 'public', table: 'system_notice' }, (payload) => {
+                if(payload.new && payload.new.id === 'live') {
+                    document.getElementById('liveNoticeContentText').innerText = payload.new.content || "환영합니다! 시현클리커 시즌2 v3.3V 실시간 서버 네트워크 연동 완료.";
+                }
+            }).subscribe();
+        }
+
+        window.executeAdminPublishNotice = async function() {
+            if (!isAdminAuthenticated) return;
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            const textContent = document.getElementById('admNoticeInput').value.trim();
+            if(!textContent) return alert("배포할 공지사항 내용을 입력해줘!");
+            
+            try {
+                await gameDB.from('system_notice').upsert({ id: 'live', content: textContent, updatedBy: currentUserId, timestamp: Date.now() });
+                alert("📢 [실시간 공지 주입 성공] 전 서버 상단 공지 배너가 즉시 갱신되었습니다!");
+                document.getElementById('admNoticeInput').value = '';
+            } catch(e) { alert("공지 배포 실패: " + e.message); }
+        };
+
+        function listenToServerExplosionState() {
+            if(_explosionSub) return; _explosionSub = true; 
+            const fetchExplosion = async () => {
+                const { data } = await gameDB.from('server_status').select('*').eq('id', 'state').maybeSingle();
+                const targetOverlay = document.getElementById('serverExplosionOverlay');
+                if (data && data.isDetonated === true) {
+                    targetOverlay.style.display = 'flex'; 
+                } else {
+                    targetOverlay.style.display = 'none'; 
+                }
+            };
+            fetchExplosion();
+            gameDB.channel('public:server_status').on('postgres_changes', { event: '*', schema: 'public', table: 'server_status' }, (payload) => {
+                if (payload.new && payload.new.id === 'state') {
+                    const targetOverlay = document.getElementById('serverExplosionOverlay');
+                    targetOverlay.style.display = payload.new.isDetonated ? 'flex' : 'none'; 
+                }
+            }).subscribe();
+        }
+
+        window.executeManualServerRecovery = async function() {
+            const inputKey = document.getElementById('serverExplosionRestoreKey').value.trim();
+            if (inputKey === "102030") {
+                try {
+                    await gameDB.from('server_status').upsert({ id: 'state', isDetonated: false, restoredAt: Date.now() });
+                    alert("✅ [인프라 권한 인증 완료] 전 서버 정상화 복구 코드가 성공적으로 승인되었습니다!");
+                    document.getElementById('serverExplosionRestoreKey').value = '';
+                } catch(e) { alert("서버 상태 수정 실패: " + e.message); }
+            } else {
+                alert("❌ 승인 암호가 일치하지 않습니다! 복구 실패.");
+            }
+        };
+
+        window.executeAdminDetonateServer = async function(shouldDetonate) {
+            if (!isAdminAuthenticated) return;
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            const actionText = shouldDetonate ? "폭발 차단 집행" : "강제 복구정상화";
+            if (confirm(`정말로 전 서버 실시간 [ ${actionText} ]을 단행하시겠습니까?`)) {
+                try {
+                    await gameDB.from('server_status').upsert({ id: 'state', isDetonated: shouldDetonate, triggeredBy: currentUserId, timestamp: Date.now() });
+                    alert(`🚨 전 서버 실시간 상태 제어가 [ ${actionText} ] 상태로 인젝션되었습니다.`);
+                } catch(e) { alert("원격 제어 실패: " + e.message); }
+            }
+        };
+
+        let globalLiveRankData = [];
+        function startLiveGlobalRankingTracker() {
+            if(_rankingSub) return; _rankingSub = true; 
+            const fetchRankings = async () => {
+                const { data: snapshot } = await gameDB.from('users').select('*');
+                if(!snapshot) return;
+
+                globalLiveRankData = snapshot.filter(d => d.gameSave && !d.isAdmin && !d.isScoreLocked && d.userId !== 'undefined').map(d => {
+                    let calcSps = 0;
+                    if(d.gameSave.itemCounts) {
+                        for(const k in d.gameSave.itemCounts) calcSps += d.gameSave.itemCounts[k] * (items[k]?.spsValue || 0);
+                    }
+                    calcSps += (d.gameSave.prestigeCount || 0) * 10000 + (d.gameSave.cheatBonusSps || 0);
+
+                    return {
+                        userId: d.userId,
+                        score: Math.max(0, d.gameSave.score || 0),
+                        sps: Math.max(0, calcSps)
+                    };
+                });
+            };
+            fetchRankings();
+            
+            gameDB.channel('public:users_ranking').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
+                const updatedUser = payload.new;
+                if (!updatedUser || !updatedUser.gameSave || updatedUser.isAdmin || updatedUser.isScoreLocked || updatedUser.userId === 'undefined') return;
+                
+                let calcSps = 0;
+                if(updatedUser.gameSave.itemCounts) {
+                    for(const k in updatedUser.gameSave.itemCounts) calcSps += updatedUser.gameSave.itemCounts[k] * (items[k]?.spsValue || 0);
+                }
+                calcSps += (updatedUser.gameSave.prestigeCount || 0) * 10000 + (updatedUser.gameSave.cheatBonusSps || 0);
+
+                const existing = globalLiveRankData.find(u => u.userId === updatedUser.userId);
+                const validatedNewScore = Math.max(0, updatedUser.gameSave.score || 0);
+
+                if (existing) {
+                    existing.score = Math.max(existing.score, validatedNewScore);
+                    existing.sps = Math.max(0, calcSps);
+                } else {
+                    globalLiveRankData.push({
+                        userId: updatedUser.userId,
+                        score: validatedNewScore,
+                        sps: Math.max(0, calcSps)
+                    });
+                }
+            }).subscribe();
+        }
+
+        setInterval(() => {
+            if (globalLiveRankData.length === 0) {
+                const area = document.getElementById('globalRankingScrollBoard');
+                if(area.innerHTML.includes("데이터를 집계하고 있습니다")) area.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding:5px; font-size:11px;">데이터가 없습니다.</div>';
+                return;
+            }
+
+            globalLiveRankData.forEach(u => u.score += u.sps / 10);
+            globalLiveRankData.sort((a, b) => b.score - a.score);
+
+            const rankingArea = document.getElementById('globalRankingScrollBoard');
+            let newHtml = '';
+            globalLiveRankData.forEach((u, index) => {
+                const rankNum = index + 1;
+                let medal = `${rankNum}위`;
+                if (rankNum === 1) medal = "🥇 1위";
+                else if (rankNum === 2) medal = "🥈 2위";
+                else if (rankNum === 3) medal = "🥉 3위";
+                
+                const cssClass = rankNum <= 3 ? 'ranking-row top-rank' : 'ranking-row';
+                newHtml += `
+                    <div class="${cssClass}">
+                        <span><strong>${medal}</strong> - ${u.userId}</span>
+                        <span style="color:#38bdf8; font-weight:bold;">${Math.floor(u.score).toLocaleString()} 시현</span>
+                    </div>`;
+            });
+            rankingArea.innerHTML = newHtml;
+        }, 100);
+
+        function listenToMyDataChanges() {
+            if(_mydataSub) return; _mydataSub = true;
+            gameDB.channel('public:users:my_data').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users' }, (payload) => {
+                if (payload.new && payload.new.userId === currentUserId) {
+                    const ud = payload.new;
+                    
+                    if(ud.isPermanentBan || (ud.banExpiry && ud.banExpiry > Date.now())) {
+                        alert("🔴 관리자에 의해 제재를 받았습니다.");
+                        gameDB.auth.signOut().then(() => location.reload());
+                        return;
+                    }
+                    
+                    isUserScoreLocked = ud.isScoreLocked || false;
+                    const s = ud.gameSave || {};
+                    
+                    let needUpdate = false;
+                    
+                    if (isUserScoreLocked || ud.isPermanentBan) {
+                        score = 0; cheatBonusSps = 0; needUpdate = true;
+                    } else {
+                        let dbScore = Math.max(0, Number(s.score) || 0);
+                        if (dbScore > score + 5000) {
+                            score = dbScore; needUpdate = true;
+                        }
+                    }
+
+                    let dbSps = Math.max(0, Number(s.cheatBonusSps) || 0);
+                    if (cheatBonusSps !== dbSps) {
+                        cheatBonusSps = dbSps; needUpdate = true;
+                    }
+                    
+                    if(s.itemCounts) {
+                        for(const k in items) {
+                            if(s.itemCounts[k] !== undefined && items[k].count !== s.itemCounts[k]) {
+                                items[k].count = Math.max(0, s.itemCounts[k]);
+                                items[k].cost = Math.floor(items[k].baseCost * Math.pow(1.15, items[k].count));
+                                needUpdate = true;
+                            }
+                        }
+                    }
+                    if (needUpdate) {
+                        updateDisplay();
+                        buildShopUI();
+                    }
+                }
+            }).subscribe();
+        }
+
+        window.executeAdminClearAllChatLogs = async function() {
+            if (!isUserAdminPrivilege) return;
+            if (confirm("🚨 경고: DB에 등록된 전 서버 실시간 채팅 로그를 전부 영구 삭제 청소하시겠습니까?")) {
+                try {
+                    await gameDB.from('chat_messages').delete().neq('id', 0); 
+                    alert("🧹 실시간 월드 채팅방 로그가 통째로 초기화 청소 완료되었습니다!");
+                } catch(e) { alert("로그 초기화 에러: " + e.message); }
+            }
+        };
+
+        window.executeAdminClearAllTickets = async function() {
+            if (!isAdminAuthenticated) return;
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            if (confirm("🚨 모든 유저 접수 메시지 내역을 영구 삭제하시겠습니까?")) {
+                try {
+                    await gameDB.from('admin_tickets').delete().neq('id', 0);
+                    alert("🧹 실시간 티켓 접수 내역이 모두 초기화 되었습니다!");
+                } catch(e) { alert("삭제 에러: " + e.message); }
+            }
+        };
+
+        // 🚨 유령(undefined) 계정 완벽 청소 기능 추가!
+        window.executeCleanCorruptedAccounts = async function() {
+            if (!isUserSuperAdmin) return alert("최고관리자 권한이 필요합니다.");
+            if(!confirm("이름이나 비밀번호가 'undefined'로 망가진 오류/유령 계정들을 DB에서 완전히 삭제(청소)하시겠습니까?")) return;
+            
+            try {
+                const { data: snap } = await gameDB.from('users').select('*');
+                let count = 0;
+                
+                for(const u of snap) {
+                    if(!u.userId || String(u.userId) === 'undefined' || String(u.userId) === 'null') {
+                        await gameDB.from('users').delete().eq('userId', u.userId);
+                        count++;
+                    }
+                }
+                
+                alert(`✅ 총 ${count}개의 오류(undefined) 유령 계정이 시스템에서 영구히 소멸(청소)되었습니다!`);
+                await loadUserBulkList();
+            } catch(e) {
+                alert("오류 계정 청소 중 문제가 발생했습니다: " + e.message);
+            }
+        };
+
+        let isGameBooted = false;
+
+        async function initializeAppWithSession(session) {
+            if (!session || !session.user) {
+                document.getElementById('authOverlay').style.display = 'flex';
+                listenToServerExplosionState(); 
+                listenToLiveGlobalNotice();
+                return;
+            }
+
+            if (isGameBooted) return;
+
+            try {
+                const user = session.user;
+                currentUserSession = user;
+                currentUserId = user.email.split('@')[0];
+                
+                // 세션 아이디가 undefined 이면 강제 로그아웃 방어
+                if(!currentUserId || currentUserId === 'undefined') {
+                    await gameDB.auth.signOut();
+                    return location.reload();
+                }
+
+                let d = null;
+
+                for (let i = 0; i < 4; i++) {
+                    const { data } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
+                    if (data) { d = data; break; }
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                if (!d) {
+                    await gameDB.from('users').upsert({
+                        userId: currentUserId,
+                        password: 'unknown',
+                        gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                    });
+                    const { data: fallbackD } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
+                    d = fallbackD || { gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 } };
+                }
+
+                if(d.isPermanentBan || (d.banExpiry && d.banExpiry > Date.now())) { 
+                    alert("🔴 정지 처리를 받은 계정입니다.");
+                    await gameDB.auth.signOut(); location.reload(); return; 
+                }
+                
+                if (currentUserId === '이시현' || currentUserId === 'admin') {
+                    isUserSuperAdmin = true; isUserAdminPrivilege = true;
+                } else {
+                    isUserSuperAdmin = d.isSuperAdmin || false;
+                    isUserAdminPrivilege = d.isAdmin || isUserSuperAdmin || false;
+                }
+
+                isUserScoreLocked = d.isScoreLocked || false; 
+                
+                if (isUserAdminPrivilege) { document.getElementById('adminChatClearBtn').style.display = 'inline-block'; }
+
+                const s = d.gameSave || {};
+                score = (isUserAdminPrivilege || isUserScoreLocked) ? 0 : Math.max(0, Number(s.score) || 0); 
+                totalClicks = s.totalClicks || 0; 
+                prestigeCount = (isUserAdminPrivilege || isUserScoreLocked) ? 0 : (s.prestigeCount || 0);
+                cheatBonusSps = (isUserAdminPrivilege || isUserScoreLocked) ? 0 : Math.max(0, Number(s.cheatBonusSps) || 0); 
+                ownedCookieUpgrade = s.ownedCookieUpgrade || false; 
+                ownedScrollUpgrade = s.ownedScrollUpgrade || false;
+                
+                unlockedAchievements = s.unlockedAchievements || {};
+                bugsRemovedCount = Math.max(0, s.bugsRemovedCount || 0);
+
+                if(s.itemCounts) {
+                    for(const k in items) {
+                        if(s.itemCounts[k] !== undefined) {
+                            items[k].count = (isUserAdminPrivilege || isUserScoreLocked) ? 0 : Math.max(0, s.itemCounts[k]);
+                            items[k].cost = Math.floor(items[k].baseCost * Math.pow(1.15, items[k].count));
+                        }
+                    }
+                }
+                
+                document.getElementById('navUserId').innerText = currentUserId;
+                document.getElementById('authOverlay').style.display = 'none';
+
+                buildShopUI(); buildAchievementsUI(); updateDisplay(); 
+                
+                loadChatMessages();
+                listenToGlobalRaidState(); 
+                listenToServerExplosionState(); 
+                startLiveGlobalRankingTracker();
+                listenToLiveGlobalNotice();
+                listenToMyDataChanges();
+                
+                startGoldenCookieEngine(); 
+                startBugSpawner(); 
+                setInterval(saveGameToServer, 15000);
+
+                isGameBooted = true; 
+
+                const btn = document.getElementById('mainLoginBtn');
+                if (btn) { btn.innerText = "게임 접속하기"; btn.disabled = false; }
+
+                if (sessionStorage.getItem('admin_access_granted') === 'true') {
+                    document.getElementById('reopenAdminBtn').style.display = 'block';
+                    openAdminModal();
+                }
+
+            } catch(e) {
+                alert("⚠️ 게임 로드 중 에러 방어 완료: " + e.message);
+                const btn = document.getElementById('mainLoginBtn');
+                if (btn) { btn.innerText = "게임 접속하기"; btn.disabled = false; }
+            }
+        }
+
+        gameDB.auth.getSession().then(({ data: { session } }) => { initializeAppWithSession(session); });
+
+        gameDB.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') { initializeAppWithSession(session); } 
+            else if (event === 'SIGNED_OUT') { isGameBooted = false; initializeAppWithSession(null); }
+        });
+
+        // --- 업적 시스템 및 UI 구축 ---
+        function buildAchievementsUI() {
+            const root = document.getElementById('achievementGrid');
+            if(!root) return;
+            root.innerHTML = '';
+            achievementData.forEach(ach => {
+                const isUnlocked = unlockedAchievements[ach.id];
+                const div = document.createElement('div');
+                div.className = `achievement-item ${isUnlocked ? 'unlocked' : ''}`;
+                const rareBadge = ach.type === '희귀' ? '<span style="color:#eab308; font-size:9px;">[희귀]</span> ' : '';
+                
+                div.innerHTML = `
+                    <div class="achieve-name">${rareBadge}${ach.name}</div>
+                    <div class="achieve-cond">${ach.condition}</div>
+                    ${isUnlocked ? `<div class="achieve-desc">${ach.desc}</div>` : `<div class="achieve-desc" style="color:var(--text-sub);">???</div>`}
+                `;
+                root.appendChild(div);
+            });
+        }
+
+        let achieveCheckThrottle = false;
+        function checkAchievements() {
+            if (achieveCheckThrottle || isUserAdminPrivilege || isUserScoreLocked) return;
+            achieveCheckThrottle = true;
+            setTimeout(() => achieveCheckThrottle = false, 500); 
+
+            let newlyUnlocked = false;
+            const sps = getCurrentSps();
+            const totalUpgrades = Object.values(items).reduce((sum, item) => sum + item.count, 0);
+            const aiCount = items['item5'].count; // AI 직원 갯수
+
+            const check = (id, condition) => {
+                if (condition && !unlockedAchievements[id]) {
+                    unlockedAchievements[id] = true;
+                    newlyUnlocked = true;
+                    const ach = achievementData.find(a => a.id === id);
+                    alert(`🏆 업적 달성: [${ach.name}]\n"${ach.desc}"`);
+                }
+            };
+
+            check('helloWorld', totalClicks >= 1);
+            check('keyboardWarrior', totalClicks >= 100);
+            check('caffeine', totalClicks >= 1000);
+            check('nightDev', totalClicks >= 10000);
+            check('codeMaster', totalClicks >= 100000);
+            
+            check('firstDeploy', totalUpgrades >= 1);
+            check('noDowntime', totalUpgrades >= 50);
+            
+            check('serverAdmin', sps > 0);
+            check('devOps', sps >= 100);
+            check('startup', sps >= 1000);
+            check('investment', sps >= 10000);
+            
+            check('aiUser', aiCount >= 1);
+            check('aiAddict', aiCount >= 100);
+            
+            check('bugHunter', bugsRemovedCount >= 10);
+            check('debuggingGod', bugsRemovedCount >= 1000);
+
+            if (newlyUnlocked) {
+                buildAchievementsUI();
+                saveGameToServer();
+            }
+        }
+
+        function startBugSpawner() {
+            setInterval(() => {
+                if(!currentUserSession || isUserAdminPrivilege || isUserScoreLocked) return;
+                if(Math.random() > 0.4) return; // 8초마다 40% 확률로 등장
+                
+                const leftPanel = document.getElementById('leftPanel');
+                const bug = document.createElement('div');
+                bug.className = 'bug-entity';
+                bug.innerText = '🐛';
+                
+                const randomX = Math.floor(Math.random() * (leftPanel.offsetWidth - 40)) + 10;
+                const randomY = Math.floor(Math.random() * (leftPanel.offsetHeight - 180)) + 100;
+                bug.style.left = randomX + 'px';
+                bug.style.top = randomY + 'px';
+                
+                bug.onclick = function(event) {
+                    event.stopPropagation();
+                    bugsRemovedCount++;
+                    updateDisplay();
+                    checkAchievements();
+                    bug.remove();
+                };
+                
+                leftPanel.appendChild(bug);
+                setTimeout(() => { if(bug.parentNode) bug.remove(); }, 4000);
+            }, 8000);
+        }
+
+        function startGoldenCookieEngine() {
+            setInterval(() => {
+                if(!currentUserSession) return;
+                if(document.getElementById('goldenCookieEntityNode')) return;
+                if(Math.random() > 0.35) return;
+
+                const leftPanel = document.getElementById('leftPanel');
+                const gc = document.createElement('div');
+                gc.id = 'goldenCookieEntityNode';
+                gc.className = 'golden-cookie-entity';
+                gc.innerText = '⭐';
+
+                const randomX = Math.floor(Math.random() * (leftPanel.offsetWidth - 80)) + 10;
+                const randomY = Math.floor(Math.random() * (leftPanel.offsetHeight - 180)) + 100;
+                gc.style.left = randomX + 'px';
+                gc.style.top = randomY + 'px';
+
+                gc.onclick = function(event) {
+                    event.stopPropagation();
+                    if(isUserAdminPrivilege || isUserScoreLocked) {
+                        alert("🔒 점수 획득이 불가한 계정은 황금 쿠키 축복 버프를 획득할 수 없습니다.");
+                        gc.remove();
+                        return;
+                    }
+                    goldenCookieBuffTimer = 7; 
+                    alert("⚡ [황금 쿠키 축복] 7초 동안 모든 대미지 및 효율이 77배로 폭증합니다!");
+                    gc.remove();
+                };
+
+                leftPanel.appendChild(gc);
+                setTimeout(() => { if(gc.parentNode) gc.remove(); }, 5000);
+            }, 30000); 
+        }
+
+        function getCurrentSps() {
+            if (isUserAdminPrivilege || isUserScoreLocked) return 0;
+
+            let sps = 0;
+            for (const key in items) { sps += items[key].count * items[key].spsValue; }
+            if(ownedScrollUpgrade) sps += 5000;
+            sps += prestigeCount * 10000 + cheatBonusSps;
+            return Math.max(0, sps); 
+        }
+
+        window.handleCookieClick = async function(e) {
+            if (!currentUserSession) return;
+            if (isUserAdminPrivilege || isUserScoreLocked) {
+                alert("👑 관리자(혹은 점수 획득 불가 계정)는 게임 내 점수 파밍 클릭을 할 수 없습니다.");
+                return;
+            }
+
+            let isGoldenActive = goldenCookieBuffTimer > 0;
+            let baseGain = ownedCookieUpgrade ? 5 : 1;
+            let gain = isGoldenActive ? (baseGain * 77) : baseGain;
+
+            score += gain; totalClicks++;
+            score = Math.max(0, score); 
+
+            const container = document.getElementById('cookieContainer');
+            const ft = document.createElement('div');
+            ft.className = 'floating-text'; 
+            ft.innerText = `+${gain}`;
+            if(isGoldenActive) { ft.style.color = '#eab308'; ft.style.fontSize = '30px'; }
+            ft.style.left = (e.clientX - container.getBoundingClientRect().left - 10) + 'px';
+            ft.style.top = (e.clientY - container.getBoundingClientRect().top - 20) + 'px';
+            container.appendChild(ft);
+            setTimeout(() => ft.remove(), 800);
+
+            if (globalRaidActive && globalRaidHp > 0) {
+                let dmgAmt = gain * 500000; 
+                try {
+                    let nextHp = globalRaidHp - dmgAmt;
+                    if(nextHp <= 0) {
+                        await triggerRaidVictoryReward();
+                    } else {
+                        await gameDB.from('world_raid').update({ currentHp: nextHp }).eq('id', 'current_boss');
+                    }
+                } catch(err) { console.error("대미지 인젝션 에러:", err); }
+            }
+
+            updateDisplay();
+            checkAchievements();
+        };
+
+        async function triggerRaidVictoryReward() {
+            try {
+                await gameDB.from('world_raid').upsert({ id: 'current_boss', active: false, currentHp: 0 });
+                if(isUserAdminPrivilege || isUserScoreLocked) return;
+                score += 5000000000; 
+                prestigeCount += 3;  
+                alert("🎉 [WORLD RAID VICTORY] 레이드 보스가 완전히 격파되었습니다!");
+                updateDisplay();
+            } catch(e) { console.error(e); }
+        }
+
+        function listenToGlobalRaidState() {
+            if(_raidSub) return; _raidSub = true; 
+            const fetchRaid = async () => {
+                const { data } = await gameDB.from('world_raid').select('*').eq('id', 'current_boss').maybeSingle();
+                const uiPanel = document.getElementById('raidBossUIPanel');
+                if (data) {
+                    globalRaidActive = data.active || false;
+                    globalRaidHp = data.currentHp !== undefined ? data.currentHp : MAX_BOSS_HP;
+
+                    if (globalRaidActive && globalRaidHp > 0) {
+                        uiPanel.style.display = 'block';
+                        const hpPercent = (globalRaidHp / MAX_BOSS_HP) * 100;
+                        document.getElementById('bossHpBarFill').style.width = `${hpPercent}%`;
+                        document.getElementById('bossHpBarText').innerText = `${Math.floor(globalRaidHp).toLocaleString()} / ${MAX_BOSS_HP.toLocaleString()} HP`;
+                    } else {
+                        uiPanel.style.display = 'none';
+                    }
+                } else {
+                    uiPanel.style.display = 'none';
+                }
+            };
+            fetchRaid();
+            gameDB.channel('public:world_raid').on('postgres_changes', { event: '*', schema: 'public', table: 'world_raid' }, (payload) => {
+                if (payload.new && payload.new.id === 'current_boss') {
+                    const data = payload.new;
+                    const uiPanel = document.getElementById('raidBossUIPanel');
+                    globalRaidActive = data.active || false;
+                    globalRaidHp = data.currentHp !== undefined ? data.currentHp : MAX_BOSS_HP;
+
+                    if (globalRaidActive && globalRaidHp > 0) {
+                        uiPanel.style.display = 'block';
+                        const hpPercent = (globalRaidHp / MAX_BOSS_HP) * 100;
+                        document.getElementById('bossHpBarFill').style.width = `${hpPercent}%`;
+                        document.getElementById('bossHpBarText').innerText = `${Math.floor(globalRaidHp).toLocaleString()} / ${MAX_BOSS_HP.toLocaleString()} HP`;
+                    } else {
+                        uiPanel.style.display = 'none';
+                    }
+                }
+            }).subscribe();
+        }
+
+        window.executeAdminControlRaid = async function(actionType) {
+            if (!isAdminAuthenticated) return;
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            try {
+                if (actionType === 'START') {
+                    await gameDB.from('world_raid').upsert({ id: 'current_boss', active: true, currentHp: MAX_BOSS_HP, startedAt: Date.now() });
+                    alert("⚔️ 전 서버 레이드를 강제 공식 개막했습니다!");
+                } else {
+                    await gameDB.from('world_raid').upsert({ id: 'current_boss', active: false, currentHp: 0 });
+                    alert("🛑 원격 제어로 보스 레이드를 실시간으로 전면 폐쇄시켰습니다.");
+                }
+            } catch(e) { alert("레이드 제어 오류: " + e.message); }
+        };
+
+        window.executeAdminSetBossHp = async function() {
+            if (!isAdminAuthenticated) return;
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            const hpVal = parseFloat(document.getElementById('admBossHpInput').value);
+            if(isNaN(hpVal) || hpVal < 0) return alert("올바른 체력 수치를 입력해줘!");
+            try {
+                await gameDB.from('world_raid').upsert({ id: 'current_boss', active: true, currentHp: hpVal });
+                alert(`🩸 전 서버 레이드 보스의 체력이 [ ${hpVal.toLocaleString()} ](으)로 덮어쓰기 변경되었습니다!`);
+                document.getElementById('admBossHpInput').value = '';
+            } catch(e) { alert("보스 체력 설정 에러: " + e.message); }
+        };
+
+        function buildShopUI() {
+            const root = document.getElementById('shopItemsRoot'); root.innerHTML = '';
+            for(const key in items) {
+                const it = items[key];
+                let displayPrice = 0;
+
+                if (currentStoreMode === "BUY") {
+                    if (isAdminAuthenticated) {
+                        displayPrice = 0;
+                    } else {
+                        let tempCount = it.count;
+                        for (let i = 0; i < currentStoreAmount; i++) {
+                            displayPrice += Math.floor(it.baseCost * Math.pow(1.15, tempCount));
+                            tempCount++;
+                        }
+                    }
+                } else {
+                    let tempCount = it.count;
+                    for (let i = 0; i < currentStoreAmount; i++) {
+                        if (tempCount > 0) {
+                            displayPrice += Math.floor(Math.floor(it.baseCost * Math.pow(1.15, tempCount - 1)) * 0.5);
+                            tempCount--;
+                        }
+                    }
+                }
+
+                const div = document.createElement('div');
+                div.className = 'shop-item'; div.id = `shop_${key}`;
+                div.setAttribute('onclick', `handleShopItemTrade('${key}', ${displayPrice})`);
+                
+                const labelColor = (currentStoreMode === "BUY") ? "#10b981" : "#ef4444";
+                const prefixText = (currentStoreMode === "BUY") ? "구매 비용:" : "판매 수익:";
+
+                div.innerHTML = `
+                    <div class="item-icon-placeholder">${it.icon}</div>
+                    <div class="item-info">
+                        <div class="item-name">${it.name} <span style="font-size:10px; color:${labelColor}; font-weight:normal;">(${currentStoreMode} x${currentStoreAmount})</span></div>
+                        <div style="font-size:11px; color:#a855f7; margin-bottom: 2px;">(초당 +${it.spsValue.toLocaleString()} SPS 획득)</div>
+                        <div class="item-cost" id="cost_${key}" style="color:${labelColor};">${prefixText} ${displayPrice.toLocaleString()}</div>
+                    </div>
+                    <div class="item-count" id="count_${key}">${it.count}</div>
+                `;
+                root.appendChild(div);
+            }
+            updateDisplay();
+        }
+
+        window.handleShopItemTrade = function(key, calculatedPrice) {
+            if (isUserAdminPrivilege || isUserScoreLocked) {
+                alert("👑 관리자 권한 혹은 점수 획득 불가 계정은 인게임 상거래를 진행할 수 없습니다.");
+                return;
+            }
+
+            const it = items[key];
+            if (currentStoreMode === "BUY") {
+                if (isAdminAuthenticated || score >= calculatedPrice) {
+                    if (!isAdminAuthenticated) { score -= calculatedPrice; }
+                    score = Math.max(0, score); 
+                    it.count += currentStoreAmount;
+                    it.cost = Math.floor(it.baseCost * Math.pow(1.15, it.count));
+                    buildShopUI();
+                } else { alert("자원이 부족하여 일괄 구매를 집행할 수 없습니다."); }
+            } else {
+                if (it.count >= currentStoreAmount) {
+                    score += calculatedPrice;
+                    score = Math.max(0, score); 
+                    it.count -= currentStoreAmount;
+                    it.cost = Math.floor(it.baseCost * Math.pow(1.15, it.count));
+                    buildShopUI();
+                } else { alert("아이템 개수가 부족하여 판매할 수 없습니다."); }
+            }
+            checkAchievements();
+        };
+
+        window.buySpecial = function(type) {
+            if (isUserAdminPrivilege || isUserScoreLocked) return;
+            if(type === 'cookie' && !ownedCookieUpgrade && (isAdminAuthenticated || score >= 5000)) {
+                if (!isAdminAuthenticated) score -= 5000; 
+                score = Math.max(0, score);
+                ownedCookieUpgrade = true; alert("수련 완료! 클릭 효율 5배 증가"); updateDisplay();
+            } else if(type === 'scroll' && !ownedScrollUpgrade && (isAdminAuthenticated || score >= 30000)) {
+                if (!isAdminAuthenticated) score -= 30000; 
+                score = Math.max(0, score);
+                ownedScrollUpgrade = true; alert("최적화 알고리즘 터득 완료! (SPS 대폭 증가)"); updateDisplay();
+            } else { alert("조건이 맞지 않거나 자원이 부족합니다."); }
+        };
+
+        window.triggerPrestige = function() {
+            if (isUserAdminPrivilege || isUserScoreLocked) {
+                alert("👑 제단 환생 초월을 단행할 수 없는 계정입니다.");
+                return;
+            }
+            const currentRequiredCost = (prestigeCount + 1) * 10000000; 
+            if(isAdminAuthenticated || score >= currentRequiredCost) {
+                if(confirm(`초월 환생을 진행하시겠습니까?`)) {
+                    score = 0; prestigeCount++;
+                    for(const k in items) { items[k].count = 0; items[k].cost = items[k].baseCost; }
+                    buildShopUI(); updateDisplay(); saveGameToServer();
+                }
+            } else { alert(`시현 점수가 부족합니다.`); }
+        };
+
+        function updateDisplay() {
+            if (isUserAdminPrivilege || isUserScoreLocked) {
+                score = 0;
+                cheatBonusSps = 0;
+            }
+            
+            if (isNaN(score) || score < 0) score = 0;
+
+            const nextCost = (prestigeCount + 1) * 10000000;
+            if (isAdminAuthenticated) {
+                document.getElementById('prestigeBtn').innerText = `✨ 관리자 무료 환생 가능 (SPS +10,000)`;
+                document.getElementById('adminCheatBadge').style.display = 'inline-block';
+            } else {
+                document.getElementById('prestigeBtn').innerText = `다음 환생 비용: ${nextCost.toLocaleString()} 시현`;
+                document.getElementById('adminCheatBadge').style.display = 'none';
+            }
+
+            document.getElementById('scoreDisplay').innerText = `${Math.floor(score).toLocaleString()} 시현`;
+            document.getElementById('centerClicksVal').innerText = totalClicks.toLocaleString();
+            document.getElementById('centerPrestigeVal').innerText = prestigeCount.toLocaleString();
+            document.getElementById('centerBugsVal').innerText = bugsRemovedCount.toLocaleString();
+
+            let sps = getCurrentSps();
+            document.getElementById('centerSpsVal').innerText = sps.toFixed(1).toLocaleString();
+            if(ownedCookieUpgrade) document.getElementById('cardCookieUpgrade').classList.add('owned');
+            if(ownedScrollUpgrade) document.getElementById('cardScrollUpgrade').classList.add('owned');
+        }
+
+        setInterval(async () => {
+            if (!currentUserSession) return;
+            if (isUserAdminPrivilege || isUserScoreLocked) {
+                score = 0;
+                cheatBonusSps = 0;
+            }
+
+            if(goldenCookieBuffTimer > 0) {
+                goldenCookieBuffTimer -= 0.1;
+                if(goldenCookieBuffTimer <= 0) { goldenCookieBuffTimer = 0; }
+            }
+
+            let sps = getCurrentSps();
+            if(goldenCookieBuffTimer > 0) { sps = sps * 77; }
+            score += sps / 10;
+            
+            if (isNaN(score) || score < 0) score = 0; 
+
+            if (globalRaidActive && globalRaidHp > 0 && sps > 0) {
+                let autoDmg = (sps / 10) * 15000; 
+                let targetHp = globalRaidHp - autoDmg;
+                if (targetHp <= 0) { await triggerRaidVictoryReward(); } 
+                else { globalRaidHp = targetHp; }
+            }
+            updateDisplay();
+            checkAchievements();
+        }, 100);
+
+        setInterval(async () => {
+            if(!currentUserId) return;
+            const { data: ud } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
+            if(ud) {
+                if(ud.isPermanentBan || (ud.banExpiry && ud.banExpiry > Date.now())) {
+                    alert("🔴 계정이 정지 처리되어 추방됩니다.");
+                    await gameDB.auth.signOut();
+                    location.reload();
+                }
+            }
+        }, 3000);
+
+        window.clickUserToDM = function(targetUser) {
+            if(targetUser === currentUserId) return;
+            const input = document.getElementById('chatInput');
+            input.value = `@${targetUser} ` + input.value.replace(/^@[A-Za-z0-9가-힣_]+\s/, "");
+            input.focus();
+        };
+
+        window.sendChatMessage = async function() {
+            const input = document.getElementById('chatInput');
+            let text = input.value.trim();
+            if(!text || !currentUserId) return;
+
+            try {
+                const { data: myData } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
+                if(!myData) return;
+                const dmMatch = text.match(/^@([A-Za-z0-9ㄱ-ㅎㅏ-ㅣ가-힣_]+)\s(.+)/);
+
+                if(dmMatch) {
+                    if(myData.isDMBanned) { alert("🔒 1:1 귓속말 기능이 차단되었습니다."); return; }
+                    const targetReceiver = dmMatch[1];
+                    const dmText = dmMatch[2];
+
+                    const { data: targetCheck } = await gameDB.from('users').select('*').eq('userId', targetReceiver).maybeSingle();
+                    if(!targetCheck && targetReceiver !== 'admin' && targetReceiver !== '시현') {
+                        alert("⚠️ 존재하지 유저입니다.");
+                        return;
+                    }
+
+                    await gameDB.from('chat_messages').insert([{ sender: currentUserId, receiver: targetReceiver, text: dmText, isDM: true, timestamp: Date.now() }]);
+                    input.value = `@${targetReceiver} `; 
+                } else {
+                    if(myData.isChatBanned) { alert("🚫 월드 전체 채팅방 발언권이 정지되었습니다."); return; }
+                    await gameDB.from('chat_messages').insert([{ sender: currentUserId, text: text, isDM: false, timestamp: Date.now() }]);
+                    input.value = '';
+                }
+            } catch(e) { console.error(e); }
+        };
+
+        function loadChatMessages() {
+            if(_chatSub) return; _chatSub = true; 
+            const fetchChats = async () => {
+                const { data: docs } = await gameDB.from('chat_messages').select('*').order('timestamp', { ascending: false }).limit(50);
+                const msgArea = document.getElementById('chatMsgArea');
+                msgArea.innerHTML = '';
+                if(!docs) return;
+                
+                docs.reverse().forEach(m => {
+                    if(m.isDM && m.sender !== currentUserId && m.receiver !== currentUserId) return;
+
+                    const row = document.createElement('div');
+                    row.className = 'chat-msg-row';
+                    
+                    const isSystem = m.sender === 'admin' || m.sender === '시현';
+                    const userClass = isSystem ? 'chat-admin-user' : 'chat-user';
+                    
+                    let prefixMarkup = "";
+                    if(m.isDM) {
+                        prefixMarkup = m.sender === currentUserId ? `<span class="chat-dm-label">To @${m.receiver}</span>` : `<span class="chat-dm-label">From @${m.sender}</span>`;
+                    }
+
+                    const nameSpan = `<span class="${userClass}" onclick="clickUserToDM('${m.sender}')">${isSystem ? '[관리자] ' : ''}${m.sender}</span>`;
+                    row.innerHTML = `${prefixMarkup}${nameSpan} : ${m.text}`;
+                    msgArea.appendChild(row);
+                });
+                msgArea.scrollTop = msgArea.scrollHeight;
+            };
+            fetchChats();
+            gameDB.channel('public:chat_messages').on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, fetchChats).subscribe();
+        }
+
+        window.openAdminModal = function() {
+            if (isUserSuperAdmin || isUserAdminPrivilege) {
+                isAdminAuthenticated = true;
+                showAdminDashboard();
+            } else {
+                alert("🚫 접근 권한이 없습니다. 일반 유저는 관리자 모드에 진입할 수 없습니다.");
+            }
+        };
+
+        function showAdminDashboard() {
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) {
+                alert("권한이 부족합니다. (클라이언트 변조 감지)");
+                return;
+            }
+            
+            document.getElementById('adminModal').classList.add('active');
+            
+            const superDisplayStyle = isUserSuperAdmin ? 'block' : 'none';
+            document.getElementById('adminSectionRanking').style.display = superDisplayStyle;
+            document.getElementById('adminSectionCreateUser').style.display = superDisplayStyle;
+            document.getElementById('adminSectionStats').style.display = superDisplayStyle;
+            document.getElementById('adminSectionBan').style.display = superDisplayStyle;
+            document.getElementById('adminSectionGambling').style.display = superDisplayStyle;
+            document.getElementById('adminSectionItems').style.display = superDisplayStyle;
+
+            loadUserBulkList();
+            loadAdminTicketsFeed(); 
+        }
+
+        window.toggleSelectAllBulkUsers = function(isChecked) {
+            const checkboxes = document.querySelectorAll('input[name="bulkUserCheck"]');
+            checkboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+        };
+
+        window.viewUserScreen = async function(targetId) {
+            if (!isUserAdminPrivilege && !isUserSuperAdmin) return;
+            try {
+                const { data: d } = await gameDB.from('users').select('*').eq('userId', targetId).maybeSingle();
+                if(!d) return alert("유저 정보를 찾을 수 없습니다.");
+                
+                const s = d.gameSave || {};
+                
+                let html = `
+                    <div style="text-align:center; margin-bottom:15px;">
+                        <h2 style="color:#38bdf8; margin: 0 0 5px 0;">${Math.floor(Math.max(0, s.score || 0)).toLocaleString()} 시현</h2>
+                        <div style="color:var(--text-sub);">총 클릭: ${(s.totalClicks || 0).toLocaleString()}회 / 환생: ${s.prestigeCount || 0}회</div>
+                    </div>
+                    <hr style="border:0; border-top:1px solid var(--border-color); margin-bottom:15px;">
+                    <h3 style="margin-bottom:10px; color:#10b981; font-size:14px;">보유 아이템 현황</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                `;
+                
+                const ic = s.itemCounts || {};
+                for(const k in items) {
+                    html += `<div style="background:var(--input-bg); padding:8px; border-radius:4px; border:1px solid var(--border-color); text-align:center;">
+                        <div style="font-size:16px; margin-bottom:4px;">${items[k].icon}</div>
+                        <div style="font-size:11px; margin-bottom:2px;">${items[k].name}</div>
+                        <div style="color:#eab308; font-weight:bold; font-size:14px;">${Math.max(0, ic[k] || 0)}개</div>
+                    </div>`;
+                }
+                
+                html += `</div>`;
+                
+                document.getElementById('viewUserName').innerText = targetId;
+                document.getElementById('userScreenBody').innerHTML = html;
+                document.getElementById('userScreenModal').classList.add('active');
+            } catch(e) {
+                alert("유저 화면 불러오기 실패: " + e.message);
+            }
+        };
+
+        async function loadUserBulkList() {
+            if (!isUserAdminPrivilege && !isUserSuperAdmin) return;
+            const container = document.getElementById('admBulkUserListArea');
+            container.innerHTML = '<div style="color: var(--text-sub); padding: 10px; font-size:11px;">유저 명단 스캔 중...</div>';
+            try {
+                const { data: snap } = await gameDB.from('users').select('*');
+                container.innerHTML = '';
+                
+                if(!snap || snap.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-sub); padding: 10px; font-size:11px;">등록된 유저가 존재하지 않습니다.</div>';
+                    return;
+                }
+
+                snap.forEach(userData => {
+                    let tags = [];
+                    if(userData.isPermanentBan) tags.push("영구밴");
+                    if(userData.banExpiry && userData.banExpiry > Date.now()) tags.push("기간밴");
+                    if(userData.isChatBanned) tags.push("채팅차단");
+                    if(userData.isSuperAdmin) tags.push("👑최고관리자");
+                    else if(userData.isAdmin) tags.push("🛡️일반관리자");
+                    if(userData.isScoreLocked) tags.push("🔒점수불가"); 
+                    
+                    let statusLabel = tags.length > 0 ? tags.join(",") : "정상";
+                    
+                    // UI 깨짐 방지를 위한 undefined 필터링
+                    let safeId = String(userData.userId) === 'undefined' || String(userData.userId) === 'null' ? '오류계정(삭제권장)' : userData.userId;
+                    let safePw = String(userData.password) === 'undefined' ? '오류(알수없음)' : (userData.password || '없음');
+                    
+                    const div = document.createElement('div');
+                    div.className = 'bulk-user-item';
+                    div.innerHTML = `
+                        <label class="bulk-user-label-wrap">
+                            <input type="checkbox" name="bulkUserCheck" value="${userData.userId}">
+                            <span><strong>ID: ${safeId}</strong> <span style="color:#eab308; margin-left:6px;">[PW: ${safePw}]</span> <span style="color:#8b9bb4; margin-left:6px;">[${statusLabel}]</span></span>
+                        </label>
+                        <button onclick="event.preventDefault(); viewUserScreen('${userData.userId}')" style="background-color:#2563eb; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold; flex-shrink:0;">👀 화면보기</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch(e) { container.innerHTML = '<div style="color: #ef4444; padding: 10px;">명단 파싱 실패</div>'; }
+        }
+
+        function getCheckedUserIds() {
+            const checkboxes = document.querySelectorAll('input[name="bulkUserCheck"]:checked');
+            const ids = [];
+            checkboxes.forEach(cb => {
+                if(cb.value !== currentUserId) { ids.push(cb.value); }
+            });
+            return ids;
+        }
+
+        window.executeBulkToggleScoreLock = async function(shouldLock) {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            if(targetIds.length === 0) return alert("점수 획득 불가 여부를 설정할 대상을 체크박스에서 선택해줘!");
+            const stateLabel = shouldLock ? "불가" : "허용";
+
+            try {
+                await gameDB.from('users').update({ isScoreLocked: shouldLock }).in('userId', targetIds);
+                alert(`✅ 선택된 ${targetIds.length}명의 계정이 일괄적으로 점수 획득 [${stateLabel}] 처리되었습니다.`);
+                await loadUserBulkList();
+            } catch(e) { alert("관전자 상태 권한 인젝션 실패: " + e.message); }
+        };
+
+        window.executeAdminBulkTimeBan = async function() {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            const seconds = parseInt(document.getElementById('admBanSecondsInput').value);
+            
+            if(targetIds.length === 0) return alert("다중 제재를 집행할 대상을 체크박스에서 선택해줘!");
+            if(isNaN(seconds) || seconds <= 0) return alert("정지할 타임 가산 초를 올바르게 입력창에 적어줘!");
+
+            if(confirm(`선택된 무리 총 ${targetIds.length}명에게 일괄 기간제 밴을 선고하겠습니까?`)) {
+                try {
+                    const expiryTimestamp = Date.now() + (seconds * 1000);
+                    await gameDB.from('users').update({ banExpiry: expiryTimestamp, isPermanentBan: false }).in('userId', targetIds);
+                    alert(`⚡ [집행 성공] ${targetIds.length}명 유저 대상 ${seconds}초 정지 주입 완료.`);
+                    await loadUserBulkList();
+                } catch(e) { alert("일괄 제재 오류: " + e.message); }
+            }
+        };
+
+        window.executeAdminBulkPermBan = async function() {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            if(targetIds.length === 0) return alert("영구 밴 조치할 대상들을 명단에서 체크해줘!");
+
+            if(confirm(`🚨 경고: 선택한 유저 총 ${targetIds.length}명의 로그인을 영구 영방 차단하시겠습니까?`)) {
+                try {
+                    await gameDB.from('users').update({ isPermanentBan: true, banExpiry: 0 }).in('userId', targetIds);
+                    alert(`🔴 [일괄 영방 성공] 선택 무리 ${targetIds.length}명이 블랙리스트로 동결되었습니다.`);
+                    await loadUserBulkList();
+                } catch(e) { alert("통신 차단 실패: " + e.message); }
+            }
+        };
+
+        window.executeAdminBulkUnban = async function() {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            if(targetIds.length === 0) return alert("사면 면제 조치할 대상을 체크해줘!");
+
+            if(confirm(`선택한 ${targetIds.length}명의 유저의 모든 차단 상태를 깨끗이 일괄 석방하시겠습니까?`)) {
+                try {
+                    await gameDB.from('users').update({ isPermanentBan: false, banExpiry: 0, isChatBanned: false, isDMBanned: false, isScoreLocked: false }).in('userId', targetIds);
+                    alert(`🔓 [일괄 사면 완료] 선택한 유저 무리의 전과 기록이 클리어되었습니다.`);
+                    await loadUserBulkList();
+                } catch(e) { alert("사면 처리 실패: " + e.message); }
+            }
+        };
+
+        window.executeBulkToggleChatBan = async function(shouldBan) {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            if(targetIds.length === 0) return alert("채팅 권한을 조율할 대상을 목록에서 체크해줘!");
+            const stateLabel = shouldBan ? "금지" : "허용";
+
+            try {
+                await gameDB.from('users').update({ isChatBanned: shouldBan }).in('userId', targetIds);
+                alert(`✅ 선택된 ${targetIds.length}명의 월드 대화방 발언권이 일괄 ${stateLabel} 처리되었습니다.`);
+                await loadUserBulkList();
+            } catch(e) { alert("권한 인젝션 실패: " + e.message); }
+        };
+
+        window.executeBulkDeleteUserAccounts = async function() {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            if(targetIds.length === 0) return alert("DB 도큐먼트를 삭제해버릴 대상을 선택해줘!");
+
+            if(confirm(`🔥 [크리티컬 경고] 선택된 ${targetIds.length}명의 데이터를 영구 삭제하시겠습니까?\n(껍데기(DB) 뿐만 아니라 실제 인증 서버 계정 파기도 시도합니다)`)) {
+                let successCount = 0;
+                let authFailCount = 0;
+                
+                try {
+                    for(const targetId of targetIds) {
+                        const { data: targetData } = await gameDB.from('users').select('password').eq('userId', targetId).maybeSingle();
+                        if(targetData && targetData.password) {
+                            try {
+                                const { data: signInData, error: authErr } = await secondarySupabase.auth.signInWithPassword({ email: `${targetId}@clicker.com`, password: targetData.password });
+                                await gameDB.from('users').delete().eq('userId', targetId);
+                                
+                                if(!authErr && signInData.user) {
+                                    console.warn("Client side Auth delete may require backend RPC, depending on Supabase RLS.");
+                                }
+                                successCount++;
+                            } catch (e) {
+                                authFailCount++;
+                            }
+                        } else {
+                            await gameDB.from('users').delete().eq('userId', targetId);
+                            successCount++;
+                        }
+                    }
+                    
+                    let alertMsg = `🔥 [일괄 파쇄 완료] 유저 ${successCount}건의 데이터 구조가 영구 소멸했습니다.`;
+                    if(authFailCount > 0) alertMsg += `\n⚠️ (주의: 완벽한 파쇄에 실패한 계정이 ${authFailCount}건 있습니다.)`;
+                    
+                    alert(alertMsg);
+                    await loadUserBulkList();
+                } catch(e) { alert("파쇄 연동 에러: " + e.message); }
+            }
+        };
+
+        window.executeAdminBulkScoreReset = async function() {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            if(targetIds.length === 0) return alert("초기화시킬 유저 대상을 체크박스에서 선택해줘!");
+
+            if(confirm(`선택한 ${targetIds.length}명의 점수를 0 시현으로 일괄 초기화하시겠습니까?`)) {
+                try {
+                    const { data: usersToUpdate } = await gameDB.from('users').select('*').in('userId', targetIds);
+                    for(const userDoc of usersToUpdate) {
+                        const currentData = userDoc.gameSave || {};
+                        currentData.score = 0;
+                        await gameDB.from('users').update({ gameSave: currentData }).eq('userId', userDoc.userId);
+                        if(userDoc.userId === currentUserId) score = 0;
+                    }
+                    alert(`✅ 선택한 ${targetIds.length}명 유저의 점수가 0으로 초기화되었습니다.`);
+                    updateDisplay();
+                    await loadUserBulkList();
+                } catch(err) { alert("통신 에러: " + err.message); }
+            }
+        };
+
+        window.adjustUserStat = async function(statType, operation) {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            const amount = parseFloat(document.getElementById('admAmountInput').value);
+            
+            if(targetIds.length === 0) { alert("체크박스 명단에서 조작 대상을 최소 1명 이상 선택해줘."); return; }
+            if(isNaN(amount) || amount <= 0) { alert("올바른 조작 수치를 대입하십시오."); return; }
+
+            if(!confirm(`선택한 ${targetIds.length}명의 유저 스탯을 일괄 조정하시겠습니까?`)) return;
+
+            try {
+                const { data: usersToUpdate } = await gameDB.from('users').select('*').in('userId', targetIds);
+                
+                for(const userDoc of usersToUpdate) {
+                    const currentData = userDoc.gameSave || {};
+                    let currentScore = Math.max(0, Number(currentData.score) || 0);
+                    let currentCheatSps = Math.max(0, Number(currentData.cheatBonusSps) || 0);
+                    const multiplier = (operation === 'plus') ? 1 : -1;
+                    const numAmount = Number(amount);
+
+                    if (statType === 'score') {
+                        currentScore += (numAmount * multiplier);
+                        currentScore = Math.max(0, currentScore); // 마이너스 방어
+                        currentData.score = currentScore;
+                        if(userDoc.userId === currentUserId) score = currentScore;
+                    } 
+                    else if (statType === 'sps') {
+                        currentCheatSps += (numAmount * multiplier);
+                        currentCheatSps = Math.max(0, currentCheatSps); // 마이너스 방어
+                        currentData.cheatBonusSps = currentCheatSps;
+                        if(userDoc.userId === currentUserId) cheatBonusSps = currentCheatSps;
+                    }
+                    await gameDB.from('users').update({ gameSave: currentData }).eq('userId', userDoc.userId);
+                }
+
+                alert(`✅ 선택한 ${targetIds.length}명 유저의 스탯이 일괄 조율되었습니다.`);
+                updateDisplay();
+                await loadUserBulkList();
+            } catch(err) { alert("통신 에러: " + err.message); }
+        };
+
+        window.adjustUserItem = async function(operation) {
+            if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 전용 권한입니다.");
+            const targetIds = getCheckedUserIds();
+            const itemKey = document.getElementById('admItemSelect').value;
+            const countInput = parseInt(document.getElementById('admItemCountInput').value);
+
+            if(targetIds.length === 0) { alert("명단 체크박스에서 아이템을 조율할 유저를 선택해줘."); return; }
+            if(isNaN(countInput) || countInput <= 0) { alert("올바른 아이템 조정 수량을 기입하십시오."); return; }
+
+            if(!confirm(`선택한 ${targetIds.length}명의 유저 아이템을 일괄 조정하시겠습니까?`)) return;
+
+            try {
+                const { data: usersToUpdate } = await gameDB.from('users').select('*').in('userId', targetIds);
+                
+                for(const userDoc of usersToUpdate) {
+                    const currentData = userDoc.gameSave || {};
+                    let currentItemCounts = currentData.itemCounts || {};
+                    let currentCount = currentItemCounts[itemKey] || 0;
+                    const multiplier = (operation === 'plus') ? 1 : -1;
+                    
+                    currentCount += (countInput * multiplier);
+                    currentCount = Math.max(0, currentCount); // 마이너스 방어
+
+                    currentItemCounts[itemKey] = currentCount;
+                    currentData.itemCounts = currentItemCounts;
+
+                    await gameDB.from('users').update({ gameSave: currentData }).eq('userId', userDoc.userId);
+
+                    if(userDoc.userId === currentUserId) {
+                        items[itemKey].count = currentCount;
+                        items[itemKey].cost = Math.floor(items[itemKey].baseCost * Math.pow(1.15, currentCount));
+                        buildShopUI();
+                    }
+                }
+                
+                alert(`✅ 선택한 ${targetIds.length}명 유저의 인벤토리 아이템 덤프가 일괄 갱신되었습니다.`);
+                await loadUserBulkList();
+            } catch(e) { alert("아이템 인젝션 에러: " + e.message); }
+        };
+
+        window.executeAdminUserPasswordOverride = async function() {
+            if (!isUserSuperAdmin) return alert("최고관리자 권한이 필요합니다.");
+            const targetIds = getCheckedUserIds();
+            const targetNewPw = document.getElementById('admTargetNewPwInput').value.trim();
+
+            if(targetIds.length === 0) { alert("암호를 강제 덮어쓸 유저를 선택해줘!"); return; }
+            if(!targetNewPw || targetNewPw.length < 6) { alert("덮어쓸 암호는 6자 이상으로 명시해줘!"); return; }
+
+            if(confirm(`정말로 선택한 ${targetIds.length}명 유저의 보안 접근 암호를 강제 변조하시겠습니까?`)) {
+                let successCount = 0;
+
+                for(const targetId of targetIds) {
+                    const { data: targetSnap } = await gameDB.from('users').select('password').eq('userId', targetId).maybeSingle();
+                    if(targetSnap) {
+                        const oldPw = targetSnap.password;
+                        
+                        await gameDB.from('users').update({ password: targetNewPw }).eq('userId', targetId);
+
+                        if (oldPw && oldPw !== 'undefined') {
+                            try {
+                                const { data: loginData } = await secondarySupabase.auth.signInWithPassword({ email: `${targetId}@clicker.com`, password: oldPw });
+                                if (loginData.user) {
+                                    await secondarySupabase.auth.updateUser({ password: targetNewPw });
+                                }
+                                await secondarySupabase.auth.signOut();
+                            } catch (authErr) {
+                                console.warn(`Auth PW 변경 프로세스 스킵 (${targetId}): `, authErr);
+                            }
+                        }
+                        successCount++;
+                    }
+                }
+                
+                alert(`✅ 무조건 덮어쓰기 완료! 총 ${successCount}명의 계정 비밀번호가 강제로 변경되었습니다.`);
+                
+                document.getElementById('admTargetNewPwInput').value = '';
+                await loadUserBulkList();
+            }
+        };
+
+        function loadAdminTicketsFeed() {
+            if(_ticketSub) return; _ticketSub = true; 
+            if (!isUserAdminPrivilege && !isUserSuperAdmin) return;
+            const fetchTickets = async () => {
+                const { data: snapshot } = await gameDB.from('admin_tickets').select('*').order('timestamp', { ascending: false }).limit(6);
+                const feedArea = document.getElementById('admTicketFeedArea');
+                feedArea.innerHTML = '';
+                
+                if (!snapshot || snapshot.length === 0) {
+                    feedArea.innerHTML = '<div style="color: var(--text-sub); font-size: 11px; text-align: center; padding: 10px;">접수된 내역이 없습니다.</div>';
+                    return;
+                }
+
+                snapshot.forEach(data => {
+                    const dateStr = new Date(data.timestamp).toLocaleString();
+                    const row = document.createElement('div');
+                    row.className = 'ticket-row';
+                    row.innerHTML = `
+                        <div class="ticket-meta">
+                            <span style="color: #00ffcc; font-weight: bold;">👤 발신자: ${data.senderId}</span>
+                            <span>⏱️ ${dateStr}</span>
+                        </div>
+                        <div style="color: var(--text-main); word-break: break-all;">${data.message}</div>
+                    `;
+                    feedArea.appendChild(row);
+                });
+            };
+            fetchTickets();
+            gameDB.channel('public:admin_tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'admin_tickets' }, fetchTickets).subscribe();
+        }
+
+        window.exitAdminConsole = function(keepAuthAlive) {
+            isAdminAuthenticated = !!keepAuthAlive; 
+            document.getElementById('adminModal').classList.remove('active');
+            buildShopUI(); updateDisplay();
+        };
+
+        window.addEventListener("beforeunload", saveGameToServer);
+    </script>
+</body>
+</html>
