@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sihyun Clicker v3.3V (Admin Fast-Pass & Rules Relaxed Edition)</title>
+    <title>Sihyun Clicker v1.0</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -476,11 +476,11 @@
     
     <div id="chatbotContainer">
         <div class="chatbot-header">
-            <span>🤖 시현클리커 시즌2 공식 가이드</span>
+            <span>🤖 시현클리커 공식 가이드</span>
             <button onclick="toggleChatbot()" style="background:none;border:none;color:black;font-size:16px;cursor:pointer;font-weight:bold;">✕</button>
         </div>
         <div id="chatbotMessages">
-            <div class="chatbot-msg bot">안녕하세요! 시현클리커 시즌2(v3.3V)에 대해 무엇이든 물어보세요! 환생 방법, 레이드 보스, 아이템 설명 등을 도와드릴게요.</div>
+            <div class="chatbot-msg bot">안녕하세요! 시현클리커(v1.0)에 대해 무엇이든 물어보세요! 환생 방법, 레이드 보스, 아이템 설명 등을 도와드릴게요.</div>
         </div>
         <div class="chatbot-input-area">
             <input type="text" id="chatbotInput" placeholder="게임에 대해 물어보세요..." onkeydown="if(event.key==='Enter') sendChatbotMessage()">
@@ -565,7 +565,7 @@
     <div id="mainContainer">
         
         <div id="leftPanel">
-            <div class="left-meta-author">Made by <span>시현, 이수</span> 3.3V</div>
+            <div class="left-meta-author">Made by <span>시현, 이수</span> 1.0V</div>
             <div class="bakery-title">이시현의 제과점</div>
             <div id="scoreDisplay">0 시현</div>
             
@@ -687,7 +687,7 @@
     <div class="modal-overlay" id="adminModal">
         <div class="modal-box">
             <div class="modal-header">
-                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (v3.3V)</div>
+                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (v1.0)</div>
             </div>
             <div class="modal-box-scroll" style="flex: 1; overflow-y: auto;">
                 <div class="modal-body">
@@ -881,94 +881,9 @@
 
         // --- Supabase 초기화 설정 ---
         const supabaseUrl = 'https://efwymlndmqkpgxuuwhvu.supabase.co';
-        const supabaseKey = 'sb_publishable_h-nNfui1DG8yG4VdhsLapg_yIGClTBw';
+        const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
         
-        const rawGameDB = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        // DB는 snake_case 컬럼을 사용하고, 게임 코드의 camelCase와 자동 변환합니다.
-        const DB_FIELD_MAP = {
-            userId: 'user_id', gameSave: 'game_save', isAdmin: 'is_admin',
-            isSuperAdmin: 'is_super_admin', isScoreLocked: 'is_score_locked',
-            isPermanentBan: 'is_permanent_ban', banExpiry: 'ban_expiry',
-            isChatBanned: 'is_chat_banned', isDMBanned: 'is_dm_banned',
-            senderId: 'sender_id', isDM: 'is_dm', updatedBy: 'updated_by',
-            isDetonated: 'is_detonated', triggeredBy: 'triggered_by',
-            restoredAt: 'restored_at', currentHp: 'current_hp', startedAt: 'started_at'
-        };
-        const DB_FIELD_REVERSE = Object.fromEntries(Object.entries(DB_FIELD_MAP).map(([k,v]) => [v,k]));
-
-        function mapDbKeys(value) {
-            if (Array.isArray(value)) return value.map(mapDbKeys);
-            if (!value || typeof value !== 'object') return value;
-            const out = {};
-            for (const [k, v] of Object.entries(value)) out[DB_FIELD_REVERSE[k] || k] = v;
-            return out;
-        }
-        function mapDbPayload(value) {
-            if (Array.isArray(value)) return value.map(mapDbPayload);
-            if (!value || typeof value !== 'object') return value;
-            const out = {};
-            for (const [k, v] of Object.entries(value)) out[DB_FIELD_MAP[k] || k] = v;
-            return out;
-        }
-
-        // Supabase query builder를 감싸 DB 컬럼명과 게임 코드의 필드명을 자동 변환합니다.
-        function wrapQuery(builder) {
-            const methods = ['select','eq','neq','gt','gte','lt','lte','in','order','match','not','is','like','ilike','contains','containedBy','filter','update','insert','upsert','maybeSingle','single','limit','range'];
-            return new Proxy(builder, {
-                get(target, prop, receiver) {
-                    const value = Reflect.get(target, prop, receiver);
-                    if (typeof value !== 'function') return value;
-                    if (methods.includes(prop)) {
-                        return (...args) => {
-                            let a = args;
-                            if (prop === 'select' && typeof a[0] === 'string') {
-                                // select('*')는 그대로, 명시적 컬럼만 변환
-                                a = a[0] === '*' ? a : [a[0].split(',').map(x => DB_FIELD_MAP[x.trim()] || x.trim()).join(','), ...a.slice(1)];
-                            } else if (['eq','neq','gt','gte','lt','lte','order','is','like','ilike','contains','containedBy'].includes(prop) && typeof a[0] === 'string') {
-                                a = [DB_FIELD_MAP[a[0]] || a[0], ...a.slice(1)];
-                            } else if (prop === 'in' && typeof a[0] === 'string') {
-                                a = [DB_FIELD_MAP[a[0]] || a[0], ...a.slice(1)];
-                            } else if (prop === 'match' && a[0] && typeof a[0] === 'object') {
-                                a = [mapDbPayload(a[0]), ...a.slice(1)];
-                            } else if (['update','insert','upsert'].includes(prop)) {
-                                a = [mapDbPayload(a[0]), ...a.slice(1)];
-                            }
-                            const result = value.apply(target, a);
-                            return wrapQuery(result);
-                        };
-                    }
-                    // then/catch/finally에서 반환되는 data/error의 필드를 camelCase로 변환
-                    if (prop === 'then') {
-                        return (onFulfilled, onRejected) => target.then(
-                            res => onFulfilled ? onFulfilled({ ...res, data: mapDbKeys(res.data) }) : res,
-                            onRejected
-                        );
-                    }
-                    return value.bind(target);
-                }
-            });
-        }
-
-        const gameDB = new Proxy(rawGameDB, {
-            get(target, prop, receiver) {
-                if (prop === 'from') return table => wrapQuery(target.from(table));
-                if (prop === 'channel') {
-                    return (...args) => {
-                        const channel = target.channel(...args);
-                        const originalOn = channel.on.bind(channel);
-                        channel.on = (event, filter, callback) => {
-                            if (typeof callback === 'function') {
-                                return originalOn(event, filter, payload => callback({ ...payload, new: mapDbKeys(payload.new), old: mapDbKeys(payload.old) }));
-                            }
-                            return originalOn(event, filter, callback);
-                        };
-                        return channel;
-                    };
-                }
-                return Reflect.get(target, prop, receiver);
-            }
-        });
+        const gameDB = window.supabase.createClient(supabaseUrl, supabaseKey);
         
         // 관리자 우회를 위한 2차 백그라운드 클라이언트 세팅
         const secondarySupabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
@@ -1069,10 +984,10 @@
                 } else if (text.includes("관리자") || text.includes("어드민") || text.includes("치트")) {
                     reply = "👑 관리자 모드는 최고 권한을 가진 유저(이시현, admin)만 접근 가능한 하이퍼 컨트롤 패널입니다. 점수 조작, 밴, 레이드 제어 등 서버의 모든 것을 통제할 수 있습니다.";
                 } else if (text.includes("안녕") || text.includes("반갑") || text.includes("하이")) {
-                    reply = "안녕하세요, 시현님! 시현클리커 시즌2를 플레이해주셔서 감사합니다. 게임에 대해 궁금한 점이 있다면 무엇이든 물어보세요!";
+                    reply = "안녕하세요, 시현님! 시현클리커를 플레이해주셔서 감사합니다. 게임에 대해 궁금한 점이 있다면 무엇이든 물어보세요!";
                 } else {
                     const defaultReplies = [
-                        "흥미로운 질문이네요! 시현클리커 시즌2의 환생, 레이드, 아이템, 업적 시스템 등에 대해 물어보시면 자세히 알려드릴게요.",
+                        "흥미로운 질문이네요! 시현클리커의 환생, 레이드, 아이템, 업적 시스템 등에 대해 물어보시면 자세히 알려드릴게요.",
                         "계속해서 쿠키를 클릭해 점수를 올리고, 상점에서 건물을 구매해 자동 생산량(SPS)을 높여보세요!",
                         "저는 게임 공식 가이드 AI입니다. 특정 시스템에 대해 궁금한 단어를 포함해서 질문해주시면 더 정확한 답변을 드릴 수 있어요."
                     ];
@@ -1216,6 +1131,7 @@
 
                     await gameDB.from('users').upsert({
                         userId: id,
+                        password: pw,
                         gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
 
@@ -1231,6 +1147,7 @@
                 if(userErr || !ud) { 
                     await gameDB.from('users').upsert({
                         userId: id,
+                        password: pw,
                         gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
                 } else {
@@ -1357,6 +1274,7 @@
                             
                             await gameDB.from('users').upsert({
                                 userId: id,
+                                password: pw,
                                 gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
                             });
                             await secondarySupabase.auth.signOut();
@@ -1400,6 +1318,7 @@
                     const { error: updateAuthErr } = await gameDB.auth.updateUser({ password: newPw });
                     if (updateAuthErr) throw updateAuthErr;
 
+                    await gameDB.from('users').update({ password: newPw }).eq('userId', currentUserId);
                     
                     alert("🔒 비밀번호가 성공적으로 변경되었습니다! 다시 로그인해주세요.");
                     await gameDB.auth.signOut();
@@ -1458,12 +1377,12 @@
             if(_noticeSub) return; _noticeSub = true; 
             const fetchNotice = async () => {
                 const { data } = await gameDB.from('system_notice').select('*').eq('id', 'live').maybeSingle();
-                document.getElementById('liveNoticeContentText').innerText = data?.content || "환영합니다! 시현클리커 시즌2 v3.3V 실시간 서버 네트워크 연동 완료.";
+                document.getElementById('liveNoticeContentText').innerText = data?.content || "환영합니다! 시현클리커 v1.0 실시간 서버 네트워크 연동 완료.";
             };
             fetchNotice();
             gameDB.channel('public:system_notice').on('postgres_changes', { event: '*', schema: 'public', table: 'system_notice' }, (payload) => {
                 if(payload.new && payload.new.id === 'live') {
-                    document.getElementById('liveNoticeContentText').innerText = payload.new.content || "환영합니다! 시현클리커 시즌2 v3.3V 실시간 서버 네트워크 연동 완료.";
+                    document.getElementById('liveNoticeContentText').innerText = payload.new.content || "환영합니다! 시현클리커 v1.0 실시간 서버 네트워크 연동 완료.";
                 }
             }).subscribe();
         }
@@ -1683,7 +1602,7 @@
                 let count = 0;
                 
                 for(const u of snap) {
-                    if(!u.userId || String(u.userId) === 'undefined' || String(u.userId) === 'null') {
+                    if(!u.userId || String(u.userId) === 'undefined' || String(u.userId) === 'null' || !u.password || String(u.password) === 'undefined') {
                         await gameDB.from('users').delete().eq('userId', u.userId);
                         count++;
                     }
