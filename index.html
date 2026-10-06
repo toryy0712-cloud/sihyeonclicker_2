@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sihyun Clicker v1.0</title>
+    <title>Sihyun Clicker v1.0 (Admin Fast-Pass & Rules Relaxed Edition)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -17,14 +17,12 @@
         }
     </script>
 
-    <link rel="manifest" href="manifest.json">
-    
     <meta name="theme-color" content="#0c1017">
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
+                Promise.resolve(null)
                     .then(reg => console.log('서비스 워커 등록 성공!', reg))
                     .catch(err => console.log('서비스 워커 등록 실패', err));
             });
@@ -480,7 +478,7 @@
             <button onclick="toggleChatbot()" style="background:none;border:none;color:black;font-size:16px;cursor:pointer;font-weight:bold;">✕</button>
         </div>
         <div id="chatbotMessages">
-            <div class="chatbot-msg bot">안녕하세요! 시현클리커(v1.0)에 대해 무엇이든 물어보세요! 환생 방법, 레이드 보스, 아이템 설명 등을 도와드릴게요.</div>
+            <div class="chatbot-msg bot">안녕하세요! 시현클리커(v3.3V)에 대해 무엇이든 물어보세요! 환생 방법, 레이드 보스, 아이템 설명 등을 도와드릴게요.</div>
         </div>
         <div class="chatbot-input-area">
             <input type="text" id="chatbotInput" placeholder="게임에 대해 물어보세요..." onkeydown="if(event.key==='Enter') sendChatbotMessage()">
@@ -565,7 +563,7 @@
     <div id="mainContainer">
         
         <div id="leftPanel">
-            <div class="left-meta-author">Made by <span>시현, 이수</span> 1.0V</div>
+            <div class="left-meta-author">Made by <span>시현, 이수</span> 3.3V</div>
             <div class="bakery-title">이시현의 제과점</div>
             <div id="scoreDisplay">0 시현</div>
             
@@ -687,7 +685,7 @@
     <div class="modal-overlay" id="adminModal">
         <div class="modal-box">
             <div class="modal-header">
-                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (v1.0)</div>
+                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (v3.3V)</div>
             </div>
             <div class="modal-box-scroll" style="flex: 1; overflow-y: auto;">
                 <div class="modal-body">
@@ -880,9 +878,9 @@
         });
 
         // --- Supabase 초기화 설정 ---
-const supabaseUrl = 'https://xjeihxusucowbkfmfuam.supabase.co';
-const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';        
-
+        const supabaseUrl = 'https://xjeihxusucowbkfmfuam.supabase.co';
+        const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
+        
         const gameDB = window.supabase.createClient(supabaseUrl, supabaseKey);
         
         // 관리자 우회를 위한 2차 백그라운드 클라이언트 세팅
@@ -1094,7 +1092,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
 
             try {
                 const { error } = await gameDB.from('admin_tickets').insert([
-                    { senderId: `(가입요청) ${targetId}`, message: `신규 가입 희망 요청 쪽지 보냄 -> 희망PW: [ ${targetPw} ]`, timestamp: Date.now() }
+                    { sender_id: `(가입요청) ${targetId}`, message: `신규 가입 희망 요청 쪽지 보냄 -> 희망PW: [ ${targetPw} ]`, timestamp: Date.now() }
                 ]);
                 if (error) throw error;
 
@@ -1130,9 +1128,9 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                     if (signUpError && !signUpError.message.includes('already registered')) throw signUpError;
 
                     await gameDB.from('users').upsert({
-                        userId: id,
+                        user_id: id,
                         password: pw,
-                        gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
 
                     const { error: retryErr } = await gameDB.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
@@ -1142,24 +1140,24 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                     throw authErr; 
                 }
                 
-                const { data: ud, error: userErr } = await gameDB.from('users').select('*').eq('userId', id).maybeSingle();
+                const { data: ud, error: userErr } = await gameDB.from('users').select('*').eq('user_id', id).maybeSingle();
                 
                 if(userErr || !ud) { 
                     await gameDB.from('users').upsert({
-                        userId: id,
+                        user_id: id,
                         password: pw,
-                        gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
                 } else {
-                    if(ud.isPermanentBan) { 
+                    if(ud.is_permanent_ban) { 
                         alert("🔴 영구 정지 처리를 받은 계정입니다."); 
                         await gameDB.auth.signOut();
                         loginBtn.innerText = "게임 접속하기";
                         loginBtn.disabled = false;
                         return; 
                     }
-                    if(ud.banExpiry && ud.banExpiry > Date.now()) {
-                        const leftSec = Math.ceil((ud.banExpiry - Date.now()) / 1000);
+                    if(ud.ban_expiry && ud.ban_expiry > Date.now()) {
+                        const leftSec = Math.ceil((ud.ban_expiry - Date.now()) / 1000);
                         alert(`🟡 아직 기간제 밴 상태입니다. 남은 시간: ${leftSec}초`);
                         await gameDB.auth.signOut();
                         loginBtn.innerText = "게임 접속하기";
@@ -1216,17 +1214,17 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 const { data: users, error } = await gameDB.from('users').select('*');
                 if (error) throw error;
                 
-                let usersList = users.filter(u => u.gameSave && !u.isAdmin && !u.isScoreLocked)
-                                     .map(u => ({ id: u.userId, score: u.gameSave.score || 0 }));
+                let usersList = users.filter(u => u.game_save && !u.is_admin && !u.is_score_locked)
+                                     .map(u => ({ id: u.user_id, score: u.game_save.score || 0 }));
                                      
                 usersList.sort((a, b) => b.score - a.score);
 
                 const rewards = [300000, 200000, 100000];
                 for (let i = 0; i < 3 && i < usersList.length; i++) {
                     const newScore = Math.max(0, usersList[i].score + rewards[i]); 
-                    let uData = users.find(x => x.userId === usersList[i].id);
-                    let newSave = { ...uData.gameSave, score: newScore };
-                    await gameDB.from('users').update({ gameSave: newSave }).eq('userId', usersList[i].id);
+                    let uData = users.find(x => x.user_id === usersList[i].id);
+                    let newSave = { ...uData.game_save, score: newScore };
+                    await gameDB.from('users').update({ game_save: newSave }).eq('user_id', usersList[i].id);
                 }
                 alert("🏆 1~3등 유저에게 보상(30만, 20만, 10만)이 성공적으로 일괄 지급되었습니다!");
             } catch (e) {
@@ -1254,9 +1252,9 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 }
 
                 await gameDB.from('users').upsert({
-                    userId: id,
+                    user_id: id,
                     password: pw,
-                    gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                    game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                 });
                 
                 await secondarySupabase.auth.signOut();
@@ -1273,9 +1271,9 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                             if (loginErr) throw loginErr;
                             
                             await gameDB.from('users').upsert({
-                                userId: id,
+                                user_id: id,
                                 password: pw,
-                                gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                                game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                             });
                             await secondarySupabase.auth.signOut();
                             
@@ -1300,7 +1298,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             if(newId === currentUserId) { alert("현재 사용 중인 아이디와 같습니다."); return; }
             if(confirm("아이디를 실시간 변경하시겠습니까?")) {
                 try {
-                    await gameDB.from('users').update({ userId: newId }).eq('userId', currentUserId);
+                    await gameDB.from('users').update({ user_id: newId }).eq('user_id', currentUserId);
                     alert("👤 아이디가 성공적으로 실시간 변경되었습니다!");
                     document.getElementById('userNewIdInput').value = '';
                     location.reload();
@@ -1318,7 +1316,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                     const { error: updateAuthErr } = await gameDB.auth.updateUser({ password: newPw });
                     if (updateAuthErr) throw updateAuthErr;
 
-                    await gameDB.from('users').update({ password: newPw }).eq('userId', currentUserId);
+                    await gameDB.from('users').update({ password: newPw }).eq('user_id', currentUserId);
                     
                     alert("🔒 비밀번호가 성공적으로 변경되었습니다! 다시 로그인해주세요.");
                     await gameDB.auth.signOut();
@@ -1336,7 +1334,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             if(!msgText) { alert("관리자에게 보낼 문의 내용을 입력해주세요."); return; }
 
             try {
-                await gameDB.from('admin_tickets').insert([{ senderId: currentUserId, message: msgText, timestamp: Date.now() }]);
+                await gameDB.from('admin_tickets').insert([{ sender_id: currentUserId, message: msgText, timestamp: Date.now() }]);
                 alert("📬 관리자 실시간 라이브 피드로 안전하게 메시지가 전송되었습니다!");
                 document.getElementById('userToAdminMsgInput').value = '';
             } catch(e) {
@@ -1367,7 +1365,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                     bugsRemovedCount: bugsRemovedCount,
                     itemCounts: itemCountsObj
                 };
-                await gameDB.from('users').update({ gameSave: payload }).eq('userId', currentUserId);
+                await gameDB.from('users').update({ game_save: payload }).eq('user_id', currentUserId);
             } catch(e) { console.error("백업 에러:", e); }
         };
 
@@ -1394,7 +1392,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             if(!textContent) return alert("배포할 공지사항 내용을 입력해줘!");
             
             try {
-                await gameDB.from('system_notice').upsert({ id: 'live', content: textContent, updatedBy: currentUserId, timestamp: Date.now() });
+                await gameDB.from('system_notice').upsert({ id: 'live', content: textContent, updated_by: currentUserId, timestamp: Date.now() });
                 alert("📢 [실시간 공지 주입 성공] 전 서버 상단 공지 배너가 즉시 갱신되었습니다!");
                 document.getElementById('admNoticeInput').value = '';
             } catch(e) { alert("공지 배포 실패: " + e.message); }
@@ -1405,7 +1403,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             const fetchExplosion = async () => {
                 const { data } = await gameDB.from('server_status').select('*').eq('id', 'state').maybeSingle();
                 const targetOverlay = document.getElementById('serverExplosionOverlay');
-                if (data && data.isDetonated === true) {
+                if (data && data.is_detonated === true) {
                     targetOverlay.style.display = 'flex'; 
                 } else {
                     targetOverlay.style.display = 'none'; 
@@ -1415,7 +1413,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             gameDB.channel('public:server_status').on('postgres_changes', { event: '*', schema: 'public', table: 'server_status' }, (payload) => {
                 if (payload.new && payload.new.id === 'state') {
                     const targetOverlay = document.getElementById('serverExplosionOverlay');
-                    targetOverlay.style.display = payload.new.isDetonated ? 'flex' : 'none'; 
+                    targetOverlay.style.display = payload.new.is_detonated ? 'flex' : 'none'; 
                 }
             }).subscribe();
         }
@@ -1424,7 +1422,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             const inputKey = document.getElementById('serverExplosionRestoreKey').value.trim();
             if (inputKey === "102030") {
                 try {
-                    await gameDB.from('server_status').upsert({ id: 'state', isDetonated: false, restoredAt: Date.now() });
+                    await gameDB.from('server_status').upsert({ id: 'state', is_detonated: false, restored_at: Date.now() });
                     alert("✅ [인프라 권한 인증 완료] 전 서버 정상화 복구 코드가 성공적으로 승인되었습니다!");
                     document.getElementById('serverExplosionRestoreKey').value = '';
                 } catch(e) { alert("서버 상태 수정 실패: " + e.message); }
@@ -1439,7 +1437,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             const actionText = shouldDetonate ? "폭발 차단 집행" : "강제 복구정상화";
             if (confirm(`정말로 전 서버 실시간 [ ${actionText} ]을 단행하시겠습니까?`)) {
                 try {
-                    await gameDB.from('server_status').upsert({ id: 'state', isDetonated: shouldDetonate, triggeredBy: currentUserId, timestamp: Date.now() });
+                    await gameDB.from('server_status').upsert({ id: 'state', is_detonated: shouldDetonate, triggered_by: currentUserId, timestamp: Date.now() });
                     alert(`🚨 전 서버 실시간 상태 제어가 [ ${actionText} ] 상태로 인젝션되었습니다.`);
                 } catch(e) { alert("원격 제어 실패: " + e.message); }
             }
@@ -1452,16 +1450,16 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 const { data: snapshot } = await gameDB.from('users').select('*');
                 if(!snapshot) return;
 
-                globalLiveRankData = snapshot.filter(d => d.gameSave && !d.isAdmin && !d.isScoreLocked && d.userId !== 'undefined').map(d => {
+                globalLiveRankData = snapshot.filter(d => d.game_save && !d.is_admin && !d.is_score_locked && d.user_id !== 'undefined').map(d => {
                     let calcSps = 0;
-                    if(d.gameSave.itemCounts) {
-                        for(const k in d.gameSave.itemCounts) calcSps += d.gameSave.itemCounts[k] * (items[k]?.spsValue || 0);
+                    if(d.game_save.itemCounts) {
+                        for(const k in d.game_save.itemCounts) calcSps += d.game_save.itemCounts[k] * (items[k]?.spsValue || 0);
                     }
-                    calcSps += (d.gameSave.prestigeCount || 0) * 10000 + (d.gameSave.cheatBonusSps || 0);
+                    calcSps += (d.game_save.prestigeCount || 0) * 10000 + (d.game_save.cheatBonusSps || 0);
 
                     return {
-                        userId: d.userId,
-                        score: Math.max(0, d.gameSave.score || 0),
+                        user_id: d.user_id,
+                        score: Math.max(0, d.game_save.score || 0),
                         sps: Math.max(0, calcSps)
                     };
                 });
@@ -1470,23 +1468,23 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             
             gameDB.channel('public:users_ranking').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
                 const updatedUser = payload.new;
-                if (!updatedUser || !updatedUser.gameSave || updatedUser.isAdmin || updatedUser.isScoreLocked || updatedUser.userId === 'undefined') return;
+                if (!updatedUser || !updatedUser.game_save || updatedUser.is_admin || updatedUser.is_score_locked || updatedUser.user_id === 'undefined') return;
                 
                 let calcSps = 0;
-                if(updatedUser.gameSave.itemCounts) {
-                    for(const k in updatedUser.gameSave.itemCounts) calcSps += updatedUser.gameSave.itemCounts[k] * (items[k]?.spsValue || 0);
+                if(updatedUser.game_save.itemCounts) {
+                    for(const k in updatedUser.game_save.itemCounts) calcSps += updatedUser.game_save.itemCounts[k] * (items[k]?.spsValue || 0);
                 }
-                calcSps += (updatedUser.gameSave.prestigeCount || 0) * 10000 + (updatedUser.gameSave.cheatBonusSps || 0);
+                calcSps += (updatedUser.game_save.prestigeCount || 0) * 10000 + (updatedUser.game_save.cheatBonusSps || 0);
 
-                const existing = globalLiveRankData.find(u => u.userId === updatedUser.userId);
-                const validatedNewScore = Math.max(0, updatedUser.gameSave.score || 0);
+                const existing = globalLiveRankData.find(u => u.user_id === updatedUser.user_id);
+                const validatedNewScore = Math.max(0, updatedUser.game_save.score || 0);
 
                 if (existing) {
                     existing.score = Math.max(existing.score, validatedNewScore);
                     existing.sps = Math.max(0, calcSps);
                 } else {
                     globalLiveRankData.push({
-                        userId: updatedUser.userId,
+                        user_id: updatedUser.user_id,
                         score: validatedNewScore,
                         sps: Math.max(0, calcSps)
                     });
@@ -1516,7 +1514,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 const cssClass = rankNum <= 3 ? 'ranking-row top-rank' : 'ranking-row';
                 newHtml += `
                     <div class="${cssClass}">
-                        <span><strong>${medal}</strong> - ${u.userId}</span>
+                        <span><strong>${medal}</strong> - ${u.user_id}</span>
                         <span style="color:#38bdf8; font-weight:bold;">${Math.floor(u.score).toLocaleString()} 시현</span>
                     </div>`;
             });
@@ -1526,21 +1524,21 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
         function listenToMyDataChanges() {
             if(_mydataSub) return; _mydataSub = true;
             gameDB.channel('public:users:my_data').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users' }, (payload) => {
-                if (payload.new && payload.new.userId === currentUserId) {
+                if (payload.new && payload.new.user_id === currentUserId) {
                     const ud = payload.new;
                     
-                    if(ud.isPermanentBan || (ud.banExpiry && ud.banExpiry > Date.now())) {
+                    if(ud.is_permanent_ban || (ud.ban_expiry && ud.ban_expiry > Date.now())) {
                         alert("🔴 관리자에 의해 제재를 받았습니다.");
                         gameDB.auth.signOut().then(() => location.reload());
                         return;
                     }
                     
-                    isUserScoreLocked = ud.isScoreLocked || false;
-                    const s = ud.gameSave || {};
+                    isUserScoreLocked = ud.is_score_locked || false;
+                    const s = ud.game_save || {};
                     
                     let needUpdate = false;
                     
-                    if (isUserScoreLocked || ud.isPermanentBan) {
+                    if (isUserScoreLocked || ud.is_permanent_ban) {
                         score = 0; cheatBonusSps = 0; needUpdate = true;
                     } else {
                         let dbScore = Math.max(0, Number(s.score) || 0);
@@ -1602,8 +1600,8 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 let count = 0;
                 
                 for(const u of snap) {
-                    if(!u.userId || String(u.userId) === 'undefined' || String(u.userId) === 'null' || !u.password || String(u.password) === 'undefined') {
-                        await gameDB.from('users').delete().eq('userId', u.userId);
+                    if(!u.user_id || String(u.user_id) === 'undefined' || String(u.user_id) === 'null' || !u.password || String(u.password) === 'undefined') {
+                        await gameDB.from('users').delete().eq('user_id', u.user_id);
                         count++;
                     }
                 }
@@ -1641,22 +1639,22 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 let d = null;
 
                 for (let i = 0; i < 4; i++) {
-                    const { data } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
+                    const { data } = await gameDB.from('users').select('*').eq('user_id', currentUserId).maybeSingle();
                     if (data) { d = data; break; }
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
 
                 if (!d) {
                     await gameDB.from('users').upsert({
-                        userId: currentUserId,
+                        user_id: currentUserId,
                         password: 'unknown',
-                        gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
-                    const { data: fallbackD } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
-                    d = fallbackD || { gameSave: { score: 100, totalClicks: 0, prestigeCount: 0 } };
+                    const { data: fallbackD } = await gameDB.from('users').select('*').eq('user_id', currentUserId).maybeSingle();
+                    d = fallbackD || { game_save: { score: 100, totalClicks: 0, prestigeCount: 0 } };
                 }
 
-                if(d.isPermanentBan || (d.banExpiry && d.banExpiry > Date.now())) { 
+                if(d.is_permanent_ban || (d.ban_expiry && d.ban_expiry > Date.now())) { 
                     alert("🔴 정지 처리를 받은 계정입니다.");
                     await gameDB.auth.signOut(); location.reload(); return; 
                 }
@@ -1664,15 +1662,15 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 if (currentUserId === '이시현' || currentUserId === 'admin') {
                     isUserSuperAdmin = true; isUserAdminPrivilege = true;
                 } else {
-                    isUserSuperAdmin = d.isSuperAdmin || false;
-                    isUserAdminPrivilege = d.isAdmin || isUserSuperAdmin || false;
+                    isUserSuperAdmin = d.is_super_admin || false;
+                    isUserAdminPrivilege = d.is_admin || isUserSuperAdmin || false;
                 }
 
-                isUserScoreLocked = d.isScoreLocked || false; 
+                isUserScoreLocked = d.is_score_locked || false; 
                 
                 if (isUserAdminPrivilege) { document.getElementById('adminChatClearBtn').style.display = 'inline-block'; }
 
-                const s = d.gameSave || {};
+                const s = d.game_save || {};
                 score = (isUserAdminPrivilege || isUserScoreLocked) ? 0 : Math.max(0, Number(s.score) || 0); 
                 totalClicks = s.totalClicks || 0; 
                 prestigeCount = (isUserAdminPrivilege || isUserScoreLocked) ? 0 : (s.prestigeCount || 0);
@@ -2148,9 +2146,9 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
 
         setInterval(async () => {
             if(!currentUserId) return;
-            const { data: ud } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
+            const { data: ud } = await gameDB.from('users').select('*').eq('user_id', currentUserId).maybeSingle();
             if(ud) {
-                if(ud.isPermanentBan || (ud.banExpiry && ud.banExpiry > Date.now())) {
+                if(ud.is_permanent_ban || (ud.ban_expiry && ud.ban_expiry > Date.now())) {
                     alert("🔴 계정이 정지 처리되어 추방됩니다.");
                     await gameDB.auth.signOut();
                     location.reload();
@@ -2171,26 +2169,26 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             if(!text || !currentUserId) return;
 
             try {
-                const { data: myData } = await gameDB.from('users').select('*').eq('userId', currentUserId).maybeSingle();
+                const { data: myData } = await gameDB.from('users').select('*').eq('user_id', currentUserId).maybeSingle();
                 if(!myData) return;
                 const dmMatch = text.match(/^@([A-Za-z0-9ㄱ-ㅎㅏ-ㅣ가-힣_]+)\s(.+)/);
 
                 if(dmMatch) {
-                    if(myData.isDMBanned) { alert("🔒 1:1 귓속말 기능이 차단되었습니다."); return; }
+                    if(myData.is_dm_banned) { alert("🔒 1:1 귓속말 기능이 차단되었습니다."); return; }
                     const targetReceiver = dmMatch[1];
                     const dmText = dmMatch[2];
 
-                    const { data: targetCheck } = await gameDB.from('users').select('*').eq('userId', targetReceiver).maybeSingle();
+                    const { data: targetCheck } = await gameDB.from('users').select('*').eq('user_id', targetReceiver).maybeSingle();
                     if(!targetCheck && targetReceiver !== 'admin' && targetReceiver !== '시현') {
                         alert("⚠️ 존재하지 유저입니다.");
                         return;
                     }
 
-                    await gameDB.from('chat_messages').insert([{ sender: currentUserId, receiver: targetReceiver, text: dmText, isDM: true, timestamp: Date.now() }]);
+                    await gameDB.from('chat_messages').insert([{ sender: currentUserId, receiver: targetReceiver, text: dmText, is_dm: true, timestamp: Date.now() }]);
                     input.value = `@${targetReceiver} `; 
                 } else {
-                    if(myData.isChatBanned) { alert("🚫 월드 전체 채팅방 발언권이 정지되었습니다."); return; }
-                    await gameDB.from('chat_messages').insert([{ sender: currentUserId, text: text, isDM: false, timestamp: Date.now() }]);
+                    if(myData.is_chat_banned) { alert("🚫 월드 전체 채팅방 발언권이 정지되었습니다."); return; }
+                    await gameDB.from('chat_messages').insert([{ sender: currentUserId, text: text, is_dm: false, timestamp: Date.now() }]);
                     input.value = '';
                 }
             } catch(e) { console.error(e); }
@@ -2205,7 +2203,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 if(!docs) return;
                 
                 docs.reverse().forEach(m => {
-                    if(m.isDM && m.sender !== currentUserId && m.receiver !== currentUserId) return;
+                    if(m.is_dm && m.sender !== currentUserId && m.receiver !== currentUserId) return;
 
                     const row = document.createElement('div');
                     row.className = 'chat-msg-row';
@@ -2214,7 +2212,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                     const userClass = isSystem ? 'chat-admin-user' : 'chat-user';
                     
                     let prefixMarkup = "";
-                    if(m.isDM) {
+                    if(m.is_dm) {
                         prefixMarkup = m.sender === currentUserId ? `<span class="chat-dm-label">To @${m.receiver}</span>` : `<span class="chat-dm-label">From @${m.sender}</span>`;
                     }
 
@@ -2267,10 +2265,10 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
         window.viewUserScreen = async function(targetId) {
             if (!isUserAdminPrivilege && !isUserSuperAdmin) return;
             try {
-                const { data: d } = await gameDB.from('users').select('*').eq('userId', targetId).maybeSingle();
+                const { data: d } = await gameDB.from('users').select('*').eq('user_id', targetId).maybeSingle();
                 if(!d) return alert("유저 정보를 찾을 수 없습니다.");
                 
-                const s = d.gameSave || {};
+                const s = d.game_save || {};
                 
                 let html = `
                     <div style="text-align:center; margin-bottom:15px;">
@@ -2316,27 +2314,27 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
 
                 snap.forEach(userData => {
                     let tags = [];
-                    if(userData.isPermanentBan) tags.push("영구밴");
-                    if(userData.banExpiry && userData.banExpiry > Date.now()) tags.push("기간밴");
-                    if(userData.isChatBanned) tags.push("채팅차단");
-                    if(userData.isSuperAdmin) tags.push("👑최고관리자");
-                    else if(userData.isAdmin) tags.push("🛡️일반관리자");
-                    if(userData.isScoreLocked) tags.push("🔒점수불가"); 
+                    if(userData.is_permanent_ban) tags.push("영구밴");
+                    if(userData.ban_expiry && userData.ban_expiry > Date.now()) tags.push("기간밴");
+                    if(userData.is_chat_banned) tags.push("채팅차단");
+                    if(userData.is_super_admin) tags.push("👑최고관리자");
+                    else if(userData.is_admin) tags.push("🛡️일반관리자");
+                    if(userData.is_score_locked) tags.push("🔒점수불가"); 
                     
                     let statusLabel = tags.length > 0 ? tags.join(",") : "정상";
                     
                     // UI 깨짐 방지를 위한 undefined 필터링
-                    let safeId = String(userData.userId) === 'undefined' || String(userData.userId) === 'null' ? '오류계정(삭제권장)' : userData.userId;
+                    let safeId = String(userData.user_id) === 'undefined' || String(userData.user_id) === 'null' ? '오류계정(삭제권장)' : userData.user_id;
                     let safePw = String(userData.password) === 'undefined' ? '오류(알수없음)' : (userData.password || '없음');
                     
                     const div = document.createElement('div');
                     div.className = 'bulk-user-item';
                     div.innerHTML = `
                         <label class="bulk-user-label-wrap">
-                            <input type="checkbox" name="bulkUserCheck" value="${userData.userId}">
+                            <input type="checkbox" name="bulkUserCheck" value="${userData.user_id}">
                             <span><strong>ID: ${safeId}</strong> <span style="color:#eab308; margin-left:6px;">[PW: ${safePw}]</span> <span style="color:#8b9bb4; margin-left:6px;">[${statusLabel}]</span></span>
                         </label>
-                        <button onclick="event.preventDefault(); viewUserScreen('${userData.userId}')" style="background-color:#2563eb; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold; flex-shrink:0;">👀 화면보기</button>
+                        <button onclick="event.preventDefault(); viewUserScreen('${userData.user_id}')" style="background-color:#2563eb; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold; flex-shrink:0;">👀 화면보기</button>
                     `;
                     container.appendChild(div);
                 });
@@ -2359,7 +2357,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             const stateLabel = shouldLock ? "불가" : "허용";
 
             try {
-                await gameDB.from('users').update({ isScoreLocked: shouldLock }).in('userId', targetIds);
+                await gameDB.from('users').update({ is_score_locked: shouldLock }).in('user_id', targetIds);
                 alert(`✅ 선택된 ${targetIds.length}명의 계정이 일괄적으로 점수 획득 [${stateLabel}] 처리되었습니다.`);
                 await loadUserBulkList();
             } catch(e) { alert("관전자 상태 권한 인젝션 실패: " + e.message); }
@@ -2376,7 +2374,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             if(confirm(`선택된 무리 총 ${targetIds.length}명에게 일괄 기간제 밴을 선고하겠습니까?`)) {
                 try {
                     const expiryTimestamp = Date.now() + (seconds * 1000);
-                    await gameDB.from('users').update({ banExpiry: expiryTimestamp, isPermanentBan: false }).in('userId', targetIds);
+                    await gameDB.from('users').update({ ban_expiry: expiryTimestamp, is_permanent_ban: false }).in('user_id', targetIds);
                     alert(`⚡ [집행 성공] ${targetIds.length}명 유저 대상 ${seconds}초 정지 주입 완료.`);
                     await loadUserBulkList();
                 } catch(e) { alert("일괄 제재 오류: " + e.message); }
@@ -2390,7 +2388,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
 
             if(confirm(`🚨 경고: 선택한 유저 총 ${targetIds.length}명의 로그인을 영구 영방 차단하시겠습니까?`)) {
                 try {
-                    await gameDB.from('users').update({ isPermanentBan: true, banExpiry: 0 }).in('userId', targetIds);
+                    await gameDB.from('users').update({ is_permanent_ban: true, ban_expiry: 0 }).in('user_id', targetIds);
                     alert(`🔴 [일괄 영방 성공] 선택 무리 ${targetIds.length}명이 블랙리스트로 동결되었습니다.`);
                     await loadUserBulkList();
                 } catch(e) { alert("통신 차단 실패: " + e.message); }
@@ -2404,7 +2402,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
 
             if(confirm(`선택한 ${targetIds.length}명의 유저의 모든 차단 상태를 깨끗이 일괄 석방하시겠습니까?`)) {
                 try {
-                    await gameDB.from('users').update({ isPermanentBan: false, banExpiry: 0, isChatBanned: false, isDMBanned: false, isScoreLocked: false }).in('userId', targetIds);
+                    await gameDB.from('users').update({ is_permanent_ban: false, ban_expiry: 0, is_chat_banned: false, is_dm_banned: false, is_score_locked: false }).in('user_id', targetIds);
                     alert(`🔓 [일괄 사면 완료] 선택한 유저 무리의 전과 기록이 클리어되었습니다.`);
                     await loadUserBulkList();
                 } catch(e) { alert("사면 처리 실패: " + e.message); }
@@ -2418,7 +2416,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             const stateLabel = shouldBan ? "금지" : "허용";
 
             try {
-                await gameDB.from('users').update({ isChatBanned: shouldBan }).in('userId', targetIds);
+                await gameDB.from('users').update({ is_chat_banned: shouldBan }).in('user_id', targetIds);
                 alert(`✅ 선택된 ${targetIds.length}명의 월드 대화방 발언권이 일괄 ${stateLabel} 처리되었습니다.`);
                 await loadUserBulkList();
             } catch(e) { alert("권한 인젝션 실패: " + e.message); }
@@ -2435,11 +2433,11 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 
                 try {
                     for(const targetId of targetIds) {
-                        const { data: targetData } = await gameDB.from('users').select('password').eq('userId', targetId).maybeSingle();
+                        const { data: targetData } = await gameDB.from('users').select('password').eq('user_id', targetId).maybeSingle();
                         if(targetData && targetData.password) {
                             try {
                                 const { data: signInData, error: authErr } = await secondarySupabase.auth.signInWithPassword({ email: `${targetId}@clicker.com`, password: targetData.password });
-                                await gameDB.from('users').delete().eq('userId', targetId);
+                                await gameDB.from('users').delete().eq('user_id', targetId);
                                 
                                 if(!authErr && signInData.user) {
                                     console.warn("Client side Auth delete may require backend RPC, depending on Supabase RLS.");
@@ -2449,7 +2447,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                                 authFailCount++;
                             }
                         } else {
-                            await gameDB.from('users').delete().eq('userId', targetId);
+                            await gameDB.from('users').delete().eq('user_id', targetId);
                             successCount++;
                         }
                     }
@@ -2470,12 +2468,12 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
 
             if(confirm(`선택한 ${targetIds.length}명의 점수를 0 시현으로 일괄 초기화하시겠습니까?`)) {
                 try {
-                    const { data: usersToUpdate } = await gameDB.from('users').select('*').in('userId', targetIds);
+                    const { data: usersToUpdate } = await gameDB.from('users').select('*').in('user_id', targetIds);
                     for(const userDoc of usersToUpdate) {
-                        const currentData = userDoc.gameSave || {};
+                        const currentData = userDoc.game_save || {};
                         currentData.score = 0;
-                        await gameDB.from('users').update({ gameSave: currentData }).eq('userId', userDoc.userId);
-                        if(userDoc.userId === currentUserId) score = 0;
+                        await gameDB.from('users').update({ game_save: currentData }).eq('user_id', userDoc.user_id);
+                        if(userDoc.user_id === currentUserId) score = 0;
                     }
                     alert(`✅ 선택한 ${targetIds.length}명 유저의 점수가 0으로 초기화되었습니다.`);
                     updateDisplay();
@@ -2495,10 +2493,10 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             if(!confirm(`선택한 ${targetIds.length}명의 유저 스탯을 일괄 조정하시겠습니까?`)) return;
 
             try {
-                const { data: usersToUpdate } = await gameDB.from('users').select('*').in('userId', targetIds);
+                const { data: usersToUpdate } = await gameDB.from('users').select('*').in('user_id', targetIds);
                 
                 for(const userDoc of usersToUpdate) {
-                    const currentData = userDoc.gameSave || {};
+                    const currentData = userDoc.game_save || {};
                     let currentScore = Math.max(0, Number(currentData.score) || 0);
                     let currentCheatSps = Math.max(0, Number(currentData.cheatBonusSps) || 0);
                     const multiplier = (operation === 'plus') ? 1 : -1;
@@ -2508,15 +2506,15 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                         currentScore += (numAmount * multiplier);
                         currentScore = Math.max(0, currentScore); // 마이너스 방어
                         currentData.score = currentScore;
-                        if(userDoc.userId === currentUserId) score = currentScore;
+                        if(userDoc.user_id === currentUserId) score = currentScore;
                     } 
                     else if (statType === 'sps') {
                         currentCheatSps += (numAmount * multiplier);
                         currentCheatSps = Math.max(0, currentCheatSps); // 마이너스 방어
                         currentData.cheatBonusSps = currentCheatSps;
-                        if(userDoc.userId === currentUserId) cheatBonusSps = currentCheatSps;
+                        if(userDoc.user_id === currentUserId) cheatBonusSps = currentCheatSps;
                     }
-                    await gameDB.from('users').update({ gameSave: currentData }).eq('userId', userDoc.userId);
+                    await gameDB.from('users').update({ game_save: currentData }).eq('user_id', userDoc.user_id);
                 }
 
                 alert(`✅ 선택한 ${targetIds.length}명 유저의 스탯이 일괄 조율되었습니다.`);
@@ -2537,10 +2535,10 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
             if(!confirm(`선택한 ${targetIds.length}명의 유저 아이템을 일괄 조정하시겠습니까?`)) return;
 
             try {
-                const { data: usersToUpdate } = await gameDB.from('users').select('*').in('userId', targetIds);
+                const { data: usersToUpdate } = await gameDB.from('users').select('*').in('user_id', targetIds);
                 
                 for(const userDoc of usersToUpdate) {
-                    const currentData = userDoc.gameSave || {};
+                    const currentData = userDoc.game_save || {};
                     let currentItemCounts = currentData.itemCounts || {};
                     let currentCount = currentItemCounts[itemKey] || 0;
                     const multiplier = (operation === 'plus') ? 1 : -1;
@@ -2551,9 +2549,9 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                     currentItemCounts[itemKey] = currentCount;
                     currentData.itemCounts = currentItemCounts;
 
-                    await gameDB.from('users').update({ gameSave: currentData }).eq('userId', userDoc.userId);
+                    await gameDB.from('users').update({ game_save: currentData }).eq('user_id', userDoc.user_id);
 
-                    if(userDoc.userId === currentUserId) {
+                    if(userDoc.user_id === currentUserId) {
                         items[itemKey].count = currentCount;
                         items[itemKey].cost = Math.floor(items[itemKey].baseCost * Math.pow(1.15, currentCount));
                         buildShopUI();
@@ -2577,11 +2575,11 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                 let successCount = 0;
 
                 for(const targetId of targetIds) {
-                    const { data: targetSnap } = await gameDB.from('users').select('password').eq('userId', targetId).maybeSingle();
+                    const { data: targetSnap } = await gameDB.from('users').select('password').eq('user_id', targetId).maybeSingle();
                     if(targetSnap) {
                         const oldPw = targetSnap.password;
                         
-                        await gameDB.from('users').update({ password: targetNewPw }).eq('userId', targetId);
+                        await gameDB.from('users').update({ password: targetNewPw }).eq('user_id', targetId);
 
                         if (oldPw && oldPw !== 'undefined') {
                             try {
@@ -2624,7 +2622,7 @@ const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
                     row.className = 'ticket-row';
                     row.innerHTML = `
                         <div class="ticket-meta">
-                            <span style="color: #00ffcc; font-weight: bold;">👤 발신자: ${data.senderId}</span>
+                            <span style="color: #00ffcc; font-weight: bold;">👤 발신자: ${data.sender_id}</span>
                             <span>⏱️ ${dateStr}</span>
                         </div>
                         <div style="color: var(--text-main); word-break: break-all;">${data.message}</div>
