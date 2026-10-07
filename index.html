@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sihyun Clicker v1.0 (Supabase Fixed Edition)</title>
+    <title>Sihyun Clicker v1.1 (Supabase Fixed Edition)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -1154,53 +1154,89 @@
         };
 
         window.handleLogin = async function() {
-            let id = document.getElementById('loginId').value.trim().toLowerCase().replace(/\s+/g, '');
+            let rawId = document.getElementById('loginId').value.trim().toLowerCase().replace(/\s+/g, '');
             const pw = document.getElementById('loginPw').value.trim();
             const loginBtn = document.getElementById('mainLoginBtn');
 
-            // undefined 및 빈칸 가입/로그인 원천 차단 방어벽
-            if(!id || !pw || String(id) === 'undefined' || String(pw) === 'undefined' || String(id) === 'null') { 
-                alert("아이디와 비밀번호를 정확히 입력하세요. (undefined 등 특수 시스템어는 사용할 수 없습니다.)"); 
-                return; 
+            if(!rawId || !pw || rawId === 'undefined' || pw === 'undefined' || rawId === 'null') {
+                alert("아이디와 비밀번호를 정확히 입력하세요.");
+                return;
             }
+
+            // 아이디 칸에 admin 또는 admin@clicker.com 어느 쪽을 넣어도 정상 처리
+            let authEmail = rawId.includes('@') ? rawId : `${rawId}@clicker.com`;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail)) {
+                alert("이메일 형식이 올바르지 않습니다. 아이디에는 admin 같은 아이디만 입력하세요.");
+                return;
+            }
+            // public.users의 user_id는 @clicker.com 앞부분을 사용
+            const id = authEmail.split('@')[0];
 
             loginBtn.innerText = "로딩 중...";
             loginBtn.disabled = true;
 
             try {
-                let { error: authErr } = await gameDB.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
-                
-                if (authErr && (authErr.message.includes('Invalid login credentials') || authErr.message.includes('not found') || authErr.message.includes('Invalid'))) {
-                    const { error: signUpError } = await gameDB.auth.signUp({ email: `${id}@clicker.com`, password: pw });
-                    
-                    if (signUpError && !signUpError.message.includes('already registered')) throw signUpError;
+                let { error: authErr } = await gameDB.auth.signInWithPassword({
+                    email: authEmail,
+                    password: pw
+                });
 
-                    await gameDB.from('users').upsert({
-                        user_id: id,
-                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                // 계정이 없을 때만 신규 가입 시도
+                if (authErr && /Invalid login credentials|not found|User not found/i.test(authErr.message || '')) {
+                    const { data: signUpData, error: signUpError } = await gameDB.auth.signUp({
+                        email: authEmail,
+                        password: pw
                     });
 
-                    const { error: retryErr } = await gameDB.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
+                    if (signUpError && !/already registered|already exists/i.test(signUpError.message || '')) {
+                        throw signUpError;
+                    }
+
+                    // 이메일 확인이 켜져 있으면 여기서 명확하게 안내
+                    if (signUpData?.user && !signUpData.session) {
+                        throw new Error("새 계정이 생성되었지만 이메일 인증이 필요합니다. Supabase Auth에서 admin 계정을 인증하거나 Email 확인을 꺼주세요.");
+                    }
+
+                    const { error: saveUserError } = await gameDB.from('users').upsert({
+                        user_id: id,
+                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 },
+                        is_admin: false,
+                        is_super_admin: false
+                    });
+                    if (saveUserError) throw saveUserError;
+
+                    const { error: retryErr } = await gameDB.auth.signInWithPassword({
+                        email: authEmail,
+                        password: pw
+                    });
                     if (retryErr) throw retryErr;
-                    authErr = null; 
+                    authErr = null;
                 } else if (authErr) {
-                    throw authErr; 
+                    throw authErr;
                 }
-                
-                const { data: ud, error: userErr } = await gameDB.from('users').select('*').eq('user_id', id).maybeSingle();
-                
-                if(userErr || !ud) { 
-                    await gameDB.from('users').upsert({
+
+                const { data: ud, error: userErr } = await gameDB.from('users')
+                    .select('*')
+                    .eq('user_id', id)
+                    .maybeSingle();
+
+                if (userErr) throw userErr;
+
+                if (!ud) {
+                    const { error: insertError } = await gameDB.from('users').upsert({
                         user_id: id,
-                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 },
+                        is_admin: false,
+                        is_super_admin: false
                     });
+                    if (insertError) throw insertError;
                 } else {
-                    if(ud.is_permanent_ban) { 
-                        alert("🔴 영구 정지 처리를 받은 계정입니다."); 
+                    if(ud.is_permanent_ban) {
+                        alert("🔴 영구 정지 처리를 받은 계정입니다.");
                         await gameDB.auth.signOut();
                         loginBtn.innerText = "게임 접속하기";
                         loginBtn.disabled = false;
-                        return; 
+                        return;
                     }
                     if(ud.ban_expiry && ud.ban_expiry > Date.now()) {
                         const leftSec = Math.ceil((ud.ban_expiry - Date.now()) / 1000);
@@ -1211,8 +1247,30 @@
                         return;
                     }
                 }
-            } catch(e) { 
-                alert("로그인/가입 실패: 비밀번호 오류이거나 계정에 문제가 있습니다. (" + e.message + ")"); 
+
+                currentUserId = id;
+                const { data: sessionData } = await gameDB.auth.getSession();
+                currentUserSession = sessionData?.session || null;
+                isUserSuperAdmin = !!ud?.is_super_admin;
+                isUserAdminPrivilege = !!ud?.is_admin;
+                isUserScoreLocked = !!ud?.is_score_locked;
+                isAdminAuthenticated = isUserSuperAdmin || isUserAdminPrivilege;
+
+                document.getElementById('authOverlay').style.display = 'none';
+                if (typeof loadGameFromServer === 'function') await loadGameFromServer();
+                if (typeof listenToLiveGlobalNotice === 'function') listenToLiveGlobalNotice();
+                if (typeof loadGlobalRanking === 'function') loadGlobalRanking();
+                if (isAdminAuthenticated && typeof loadAdminTicketsFeed === 'function') loadAdminTicketsFeed();
+                if (typeof updateUI === 'function') updateUI();
+            } catch(e) {
+                let msg = e?.message || String(e);
+                if (/invalid format|validate email/i.test(msg)) {
+                    msg = "이메일 형식 오류입니다. 아이디 칸에는 admin처럼 아이디만 입력하세요.";
+                } else if (/email not confirmed/i.test(msg)) {
+                    msg = "이 계정은 이메일 인증이 필요합니다. Supabase Authentication에서 admin@clicker.com을 인증해주세요.";
+                }
+                alert("로그인/가입 실패: " + msg);
+            } finally {
                 loginBtn.innerText = "게임 접속하기";
                 loginBtn.disabled = false;
             }
@@ -1435,10 +1493,19 @@
             if(!textContent) return alert("배포할 공지사항 내용을 입력해줘!");
             
             try {
-                await gameDB.from('system_notice').upsert({ id: 'live', content: textContent, updated_by: currentUserId, timestamp: Date.now() });
-                alert("📢 [실시간 공지 주입 성공] 전 서버 상단 공지 배너가 즉시 갱신되었습니다!");
+                const { error } = await gameDB.from('system_notice').upsert({
+                    id: 'live',
+                    content: textContent,
+                    updated_by: currentUserId,
+                    timestamp: Date.now()
+                });
+                if (error) throw error;
+                // 저장 직후 화면도 즉시 갱신
+                const noticeEl = document.getElementById('liveNoticeContentText');
+                if (noticeEl) noticeEl.innerText = textContent;
+                alert("📢 공지가 저장되었습니다!");
                 document.getElementById('admNoticeInput').value = '';
-            } catch(e) { alert("공지 배포 실패: " + e.message); }
+            } catch(e) { alert("공지 배포 실패: " + (e?.message || e)); }
         };
 
         function listenToServerExplosionState() {
