@@ -2575,40 +2575,45 @@
         window.executeBulkDeleteUserAccounts = async function() {
             if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
             const targetIds = getCheckedUserIds();
-            if(targetIds.length === 0) return alert("DB 도큐먼트를 삭제해버릴 대상을 선택해줘!");
+            if(targetIds.length === 0) return alert("삭제할 계정을 선택해줘!");
 
-            if(confirm(`🔥 [크리티컬 경고] 선택된 ${targetIds.length}명의 데이터를 영구 삭제하시겠습니까?\n(껍데기(DB) 뿐만 아니라 실제 인증 서버 계정 파기도 시도합니다)`)) {
-                let successCount = 0;
-                let authFailCount = 0;
-                
+            if(!confirm(`🔥 [최종 경고] 선택된 ${targetIds.length}명의 계정을 영구 삭제할까요?\n\n게임 DB와 Supabase 로그인 계정(Auth)까지 삭제를 시도합니다.\n삭제 후 복구할 수 없습니다.`)) return;
+
+            let successCount = 0;
+            let failCount = 0;
+            const errors = [];
+
+            for(const targetId of targetIds) {
                 try {
-                    for(const targetId of targetIds) {
-                        const targetData = null;
-                        if(targetData && null) {
-                            try {
-                                const { data: signInData, error: authErr } = ({ error: new Error('브라우저에서 다른 유저의 비밀번호를 직접 확인할 수 없습니다.') })
-                                await gameDB.from('users').delete().eq('user_id', targetId);
-                                
-                                if(!authErr && signInData.user) {
-                                    console.warn("Client side Auth delete may require backend RPC, depending on Supabase RLS.");
-                                }
-                                successCount++;
-                            } catch (e) {
-                                authFailCount++;
-                            }
-                        } else {
-                            await gameDB.from('users').delete().eq('user_id', targetId);
-                            successCount++;
-                        }
+                    const { data: { session } } = await gameDB.auth.getSession();
+                    if(!session?.access_token) throw new Error("관리자 로그인 세션이 없습니다.");
+
+                    const response = await fetch(`${supabaseUrl}/functions/v1/admin-delete-user`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({ targetUserId: targetId })
+                    });
+
+                    let result = {};
+                    try { result = await response.json(); } catch (_) {}
+                    if(!response.ok || !result.success) {
+                        throw new Error(result.error || `서버 오류 (${response.status})`);
                     }
-                    
-                    let alertMsg = `🔥 [일괄 파쇄 완료] 유저 ${successCount}건의 데이터 구조가 영구 소멸했습니다.`;
-                    if(authFailCount > 0) alertMsg += `\n⚠️ (주의: 완벽한 파쇄에 실패한 계정이 ${authFailCount}건 있습니다.)`;
-                    
-                    alert(alertMsg);
-                    await loadUserBulkList();
-                } catch(e) { alert("파쇄 연동 에러: " + e.message); }
+                    successCount++;
+                } catch(e) {
+                    failCount++;
+                    errors.push(`${targetId}: ${e.message}`);
+                }
             }
+
+            await loadUserBulkList();
+            let msg = `🔥 삭제 완료: ${successCount}명\n`;
+            if(failCount) msg += `⚠️ 삭제 실패: ${failCount}명\n\n${errors.slice(0,5).join('\n')}`;
+            msg += `\n\n※ 서버 함수가 게임 DB와 Supabase Auth 계정을 함께 삭제합니다.`;
+            alert(msg);
         };
 
         window.executeAdminBulkScoreReset = async function() {
