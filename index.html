@@ -18,18 +18,7 @@
     </script>
 
     <meta name="theme-color" content="#0c1017">
-
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                Promise.resolve(null)
-                    .then(reg => console.log('서비스 워커 등록 성공!', reg))
-                    .catch(err => console.log('서비스 워커 등록 실패', err));
-            });
-        }
-    </script>
-
-    <style>
+<style>
         :root {
             --bg-main: #0c1017;
             --bg-panel: #090d14;
@@ -1035,7 +1024,24 @@
                     if (signUpError && !/already registered|already exists|user already/i.test(signUpError.message)) {
                         throw signUpError;
                     }
-                    signInData = signUpData;
+
+                    // 이미 존재하는 계정이면 가입 결과가 세션을 주지 않을 수 있으므로
+                    // 다시 로그인한다.
+                    if (signUpData?.session) {
+                        signInData = signUpData;
+                    } else {
+                        const retry = await gameDB.auth.signInWithPassword({
+                            email: adminEmail,
+                            password: pwd
+                        });
+                        if (retry.error) {
+                            throw new Error(
+                                'admin@clicker.com 로그인에 실패했습니다. Supabase Email 인증이 켜져 있거나 계정이 아직 생성되지 않았습니다. ' +
+                                retry.error.message
+                            );
+                        }
+                        signInData = retry.data;
+                    }
                 }
 
                 sessionStorage.setItem('admin_access_granted', 'true');
@@ -2290,6 +2296,47 @@
             loadUserBulkList();
             loadAdminTicketsFeed(); 
         }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // 관리자 티켓 피드 호환 함수
+        // DB 접근이 막혀도 관리자 화면 자체가 함수 미정의로 중단되지 않도록 한다.
+        window.loadAdminTicketsFeed = async function() {
+            const area = document.getElementById('admTicketFeedArea');
+            if (!area) return;
+            try {
+                const { data, error } = await gameDB
+                    .from('admin_tickets')
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(50);
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    area.innerHTML = '<div style="color:var(--text-sub);font-size:11px;text-align:center;padding:10px;">접수된 내역이 없습니다.</div>';
+                    return;
+                }
+
+                area.innerHTML = data.map(t => `
+                    <div style="border-bottom:1px solid var(--border-color);padding:8px 4px;">
+                        <div style="color:#00ffcc;font-weight:bold;">${escapeHtml(String(t.sender_id ?? 'unknown'))}</div>
+                        <div style="color:var(--text-main);margin-top:3px;">${escapeHtml(String(t.message ?? ''))}</div>
+                        <div style="color:var(--text-sub);font-size:10px;margin-top:3px;">${new Date(Number(t.timestamp || Date.now())).toLocaleString()}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                if (area) {
+                    area.innerHTML = '<div style="color:#f87171;font-size:11px;text-align:center;padding:10px;">티켓을 불러오지 못했습니다. Supabase RLS 정책을 확인하세요.</div>';
+                }
+            }
+        };
 
         window.toggleSelectAllBulkUsers = function(isChecked) {
             const checkboxes = document.querySelectorAll('input[name="bulkUserCheck"]');
