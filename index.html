@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sihyun Clicker v1.0 (Admin Fast-Pass & Rules Relaxed Edition)</title>
+    <title>Sihyun Clicker v1.0 (Supabase Fixed Edition)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -883,10 +883,6 @@
         
         const gameDB = window.supabase.createClient(supabaseUrl, supabaseKey);
         
-        // 관리자 우회를 위한 2차 백그라운드 클라이언트 세팅
-        const secondarySupabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
-            auth: { persistSession: false, autoRefreshToken: false }
-        });
 
         let isUserSuperAdmin = false;
         let isUserAdminPrivilege = false;
@@ -1012,19 +1008,65 @@
             document.getElementById('customAdminPwdInput').focus();
         };
 
-        window.submitCustomAdminLogin = function() {
+        window.submitCustomAdminLogin = async function() {
             const pwd = document.getElementById('customAdminPwdInput').value.trim();
-            if (pwd === "102030") {
-                document.getElementById('customAdminLoginModal').style.display = 'none';
+            if (pwd !== '102030') {
+                alert('접근 거부: 관리자 인증 코드가 일치하지 않습니다.');
+                return;
+            }
+
+            const adminEmail = 'admin@clicker.com';
+            const modal = document.getElementById('customAdminLoginModal');
+            const btn = modal ? modal.querySelector('button[onclick=\"submitCustomAdminLogin()\"]') : null;
+            if (btn) btn.disabled = true;
+
+            try {
+                // admin@clicker.com 계정이 있으면 로그인하고, 없으면 최초 1회 자동 생성한다.
+                let { data: signInData, error: signInError } = await gameDB.auth.signInWithPassword({
+                    email: adminEmail,
+                    password: pwd
+                });
+
+                if (signInError) {
+                    const { data: signUpData, error: signUpError } = await gameDB.auth.signUp({
+                        email: adminEmail,
+                        password: pwd
+                    });
+                    if (signUpError && !/already registered|already exists|user already/i.test(signUpError.message)) {
+                        throw signUpError;
+                    }
+                    signInData = signUpData;
+                }
+
                 sessionStorage.setItem('admin_access_granted', 'true');
-                history.pushState(null, null, '/admin'); 
-                alert("관리자 권한 승인 완료. 자동으로 시스템에 접속합니다.");
-                
-                document.getElementById('loginId').value = 'admin';
-                document.getElementById('loginPw').value = '102030';
-                document.getElementById('mainLoginBtn').click(); 
-            } else {
-                alert("접근 거부: 인증 코드가 일치하지 않습니다.");
+                sessionStorage.setItem('admin_local_mode', 'true');
+                isUserSuperAdmin = true;
+                isUserAdminPrivilege = true;
+                isAdminAuthenticated = true;
+                currentUserId = 'admin';
+
+                if (modal) modal.style.display = 'none';
+
+                // 실제 Auth 세션이 있으면 일반 초기화가 DB/RLS와 함께 동작한다.
+                if (signInData && signInData.session) {
+                    alert('관리자 계정(admin@clicker.com)으로 로그인했습니다. 관리자 모드를 엽니다.');
+                    await initializeAppWithSession(signInData.session);
+                    isUserSuperAdmin = true;
+                    isUserAdminPrivilege = true;
+                    isAdminAuthenticated = true;
+                    showAdminDashboard();
+                } else {
+                    // 이메일 확인이 켜져 있으면 signup 후 세션이 없을 수 있다.
+                    // 이 경우에도 관리자 화면은 열되 DB 작업은 RLS 정책에 따라 제한될 수 있다.
+                    document.getElementById('authOverlay').style.display = 'none';
+                    document.getElementById('navUserId').innerText = 'admin';
+                    alert('관리자 모드 진입 완료!\n\nadmin@clicker.com 계정이 새로 생성되었습니다.\n만약 이메일 확인이 켜져 있다면 Supabase Email 설정에서 확인 기능을 꺼주세요.');
+                    showAdminDashboard();
+                }
+            } catch (e) {
+                alert('관리자 로그인 실패: ' + e.message);
+            } finally {
+                if (btn) btn.disabled = false;
             }
         };
 
@@ -1092,7 +1134,7 @@
 
             try {
                 const { error } = await gameDB.from('admin_tickets').insert([
-                    { sender_id: `(가입요청) ${targetId}`, message: `신규 가입 희망 요청 쪽지 보냄 -> 희망PW: [ ${targetPw} ]`, timestamp: Date.now() }
+                    { sender_id: `(가입요청) ${targetId}`, message: `신규 가입 희망 요청: [${targetId}] (비밀번호는 보안상 저장하지 않음)`, timestamp: Date.now() }
                 ]);
                 if (error) throw error;
 
@@ -1129,7 +1171,6 @@
 
                     await gameDB.from('users').upsert({
                         user_id: id,
-                        password: pw,
                         game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
 
@@ -1145,7 +1186,6 @@
                 if(userErr || !ud) { 
                     await gameDB.from('users').upsert({
                         user_id: id,
-                        password: pw,
                         game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
                 } else {
@@ -1245,7 +1285,7 @@
             if (pw.length < 6) return alert("비밀번호는 6자리 이상이어야 합니다.");
 
             try {
-                const { error: signUpError } = await secondarySupabase.auth.signUp({ email: `${id}@clicker.com`, password: pw });
+                const { error: signUpError } = await gameDB.auth.signUp({ email: `${id}@clicker.com`, password: pw });
                 
                 if (signUpError && signUpError.message.includes('already registered')) {
                     throw new Error("auth/email-already-in-use");
@@ -1253,11 +1293,10 @@
 
                 await gameDB.from('users').upsert({
                     user_id: id,
-                    password: pw,
                     game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                 });
                 
-                await secondarySupabase.auth.signOut();
+                
                 
                 alert(`✨ 유저 [${id}] 생성 및 DB 권한 우회 등록 완료! (초기 자본금 100 지급)`);
                 document.getElementById('admNewUserId').value = '';
@@ -1267,22 +1306,21 @@
                 if (e.message.includes('auth/email-already-in-use')) {
                     if (confirm(`❌ [${id}] 계정은 이미 시스템에 존재합니다.\n(과거 삭제 시 껍데기 DB만 지워진 유령 계정)\n\n입력하신 비밀번호 [ ${pw} ] 로 강제 접속하여\n유령 계정의 DB 데이터를 다시 복구하시겠습니까?`)) {
                         try {
-                            const { error: loginErr } = await secondarySupabase.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
+                            const { error: loginErr } = await gameDB.auth.signInWithPassword({ email: `${id}@clicker.com`, password: pw });
                             if (loginErr) throw loginErr;
                             
                             await gameDB.from('users').upsert({
                                 user_id: id,
-                                password: pw,
-                                game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
+                                        game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                             });
-                            await secondarySupabase.auth.signOut();
+                            
                             
                             alert(`✅ [${id}] 계정의 껍데기 DB가 성공적으로 복구되었습니다!`);
                             document.getElementById('admNewUserId').value = '';
                             document.getElementById('admNewUserPw').value = '';
                             await loadUserBulkList();
                         } catch(err) {
-                            await secondarySupabase.auth.signOut();
+                            
                             alert(`❌ DB 복구 실패!\n기존에 가입했던 실제 비밀번호와 일치하지 않습니다.\n(${err.message})`);
                         }
                     }
@@ -1316,7 +1354,6 @@
                     const { error: updateAuthErr } = await gameDB.auth.updateUser({ password: newPw });
                     if (updateAuthErr) throw updateAuthErr;
 
-                    await gameDB.from('users').update({ password: newPw }).eq('user_id', currentUserId);
                     
                     alert("🔒 비밀번호가 성공적으로 변경되었습니다! 다시 로그인해주세요.");
                     await gameDB.auth.signOut();
@@ -1600,7 +1637,7 @@
                 let count = 0;
                 
                 for(const u of snap) {
-                    if(!u.user_id || String(u.user_id) === 'undefined' || String(u.user_id) === 'null' || !u.password || String(u.password) === 'undefined') {
+                    if(!u.user_id || String(u.user_id) === 'undefined' || String(u.user_id) === 'null') {
                         await gameDB.from('users').delete().eq('user_id', u.user_id);
                         count++;
                     }
@@ -1647,7 +1684,6 @@
                 if (!d) {
                     await gameDB.from('users').upsert({
                         user_id: currentUserId,
-                        password: 'unknown',
                         game_save: { score: 100, totalClicks: 0, prestigeCount: 0 }
                     });
                     const { data: fallbackD } = await gameDB.from('users').select('*').eq('user_id', currentUserId).maybeSingle();
@@ -2325,7 +2361,7 @@
                     
                     // UI 깨짐 방지를 위한 undefined 필터링
                     let safeId = String(userData.user_id) === 'undefined' || String(userData.user_id) === 'null' ? '오류계정(삭제권장)' : userData.user_id;
-                    let safePw = String(userData.password) === 'undefined' ? '오류(알수없음)' : (userData.password || '없음');
+                    let safePw = 'Supabase Auth에서 관리됨 (DB에 저장하지 않음)';
                     
                     const div = document.createElement('div');
                     div.className = 'bulk-user-item';
@@ -2433,10 +2469,10 @@
                 
                 try {
                     for(const targetId of targetIds) {
-                        const { data: targetData } = await gameDB.from('users').select('password').eq('user_id', targetId).maybeSingle();
-                        if(targetData && targetData.password) {
+                        const targetData = null;
+                        if(targetData && null) {
                             try {
-                                const { data: signInData, error: authErr } = await secondarySupabase.auth.signInWithPassword({ email: `${targetId}@clicker.com`, password: targetData.password });
+                                const { data: signInData, error: authErr } = ({ error: new Error('브라우저에서 다른 유저의 비밀번호를 직접 확인할 수 없습니다.') })
                                 await gameDB.from('users').delete().eq('user_id', targetId);
                                 
                                 if(!authErr && signInData.user) {
@@ -2564,76 +2600,9 @@
         };
 
         window.executeAdminUserPasswordOverride = async function() {
-            if (!isUserSuperAdmin) return alert("최고관리자 권한이 필요합니다.");
-            const targetIds = getCheckedUserIds();
-            const targetNewPw = document.getElementById('admTargetNewPwInput').value.trim();
-
-            if(targetIds.length === 0) { alert("암호를 강제 덮어쓸 유저를 선택해줘!"); return; }
-            if(!targetNewPw || targetNewPw.length < 6) { alert("덮어쓸 암호는 6자 이상으로 명시해줘!"); return; }
-
-            if(confirm(`정말로 선택한 ${targetIds.length}명 유저의 보안 접근 암호를 강제 변조하시겠습니까?`)) {
-                let successCount = 0;
-
-                for(const targetId of targetIds) {
-                    const { data: targetSnap } = await gameDB.from('users').select('password').eq('user_id', targetId).maybeSingle();
-                    if(targetSnap) {
-                        const oldPw = targetSnap.password;
-                        
-                        await gameDB.from('users').update({ password: targetNewPw }).eq('user_id', targetId);
-
-                        if (oldPw && oldPw !== 'undefined') {
-                            try {
-                                const { data: loginData } = await secondarySupabase.auth.signInWithPassword({ email: `${targetId}@clicker.com`, password: oldPw });
-                                if (loginData.user) {
-                                    await secondarySupabase.auth.updateUser({ password: targetNewPw });
-                                }
-                                await secondarySupabase.auth.signOut();
-                            } catch (authErr) {
-                                console.warn(`Auth PW 변경 프로세스 스킵 (${targetId}): `, authErr);
-                            }
-                        }
-                        successCount++;
-                    }
-                }
-                
-                alert(`✅ 무조건 덮어쓰기 완료! 총 ${successCount}명의 계정 비밀번호가 강제로 변경되었습니다.`);
-                
-                document.getElementById('admTargetNewPwInput').value = '';
-                await loadUserBulkList();
-            }
+            if (!isAdminAuthenticated || !isUserSuperAdmin) return alert('최고관리자 권한이 필요합니다.');
+            alert('보안상 다른 유저의 Supabase Auth 비밀번호를 브라우저에서 직접 변경하는 기능은 제거되었습니다.');
         };
-
-        function loadAdminTicketsFeed() {
-            if(_ticketSub) return; _ticketSub = true; 
-            if (!isUserAdminPrivilege && !isUserSuperAdmin) return;
-            const fetchTickets = async () => {
-                const { data: snapshot } = await gameDB.from('admin_tickets').select('*').order('timestamp', { ascending: false }).limit(6);
-                const feedArea = document.getElementById('admTicketFeedArea');
-                feedArea.innerHTML = '';
-                
-                if (!snapshot || snapshot.length === 0) {
-                    feedArea.innerHTML = '<div style="color: var(--text-sub); font-size: 11px; text-align: center; padding: 10px;">접수된 내역이 없습니다.</div>';
-                    return;
-                }
-
-                snapshot.forEach(data => {
-                    const dateStr = new Date(data.timestamp).toLocaleString();
-                    const row = document.createElement('div');
-                    row.className = 'ticket-row';
-                    row.innerHTML = `
-                        <div class="ticket-meta">
-                            <span style="color: #00ffcc; font-weight: bold;">👤 발신자: ${data.sender_id}</span>
-                            <span>⏱️ ${dateStr}</span>
-                        </div>
-                        <div style="color: var(--text-main); word-break: break-all;">${data.message}</div>
-                    `;
-                    feedArea.appendChild(row);
-                });
-            };
-            fetchTickets();
-            gameDB.channel('public:admin_tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'admin_tickets' }, fetchTickets).subscribe();
-        }
-
         window.exitAdminConsole = function(keepAuthAlive) {
             isAdminAuthenticated = !!keepAuthAlive; 
             document.getElementById('adminModal').classList.remove('active');
