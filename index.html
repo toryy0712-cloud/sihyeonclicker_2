@@ -2575,45 +2575,36 @@
         window.executeBulkDeleteUserAccounts = async function() {
             if (!isUserSuperAdmin) return alert("최고관리자(Super Admin) 권한이 필요합니다.");
             const targetIds = getCheckedUserIds();
-            if(targetIds.length === 0) return alert("삭제할 계정을 선택해줘!");
+            if(targetIds.length === 0) return alert("DB 도큐먼트를 삭제해버릴 대상을 선택해줘!");
 
-            if(!confirm(`🔥 [최종 경고] 선택된 ${targetIds.length}명의 계정을 영구 삭제할까요?\n\n게임 DB와 Supabase 로그인 계정(Auth)까지 삭제를 시도합니다.\n삭제 후 복구할 수 없습니다.`)) return;
-
-            let successCount = 0;
-            let failCount = 0;
-            const errors = [];
-
-            for(const targetId of targetIds) {
+            if(confirm(`🔥 [크리티컬 경고] 선택된 ${targetIds.length}명의 데이터를 영구 삭제하시겠습니까?\n(실제 인증 서버 계정과 DB 데이터가 함께 삭제됩니다)`)) {
                 try {
-                    const { data: { session } } = await gameDB.auth.getSession();
-                    if(!session?.access_token) throw new Error("관리자 로그인 세션이 없습니다.");
-
-                    const response = await fetch(`${supabaseUrl}/functions/v1/admin-delete-user`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                        },
-                        body: JSON.stringify({ targetUserId: targetId })
+                    const { data, error } = await gameDB.functions.invoke('admin-delete-user', {
+                        body: { targetIds }
                     });
 
-                    let result = {};
-                    try { result = await response.json(); } catch (_) {}
-                    if(!response.ok || !result.success) {
-                        throw new Error(result.error || `서버 오류 (${response.status})`);
+                    if (error) {
+                        throw new Error(error.message || "Edge Function 호출에 실패했습니다.");
                     }
-                    successCount++;
+
+                    const deleted = Array.isArray(data?.deleted) ? data.deleted : [];
+                    const failed = Array.isArray(data?.failed) ? data.failed : [];
+
+                    let alertMsg = `🔥 [계정 파쇄 완료] ${deleted.length}명의 계정이 처리되었습니다.`;
+                    if (failed.length > 0) {
+                        alertMsg += `\n⚠️ 실패한 계정 ${failed.length}명:`;
+                        failed.slice(0, 5).forEach(item => {
+                            alertMsg += `\n- ${item.user_id || item.targetId || "알 수 없음"}: ${item.error || "삭제 실패"}`;
+                        });
+                    }
+
+                    alert(alertMsg);
+                    await loadUserBulkList();
                 } catch(e) {
-                    failCount++;
-                    errors.push(`${targetId}: ${e.message}`);
+                    console.error("admin-delete-user Edge Function error:", e);
+                    alert("❌ 계정 삭제 연동 오류: " + (e.message || e));
                 }
             }
-
-            await loadUserBulkList();
-            let msg = `🔥 삭제 완료: ${successCount}명\n`;
-            if(failCount) msg += `⚠️ 삭제 실패: ${failCount}명\n\n${errors.slice(0,5).join('\n')}`;
-            msg += `\n\n※ 서버 함수가 게임 DB와 Supabase Auth 계정을 함께 삭제합니다.`;
-            alert(msg);
         };
 
         window.executeAdminBulkScoreReset = async function() {
