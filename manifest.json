@@ -1,7 +1,7 @@
 {
-  "name": "시현클리커 Alpha",
-  "short_name": "시현클리커",
-  "description": "이시현의 제과점 - 실시간 멀티플레이 클리커 게임 Alpha",
+  "name": "시현클리커 시즌2 알파",
+  "short_name": "시현클리커 S2",
+  "description": "이시현의 제과점 - 시현클리커 시즌2 알파버전",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0c1017",

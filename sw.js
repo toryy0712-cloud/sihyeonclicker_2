@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sihyun-clicker-alpha-v1';
+const CACHE_NAME = 'sihyun-clicker-s2-alpha-v1';
 const ASSETS = [
   './',
   './index.html',
@@ -24,6 +24,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // 외부 API(Supabase 등) 요청은 가로채지 않고 통과시켜 Failed to fetch 방지
+  if (!event.request.url.startsWith(self.location.origin)) return;
+
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
