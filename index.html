@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
+    <title>[v7] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -750,10 +750,41 @@
 
         // ===== 오류 안내 / DB 점검 (작동 안 할 때 원인을 화면에 알려줌) =====
         let _saveFailCount = 0;
+        let _lastAdminLockAt = 0;
+        // 관리자는 항상 관전자: 서버에 잠금이 안 걸려 있으면 자동으로 걸어 둠 (10초에 한 번만 시도)
+        function lockAdminSpectatorFlag() {
+            if (Date.now() - _lastAdminLockAt < 10000) return;
+            _lastAdminLockAt = Date.now();
+            try {
+                gameDB.from('users').update({ isScoreLocked: true }).eq('userId', currentUserId)
+                    .then((r) => { if (r && r.error) console.warn('관리자 관전자 잠금 실패:', r.error); }, () => {});
+            } catch (_) {}
+        }
+        // DB(users) 비밀번호와 Auth 비밀번호가 어긋났을 때 서버 함수로 맞춤 (입력한 비번이 DB 비번과 같을 때만 동작)
+        async function tryHealAuthPassword(id, pw) {
+            try {
+                const { data, error } = await gameDB.rpc('clicker_sync_auth_password', { p_user_id: id, p_password: pw });
+                if (error) {
+                    console.warn('Auth 비밀번호 복구 함수 호출 실패:', error);
+                    if (error.code === 'PGRST202' || /could not find the function/i.test(error.message || '')) window._healRpcMissing = true;
+                    return false;
+                }
+                return data === true;
+            } catch (e) { console.warn('Auth 비밀번호 복구 오류:', e); return false; }
+        }
+        // 관리자 전원을 관전자로 되돌림 (밴 해제 등으로 풀렸을 때)
+        async function enforceAdminSpectators() {
+            try {
+                await gameDB.from('users').update({ isScoreLocked: true })
+                    .or('isAdmin.eq.true,isSuperAdmin.eq.true,userId.in.(admin,시현,이시현)');
+            } catch (_) {}
+        }
         function explainError(err) {
             const raw = String((err && (err.message || err.error_description || err.details)) || err || '');
             const code = String((err && err.code) || '');
             const low = raw.toLowerCase();
+            if (low.includes('could not be cloned') || low.includes('dataclone'))
+                return '지금 Claude 미리보기 같은 샌드박스(claudeusercontent.com)에서 열려 있어서 Supabase 와 통신할 수 없습니다. index.html 을 본인 호스팅(GitHub Pages, Netlify, Cloudflare Pages, Vercel 등)에 올려서 그 주소로 열어주세요.';
             if (low.includes('failed to fetch') || low.includes('networkerror') || low.includes('load failed'))
                 return '서버에 연결할 수 없습니다. Supabase 대시보드에서 프로젝트가 일시중지(Paused) 상태가 아닌지, URL/키가 맞는지 확인하세요.';
             if (low.includes('email not confirmed') || code === 'email_not_confirmed')
@@ -768,6 +799,8 @@
                 return '테이블이 없습니다. setup.sql 을 SQL Editor에서 실행하세요. (' + raw + ')';
             if (code === '42703' || code === 'PGRST204' || (low.includes('column') && (low.includes('does not exist') || low.includes('schema cache'))))
                 return '컬럼 이름이 맞지 않습니다. setup.sql 을 다시 실행하세요. (' + raw + ')';
+            if (code === '23502' || low.includes('not-null constraint'))
+                return 'DB 테이블에 예전 컬럼(NOT NULL)이 남아 있어 저장이 막혔습니다. 최신 setup.sql 을 다시 실행하세요. (' + raw + ')';
             if (code === '42501' || low.includes('row-level security') || low.includes('permission denied'))
                 return '권한(RLS) 문제입니다. setup.sql 의 정책 부분을 실행하세요. (' + raw + ')';
             if (low.includes('invalid login credentials')) return '아이디 또는 비밀번호가 올바르지 않습니다.';
@@ -800,15 +833,18 @@
             for (const t of tables) {
                 try {
                     const { error } = await gameDB.from(t).select('*').limit(1);
-                    if (error) problems.push(`• ${t}: ${explainError(error)}`);
+                    if (error) problems.push({ t, msg: explainError(error) });
                 } catch (e) {
-                    problems.push(`• ${t}: ${explainError(e)}`);
+                    problems.push({ t, msg: explainError(e) });
                     break;
                 }
             }
             if (problems.length) {
                 console.warn('DB 점검 문제:', problems);
-                showDbBanner('⚠️ DB 점검 결과 — 아래를 해결해야 게임이 정상 작동합니다\n' + problems.join('\n'));
+                const groups = new Map();
+                problems.forEach(pr => groups.set(pr.msg, (groups.get(pr.msg) || []).concat(pr.t)));
+                const lines = [...groups.entries()].map(([msg, ts]) => `• ${ts.join(', ')}: ${msg}`);
+                showDbBanner('⚠️ DB 점검 결과 — 아래를 해결해야 게임이 정상 작동합니다\n' + lines.join('\n'));
             }
             return problems.length === 0;
         }
@@ -1232,6 +1268,10 @@
                 });
 
                 if (signInErr) {
+                    if (!bootstrapAdmin && adminRow && String(adminRow.password) === pwd && await tryHealAuthPassword('admin', pwd)) {
+                        const healed = await gameDB.auth.signInWithPassword({ email: loginEmail, password: authPw });
+                        if (!healed.error) { signInData = healed.data; signInErr = null; }
+                    }
                     const secondTry = await gameDB.auth.signInWithPassword({
                         email: loginEmail,
                         password: pwd
@@ -1341,7 +1381,7 @@
                 document.getElementById('regTicketId').value = '';
                 document.getElementById('regTicketPw').value = '';
                 switchAuthTab('login');
-            } catch(e) { alert("가입요청 오류: " + e.message); }
+            } catch(e) { alert("가입요청 오류: " + explainError(e)); }
         };
 
         // 초기 자금 0 시현으로 계정 생성
@@ -1415,6 +1455,14 @@
                     if (!legacyAttempt.error) { signInData = legacyAttempt.data; authErr = null; }
                 }
 
+                // 비번이 DB 와 같은데 인증만 거부되는 경우(두 곳의 비번 불일치/이메일 미확인)를 자동 복구
+                if (authErr && /invalid|not confirmed/i.test(authErr.message || '')) {
+                    if (await tryHealAuthPassword(id, pw)) {
+                        const healed = await gameDB.auth.signInWithPassword({ email: authEmail, password: authPassword });
+                        if (!healed.error) { signInData = healed.data; authErr = null; }
+                    }
+                }
+
                 if (authErr && (authErr.message.includes('Invalid login credentials') || authErr.message.includes('not found') || authErr.message.includes('Invalid'))) {
                     const { error: signUpError } = await gameDB.auth.signUp({
                         email: authEmail, password: authPassword, options: { data: { userId: id } }
@@ -1461,7 +1509,7 @@
                 if (sessionToInit) await initializeAppWithSession(sessionToInit, id);
             } catch(e) { 
                 console.error('로그인 오류:', e);
-                alert("로그인/가입 실패: " + explainError(e)); 
+                alert("로그인/가입 실패: " + explainError(e) + (window._healRpcMissing ? "\n\n※ 최신 setup.sql 을 실행하면 DB와 인증 비밀번호가 어긋난 계정을 자동으로 고칩니다." : "")); 
                 loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false;
             }
         };
@@ -1558,7 +1606,8 @@
         window.sendTicketToAdmin = async function() {
             const msgText = document.getElementById('userToAdminMsgInput').value.trim();
             if(!currentUserId || !msgText) return alert("문의 내용을 입력해주세요.");
-            await gameDB.from('admin_tickets').insert([{ senderId: currentUserId, message: msgText, timestamp: Date.now() }]);
+            const { error: tkErr } = await gameDB.from('admin_tickets').insert([{ senderId: currentUserId, message: msgText, timestamp: Date.now() }]);
+            if (tkErr) return alert('문의 전송 실패: ' + explainError(tkErr));
             alert("📬 관리자에게 문의 메시지가 전송되었습니다!");
             document.getElementById('userToAdminMsgInput').value = '';
         };
@@ -1999,6 +2048,7 @@
                 isUserSuperAdmin = !!ud.isSuperAdmin || hasAdminSession || ['admin', '시현', '이시현'].includes(currentUserId);
                 isUserAdminPrivilege = !!ud.isAdmin || isUserSuperAdmin;
                 isUserScoreLocked = !!ud.isScoreLocked;
+                if (isUserAdminPrivilege) { if (!ud.isScoreLocked) lockAdminSpectatorFlag(); isUserScoreLocked = true; } // 관리자는 항상 관전자
 
                 document.getElementById('reopenAdminBtn').style.display = (isUserSuperAdmin || isUserAdminPrivilege) ? 'block' : 'none';
                 document.getElementById('adminChatClearBtn').style.display = (isUserSuperAdmin || isUserAdminPrivilege) ? 'inline-block' : 'none';
@@ -2191,16 +2241,28 @@
         };
 
         window.executeBulkToggleScoreLock = async function(lock) {
-            const ids = getCheckedUserIds(false);
+            let ids = getCheckedUserIds(false);
             if(!ids.length) return alert("대상을 선택하세요.");
-            await gameDB.from('users').update({ isScoreLocked: lock }).in('userId', ids);
+            if (!lock) {
+                // 관리자는 항상 관전자: 해제 대상에서 제외
+                const { data: adminRows } = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin').in('userId', ids);
+                const fixedNames = ['admin', '시현', '이시현'];
+                const adminIds = (adminRows || []).filter(r => r.isAdmin || r.isSuperAdmin || fixedNames.includes(r.userId)).map(r => r.userId);
+                ids.filter(id => fixedNames.includes(id) && !adminIds.includes(id)).forEach(id => adminIds.push(id));
+                ids = ids.filter(id => !adminIds.includes(id));
+                if (adminIds.length) alert('👑 관리자(' + adminIds.join(', ') + ')는 항상 관전자라 해제할 수 없습니다.');
+                if (!ids.length) return;
+            }
+            const { data: changed, error: lockErr } = await gameDB.from('users').update({ isScoreLocked: lock }).in('userId', ids).select('userId');
+            if (lockErr) return alert('관전자 변경 실패: ' + explainError(lockErr));
+            if (!changed || !changed.length) return alert('변경된 유저가 없습니다. (DB에서 대상 유저를 찾지 못했거나 권한이 없습니다)');
             alert("✅ 관전자 상태가 실시간 변경되었습니다."); await loadUserBulkList();
         };
 
         window.executeBulkToggleAdminRole = async function(roleType) {
             const ids = getCheckedUserIds(false);
             if(!ids.length) return alert("대상을 선택하세요.");
-            const up = roleType === 'super' ? { isAdmin: true, isSuperAdmin: true } : (roleType === 'normal' ? { isAdmin: true, isSuperAdmin: false } : { isAdmin: false, isSuperAdmin: false });
+            const up = roleType === 'super' ? { isAdmin: true, isSuperAdmin: true, isScoreLocked: true } : (roleType === 'normal' ? { isAdmin: true, isSuperAdmin: false, isScoreLocked: true } : { isAdmin: false, isSuperAdmin: false });
             await gameDB.from('users').update(up).in('userId', ids);
             alert("✅ 권한이 실시간 변경되었습니다."); await loadUserBulkList();
         };
@@ -2223,6 +2285,7 @@
             const ids = getCheckedUserIds(true);
             if(!ids.length) return alert("대상을 선택하세요.");
             await gameDB.from('users').update({ isPermanentBan: false, banExpiry: 0, isChatBanned: false, isDMBanned: false, isScoreLocked: false }).in('userId', ids);
+            await enforceAdminSpectators();
             alert(`🔓 모든 밴 해제 완료.`); await loadUserBulkList();
         };
 
@@ -2376,6 +2439,7 @@
                 isUserSuperAdmin = !!(ud && ud.isSuperAdmin) || hasAdminSession || ['admin', '시현', '이시현'].includes(currentUserId);
                 isUserAdminPrivilege = !!(ud && ud.isAdmin) || isUserSuperAdmin;
                 isUserScoreLocked = !!(ud && ud.isScoreLocked);
+                if (isUserAdminPrivilege) { if (!(ud && ud.isScoreLocked)) lockAdminSpectatorFlag(); isUserScoreLocked = true; } // 관리자는 항상 관전자
 
                 if (isUserSuperAdmin || isUserAdminPrivilege) {
                     isAdminAuthenticated = true;
