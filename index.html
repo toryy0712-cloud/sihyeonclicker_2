@@ -722,7 +722,7 @@
         const supabaseKey = 'sb_publishable_wiOv47IuJoDxx9mvzkKZmw_AtC0276_';
         const gameDB = window.supabase.createClient(supabaseUrl, supabaseKey);
         const secondarySupabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
-            auth: { persistSession: false, autoRefreshToken: false }
+            auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'sb-clicker-secondary-auth' }
         });
 
         // 한글 아이디 <-> 이메일 안전 인코딩 & 짧은 비밀번호 자동 패딩
@@ -746,6 +746,71 @@
         function pwToAuthPw(rawPw) {
             const pw = String(rawPw ?? '');
             return pw.length < 6 ? pw + '__pad6' : pw;
+        }
+
+        // ===== 오류 안내 / DB 점검 (작동 안 할 때 원인을 화면에 알려줌) =====
+        let _saveFailCount = 0;
+        function explainError(err) {
+            const raw = String((err && (err.message || err.error_description || err.details)) || err || '');
+            const code = String((err && err.code) || '');
+            const low = raw.toLowerCase();
+            if (low.includes('failed to fetch') || low.includes('networkerror') || low.includes('load failed'))
+                return '서버에 연결할 수 없습니다. Supabase 대시보드에서 프로젝트가 일시중지(Paused) 상태가 아닌지, URL/키가 맞는지 확인하세요.';
+            if (low.includes('email not confirmed') || code === 'email_not_confirmed')
+                return "이메일 확인이 켜져 있습니다. Supabase → Authentication → Sign In / Providers → Email 에서 'Confirm email'을 끄고 setup.sql 을 실행하세요.";
+            if (low.includes('rate limit') || code === 'over_email_send_rate_limit')
+                return "Supabase 이메일 발송 제한에 걸렸습니다. 'Confirm email'을 꺼야 해결됩니다.";
+            if (low.includes('signups not allowed') || low.includes('signup is disabled') || code === 'signup_disabled')
+                return "가입이 막혀 있습니다. Authentication → Sign In / Providers 에서 'Allow new users to sign up'을 켜세요.";
+            if ((low.includes('email address') && low.includes('invalid')) || code === 'email_address_invalid')
+                return 'Supabase가 임시 이메일 주소를 거부했습니다. (' + raw + ')';
+            if (code === 'PGRST205' || code === '42P01' || low.includes('could not find the table') || (low.includes('relation') && low.includes('does not exist')))
+                return '테이블이 없습니다. setup.sql 을 SQL Editor에서 실행하세요. (' + raw + ')';
+            if (code === '42703' || code === 'PGRST204' || (low.includes('column') && (low.includes('does not exist') || low.includes('schema cache'))))
+                return '컬럼 이름이 맞지 않습니다. setup.sql 을 다시 실행하세요. (' + raw + ')';
+            if (code === '42501' || low.includes('row-level security') || low.includes('permission denied'))
+                return '권한(RLS) 문제입니다. setup.sql 의 정책 부분을 실행하세요. (' + raw + ')';
+            if (low.includes('invalid login credentials')) return '아이디 또는 비밀번호가 올바르지 않습니다.';
+            return raw || '알 수 없는 오류';
+        }
+
+        function showDbBanner(msg) {
+            try {
+                let bar = document.getElementById('dbHealthBanner');
+                if (!bar) {
+                    bar = document.createElement('div');
+                    bar.id = 'dbHealthBanner';
+                    bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#7f1d1d;color:#fff;font-size:12px;line-height:1.5;padding:8px 36px 8px 12px;white-space:pre-wrap;';
+                    const x = document.createElement('button');
+                    x.textContent = '✕';
+                    x.style.cssText = 'position:absolute;right:8px;top:6px;background:none;border:none;color:#fff;font-size:14px;cursor:pointer;';
+                    x.onclick = () => bar.remove();
+                    const body = document.createElement('div');
+                    body.id = 'dbHealthBannerBody';
+                    bar.appendChild(x); bar.appendChild(body);
+                    document.body.appendChild(bar);
+                }
+                document.getElementById('dbHealthBannerBody').textContent = msg;
+            } catch (_) {}
+        }
+
+        async function runDbHealthCheck() {
+            const tables = ['users', 'chat_messages', 'admin_tickets', 'system_notice', 'server_status', 'world_raid'];
+            const problems = [];
+            for (const t of tables) {
+                try {
+                    const { error } = await gameDB.from(t).select('*').limit(1);
+                    if (error) problems.push(`• ${t}: ${explainError(error)}`);
+                } catch (e) {
+                    problems.push(`• ${t}: ${explainError(e)}`);
+                    break;
+                }
+            }
+            if (problems.length) {
+                console.warn('DB 점검 문제:', problems);
+                showDbBanner('⚠️ DB 점검 결과 — 아래를 해결해야 게임이 정상 작동합니다\n' + problems.join('\n'));
+            }
+            return problems.length === 0;
         }
 
         let isUserSuperAdmin = false, isUserAdminPrivilege = false, isUserScoreLocked = false;
@@ -1153,6 +1218,10 @@
 
                 if (dbReadErr) throw dbReadErr;
 
+                // 관리자 행이 없거나 비밀번호가 비어 있으면 최초 설정으로 처리
+                const bootstrapAdmin = !adminRow || !adminRow.password;
+                if (bootstrapAdmin && !confirm('관리자 계정이 아직 설정되지 않았습니다.\n입력한 비밀번호로 최초 관리자 계정을 만들까요?')) return;
+
                 if (adminRow && adminRow.password && String(adminRow.password) !== pwd) {
                     throw new Error('관리자 비밀번호가 올바르지 않습니다.');
                 }
@@ -1174,8 +1243,8 @@
                 }
 
                 if (signInErr) {
-                    if (adminRow && String(adminRow.password) === pwd) {
-                        await gameDB.auth.signUp({
+                    if (bootstrapAdmin || (adminRow && String(adminRow.password) === pwd)) {
+                        const adminSignUp = await gameDB.auth.signUp({
                             email: loginEmail,
                             password: authPw,
                             options: { data: { userId: 'admin' } }
@@ -1184,7 +1253,11 @@
                             email: loginEmail,
                             password: authPw
                         });
-                        if (retry.error) throw new Error('관리자 비밀번호가 올바르지 않습니다.');
+                        if (retry.error) {
+                            if (adminSignUp.error && !/already/i.test(adminSignUp.error.message || '')) throw adminSignUp.error;
+                            if (/invalid login/i.test(retry.error.message || '')) throw new Error('Supabase Auth에 이미 있는 admin@clicker.com 계정의 비밀번호가 입력한 값과 다릅니다.\nAuthentication → Users 에서 admin@clicker.com 을 삭제한 뒤 다시 로그인하세요.');
+                            throw retry.error;
+                        }
                         signInData = retry.data;
                     } else {
                         throw new Error('관리자 비밀번호가 올바르지 않습니다.');
@@ -1208,7 +1281,7 @@
                 }
             } catch (e) {
                 console.error('관리자 로그인 오류:', e);
-                alert('관리자 로그인 실패: ' + (e.message || e));
+                alert('관리자 로그인 실패: ' + explainError(e));
             } finally {
                 if (btn) btn.disabled = false;
             }
@@ -1314,7 +1387,7 @@
                 alert(`✅ [${reqId}] 계정이 원클릭 승인 완료되었습니다! (0 시현 시작)`);
                 await refreshAdminTicketsNow();
                 await loadUserBulkList();
-            } catch (e) { alert("원클릭 승인 실패: " + (e.message || e)); }
+            } catch (e) { alert("원클릭 승인 실패: " + explainError(e)); }
         };
 
         window.deleteSingleTicket = async function(ticketId, senderIdText, ts) {
@@ -1364,7 +1437,8 @@
                     throw authErr;
                 }
                 
-                const { data: ud } = await gameDB.from('users').select('*').eq('userId', id).maybeSingle();
+                const { data: ud, error: udErr } = await gameDB.from('users').select('*').eq('userId', id).maybeSingle();
+                if (udErr) throw udErr;
                 if (!ud) { 
                     await gameDB.from('users').upsert({
                         userId: id, password: pw,
@@ -1386,7 +1460,8 @@
                 const sessionToInit = signInData?.session || (await gameDB.auth.getSession()).data.session;
                 if (sessionToInit) await initializeAppWithSession(sessionToInit, id);
             } catch(e) { 
-                alert("로그인/가입 실패: 비밀번호가 틀렸거나 이미 존재하는 아이디입니다. (" + e.message + ")"); 
+                console.error('로그인 오류:', e);
+                alert("로그인/가입 실패: " + explainError(e)); 
                 loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false;
             }
         };
@@ -1453,7 +1528,7 @@
                 document.getElementById('admNewUserId').value = '';
                 document.getElementById('admNewUserPw').value = '';
                 await loadUserBulkList();
-            } catch (e) { alert('유저 생성 실패: ' + (e.message || e)); }
+            } catch (e) { alert('유저 생성 실패: ' + explainError(e)); }
         };
 
         window.executeUserIdentityChange = async function() {
@@ -1512,8 +1587,18 @@
                     bugsRemovedCount, weaponLevel, ownedStocks, ownedPets,
                     itemCounts: itemCountsObj, adminUpdatedAt: lastAdminUpdatedAt
                 };
-                await gameDB.from('users').update({ gameSave: payload }).eq('userId', currentUserId);
-            } catch(e) { console.error("자동저장 에러:", e); }
+                const { data: updated, error: saveErr } = await gameDB.from('users').update({ gameSave: payload }).eq('userId', currentUserId).select('userId');
+                if (saveErr) throw saveErr;
+                if (!updated || updated.length === 0) {
+                    // users 행이 없으면(가입 도중 실패 등) 새로 만들어 저장
+                    const { error: upErr } = await gameDB.from('users').upsert({ userId: currentUserId, gameSave: payload }, { onConflict: 'userId' });
+                    if (upErr) throw upErr;
+                }
+                _saveFailCount = 0;
+            } catch(e) {
+                console.error("자동저장 에러:", e);
+                if (++_saveFailCount >= 2) showDbBanner('⚠️ 진행 상황이 서버에 저장되지 않고 있습니다.\n' + explainError(e));
+            }
         };
 
         async function refreshLiveNoticeOnce() {
@@ -2189,7 +2274,7 @@
                 let extractedId = isJoinReq ? senderStr.replace('(가입요청)', '').trim().toLowerCase() : '';
                 const pwMatch = msgStr.match(/희망PW:\s*\[\s*([^\]]+?)\s*\]/);
                 let extractedPw = pwMatch ? pwMatch[1].trim() : '';
-                const ticketIdParam = data.id ? data.id : 'null';
+                const ticketIdParam = (data.id !== undefined && data.id !== null) ? `'${String(data.id).replace(/'/g, '')}'` : 'null';
                 const row = document.createElement('div');
                 row.className = 'ticket-row';
                 row.innerHTML = `
@@ -2312,8 +2397,10 @@
         }
 
         gameDB.auth.onAuthStateChange((event, session) => {
-            if (session && session.user && !isGameLoaded) initializeAppWithSession(session);
+            setTimeout(() => { if (session && session.user && !isGameLoaded) initializeAppWithSession(session); }, 0);
         });
+
+        window.addEventListener('load', () => setTimeout(() => runDbHealthCheck(), 800));
 
         // --- PWA 서비스 워커 등록 및 원클릭 앱 설치 제어 ---
         if ('serviceWorker' in navigator) {
