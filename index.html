@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v7] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
+    <title>[v8] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -1862,21 +1862,31 @@
             updateDisplay(); checkAchievements();
         };
 
+        // 서버 행이 "실제로 보스가 격파된 상태"인지 판정 (관리자 종료/삭제는 해당 없음)
+        function isRaidVictoryRow(row) {
+            return !!row && !row.active && row.currentHp !== null && row.currentHp !== undefined
+                && Number(row.currentHp) === 0 && !!row.startedAt;
+        }
+
         async function flushRaidDamageToServer() {
             if (!globalRaidActive || pendingRaidDamage <= 0) return;
             const dmgToApply = pendingRaidDamage;
             pendingRaidDamage = 0;
             try {
                 const { data } = await gameDB.from('world_raid').select('*').eq('id', 'current_boss').maybeSingle();
-                if (!data || !data.active) { globalRaidActive = false; renderRaidBossUI(); return; }
+                // 이미 종료/삭제된 레이드면 보상 없이 정리
+                if (!data || !data.active) { globalRaidActive = false; globalRaidHp = 0; renderRaidBossUI(); return; }
                 const nextHp = Math.max(0, (Number(data.currentHp) || 0) - dmgToApply);
                 if (nextHp <= 0) {
-                    await gameDB.from('world_raid').upsert({ id: 'current_boss', active: false, currentHp: 0, startedAt: data.startedAt || Date.now() }, { onConflict: 'id' });
+                    const raidKey = data.startedAt || Date.now();
+                    // 아직 진행 중(active=true)일 때만 격파로 기록 — 그 사이 관리자가 종료했다면 아무것도 바뀌지 않음
+                    await gameDB.from('world_raid').update({ active: false, currentHp: 0, startedAt: raidKey }).eq('id', 'current_boss').eq('active', true);
+                    const { data: after } = await gameDB.from('world_raid').select('*').eq('id', 'current_boss').maybeSingle();
                     globalRaidActive = false; globalRaidHp = 0; renderRaidBossUI();
-                    giveRaidVictoryRewardIfEligible(data.startedAt || 1);
+                    if (isRaidVictoryRow(after)) giveRaidVictoryRewardIfEligible(after.startedAt);
                 } else {
                     globalRaidHp = nextHp;
-                    await gameDB.from('world_raid').update({ currentHp: nextHp }).eq('id', 'current_boss');
+                    await gameDB.from('world_raid').update({ currentHp: nextHp }).eq('id', 'current_boss').eq('active', true);
                     renderRaidBossUI();
                 }
             } catch (_) {}
@@ -1892,13 +1902,17 @@
 
         async function syncGlobalRaidOnce() {
             try {
-                const { data } = await gameDB.from('world_raid').select('*').eq('id', 'current_boss').maybeSingle();
-                if (!data) { globalRaidActive = false; renderRaidBossUI(); return; }
-                if (globalRaidActive && !data.active && Number(data.currentHp) === 0) {
-                    globalRaidActive = false; globalRaidHp = 0; renderRaidBossUI();
-                    giveRaidVictoryRewardIfEligible(data.startedAt || 1); return;
+                const { data, error } = await gameDB.from('world_raid').select('*').eq('id', 'current_boss').maybeSingle();
+                if (error) return; // 통신 오류로 레이드 상태를 지우지 않음
+                // 레이드가 삭제(종료)된 경우: 보상 없이 모든 흔적 제거
+                if (!data) { globalRaidActive = false; globalRaidHp = 0; pendingRaidDamage = 0; renderRaidBossUI(); return; }
+                // 보스가 실제로 격파된 경우에만 보상
+                if (globalRaidActive && isRaidVictoryRow(data)) {
+                    globalRaidActive = false; globalRaidHp = 0; pendingRaidDamage = 0; renderRaidBossUI();
+                    giveRaidVictoryRewardIfEligible(data.startedAt); return;
                 }
                 globalRaidActive = !!data.active;
+                if (!globalRaidActive) pendingRaidDamage = 0;
                 globalRaidHp = globalRaidActive ? Math.max(0, (Number(data.currentHp) || MAX_BOSS_HP) - pendingRaidDamage) : 0;
                 renderRaidBossUI();
             } catch (_) {}
@@ -1907,13 +1921,18 @@
         window.executeAdminControlRaid = async function(actionType) {
             if (!isAdminAuthenticated) return;
             if (actionType === 'START') {
-                await gameDB.from('world_raid').upsert({ id: 'current_boss', active: true, currentHp: MAX_BOSS_HP, startedAt: Date.now() }, { onConflict: 'id' });
+                const { error } = await gameDB.from('world_raid').upsert({ id: 'current_boss', active: true, currentHp: MAX_BOSS_HP, startedAt: Date.now() }, { onConflict: 'id' });
+                if (error) return alert('레이드 개막 실패: ' + explainError(error));
                 globalRaidActive = true; globalRaidHp = MAX_BOSS_HP; pendingRaidDamage = 0; renderRaidBossUI();
                 alert("⚔️ 월드 보스 레이드를 개막했습니다!");
             } else {
-                await gameDB.from('world_raid').upsert({ id: 'current_boss', active: false, currentHp: -1 }, { onConflict: 'id' });
+                // 이벤트 전체 삭제: 행 자체를 지워서 모든 접속자의 레이드가 보상 없이 함께 사라지게 함
+                const { error } = await gameDB.from('world_raid').delete().eq('id', 'current_boss');
+                if (error) return alert('레이드 종료 실패: ' + explainError(error));
+                const { data: left } = await gameDB.from('world_raid').select('id').eq('id', 'current_boss').maybeSingle();
+                if (left) return alert('레이드가 삭제되지 않았습니다. (권한 문제일 수 있어요: setup.sql 을 다시 실행하세요)');
                 globalRaidActive = false; globalRaidHp = 0; pendingRaidDamage = 0; renderRaidBossUI();
-                alert("🛑 레이드를 중지했습니다.");
+                alert("🛑 레이드를 완전히 종료했습니다. 모든 접속자에게서 사라지며 보상은 지급되지 않습니다.");
             }
         };
 
@@ -1921,7 +1940,8 @@
             if (!isAdminAuthenticated) return;
             const hpVal = parseFloat(document.getElementById('admBossHpInput').value);
             if(isNaN(hpVal) || hpVal <= 0) return alert("올바른 체력을 입력해줘!");
-            await gameDB.from('world_raid').upsert({ id: 'current_boss', active: true, currentHp: hpVal, startedAt: Date.now() }, { onConflict: 'id' });
+            const { error } = await gameDB.from('world_raid').upsert({ id: 'current_boss', active: true, currentHp: hpVal, startedAt: Date.now() }, { onConflict: 'id' });
+            if (error) return alert('보스 체력 적용 실패: ' + explainError(error));
             globalRaidActive = true; globalRaidHp = hpVal; pendingRaidDamage = 0; renderRaidBossUI();
             alert(`🩸 보스 체력이 ${hpVal.toLocaleString()} HP로 적용되었습니다!`);
         };
