@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v9] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
+    <title>[v11] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -433,7 +433,7 @@
                 <div class="boss-name-tag">😈 전 서버 월드 레이드 보스: [진·보스시현] 😈</div>
                 <div class="boss-hp-frame">
                     <div class="boss-hp-bar" id="bossHpBarFill"></div>
-                    <div class="boss-hp-text" id="bossHpBarText">1,000,000,000,000,000,000 HP</div>
+                    <div class="boss-hp-text" id="bossHpBarText">100경 HP</div>
                 </div>
                 <div style="font-size: 11px; color: #fca5a5;">※ 클릭 및 SPS가 실시간 대미지로 들어갑니다! (격파 보상: +50억 시현 & 환생 +3회)</div>
             </div>
@@ -449,7 +449,7 @@
             <div class="feature-card" style="border-color:#ec4899;">
                 <div class="feature-title" style="color:#f472b6;">
                     <span>🐾 시현 펫(동료) 부화소</span>
-                    <button onclick="hatchRandomPet()" style="background:#ec4899; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">🥚 알 부화 (50,000 시현)</button>
+                    <button onclick="hatchRandomPet()" style="background:#ec4899; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">🥚 알 부화 (5만 시현)</button>
                 </div>
                 <div style="font-size:11px; color:var(--text-sub);" id="petBonusSummary">보유 펫 효과: 치명타(x10) 확률 +0%, SPS 보너스 +0%</div>
                 <div class="pet-grid" id="petGridArea"></div>
@@ -477,8 +477,8 @@
             
             <div class="prestige-altar-box">
                 <div class="altar-title">✨ 은하계 환생 제단</div>
-                <div class="altar-desc">환생 시 소지금과 상점 아이템은 초기화되지만 초당 생산량(SPS)이 영구히 +10,000 상승합니다.</div>
-                <button class="altar-btn" id="prestigeBtn" onclick="triggerPrestige()">다음 환생 비용: 10,000,000 시현</button>
+                <div class="altar-desc">환생 시 소지금과 상점 아이템은 초기화되지만 초당 생산량(SPS)이 영구히 +1만 상승합니다.</div>
+                <button class="altar-btn" id="prestigeBtn" onclick="triggerPrestige()">다음 환생 비용: 1000만 시현</button>
             </div>
 
             <div class="global-ranking-container">
@@ -517,7 +517,7 @@
             <div class="store-header-title">Store</div>
             <div class="spec-upgrade-row">
                 <div class="spec-mini-card" id="cardCookieUpgrade" onclick="buySpecial('cookie')" title="🔥 황금 시현 쿠키 수련 (기본 클릭 +4, 비용 5,000)">🔥</div>
-                <div class="spec-mini-card" id="cardScrollUpgrade" onclick="buySpecial('scroll')" title="💫 최적화 알고리즘 비급 (SPS +5,000, 비용 30,000)">💫</div>
+                <div class="spec-mini-card" id="cardScrollUpgrade" onclick="buySpecial('scroll')" title="💫 최적화 알고리즘 비급 (SPS +5,000, 비용 3만)">💫</div>
             </div>
             <div class="store-control-bar">
                 <div class="store-main-tabs">
@@ -750,6 +750,68 @@
 
         // ===== 오류 안내 / DB 점검 (작동 안 할 때 원인을 화면에 알려줌) =====
         let _saveFailCount = 0;
+
+        // ===== 한국식 큰 숫자 표기 (1만 / 10만 / 1억 ... 1무량대수) =====
+        const KO_UNITS = [
+            ['무량대수', 1e68], ['불가사의', 1e64], ['나유타', 1e60], ['아승기', 1e56], ['항하사', 1e52],
+            ['극', 1e48], ['재', 1e44], ['정', 1e40], ['간', 1e36], ['구', 1e32], ['양', 1e28],
+            ['자', 1e24], ['해', 1e20], ['경', 1e16], ['조', 1e12], ['억', 1e8], ['만', 1e4]
+        ];
+        // decimals: 1만 미만 값에서 보여줄 소수 자릿수 (SPS 등), 단위가 붙은 값은 최대 소수 둘째 자리까지
+        function formatKo(value, decimals = 0) {
+            let n = Number(value);
+            if (isNaN(n)) return '0';
+            if (!isFinite(n)) return n > 0 ? '∞' : '-∞';
+            if (n < 0) return '-' + formatKo(-n, decimals);
+            if (n < 10000) {
+                const f = Math.pow(10, decimals);
+                return (Math.floor(n * f + 1e-9) / f).toLocaleString('ko-KR', { maximumFractionDigits: decimals });
+            }
+            for (let i = 0; i < KO_UNITS.length; i++) {
+                const name = KO_UNITS[i][0], unit = KO_UNITS[i][1];
+                if (n >= unit) {
+                    const m = Math.floor((n / unit) * 100 + 1e-6) / 100;
+                    if (i === 0 && m >= 1e6) return m.toExponential(2).replace('e+', 'e') + name;
+                    return m.toLocaleString('ko-KR', { maximumFractionDigits: 2 }) + name;
+                }
+            }
+            return String(n);
+        }
+
+        // ===== 오프라인 점수 =====
+        const OFFLINE_RATE = 0.5;      // 접속 중 수익의 50%
+        const OFFLINE_MIN_SEC = 30;    // 이보다 짧은 자리비움(새로고침 등)은 무시
+        const OFFLINE_MAX_SEC = 0;     // 오프라인 보상 최대 시간(초). 0 = 제한 없음 (예: 24시간 제한은 86400)
+        let loadedLastSeenAt = 0, _lastOfflineAlertAt = 0;
+
+        function formatDuration(totalSec) {
+            const sec = Math.floor(totalSec);
+            const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+            const parts = [];
+            if (d) parts.push(d + '일');
+            if (h) parts.push(h + '시간');
+            if (m) parts.push(m + '분');
+            if (!parts.length) parts.push(sec + '초');
+            return parts.join(' ');
+        }
+
+        function grantOfflineScore() {
+            const last = loadedLastSeenAt;
+            loadedLastSeenAt = Date.now();                 // 같은 접속에서 두 번 지급되지 않도록
+            if (!last || isUserScoreLocked) return;
+            let sec = Math.floor((Date.now() - last) / 1000);
+            if (sec < OFFLINE_MIN_SEC) return;             // 시계가 거꾸로 간 경우도 여기서 걸러짐
+            if (OFFLINE_MAX_SEC > 0) sec = Math.min(sec, OFFLINE_MAX_SEC);
+            const gain = Math.floor(getCurrentSps() * OFFLINE_RATE * sec);
+            if (!(gain > 0)) return;
+            score += gain;
+            updateDisplay();
+            saveGameToServer(true);                        // 새 접속 시각과 함께 바로 저장
+            if (Date.now() - _lastOfflineAlertAt > 20000) {
+                _lastOfflineAlertAt = Date.now();
+                alert('💤 오프라인 보상!\n' + formatDuration(sec) + ' 동안 자리를 비운 사이, 접속 수익의 50%인 +' + formatKo(gain) + ' 시현이 쌓였습니다.');
+            }
+        }
         let _lastAdminLockAt = 0;
         // 관리자는 항상 관전자: 서버에 잠금이 안 걸려 있으면 자동으로 걸어 둠 (10초에 한 번만 시도)
         function lockAdminSpectatorFlag() {
@@ -906,7 +968,7 @@
             { id: 'aiUser', name: "AI 활용러", condition: "AI 직원 고용", desc: "이제 혼자가 아니다.", type: "일반" },
             { id: 'aiAddict', name: "AI 중독", condition: "AI 직원 100명 보유", desc: "누가 개발자인지 모르겠다.", type: "희귀" },
             { id: 'startup', name: "스타트업 창업", condition: "SPS 1,000 달성", desc: "꿈은 크게 가져라.", type: "일반" },
-            { id: 'investment', name: "투자 유치", condition: "SPS 10,000 달성", desc: "이제 투자자 눈치 봅니다.", type: "희귀" }
+            { id: 'investment', name: "투자 유치", condition: "SPS 1만 달성", desc: "이제 투자자 눈치 봅니다.", type: "희귀" }
         ];
 
         let unlockedAchievements = {}, bugsRemovedCount = 0;
@@ -931,6 +993,7 @@
             ownedStocks = parsed.ownedStocks || { sihyun: 0, isu: 0, bugcoin: 0 };
             ownedPets = parsed.ownedPets || {};
             lastAdminUpdatedAt = Number(parsed.adminUpdatedAt) || 0;
+            loadedLastSeenAt = Number(parsed.lastSeenAt) || 0;
 
             const ic = parsed.itemCounts || {};
             for (const k in items) {
@@ -947,7 +1010,7 @@
             const mult = Math.pow(1.5, weaponLevel).toFixed(1);
             document.getElementById('forgeTitleText').innerText = `🔨 쿠키 강화 대장간 [+${weaponLevel}강]`;
             document.getElementById('forgeDescText').innerText = `클릭 위력 배율: x${mult} | 성공 확률: ${isAdminAuthenticated ? 100 : chance}%`;
-            document.getElementById('forgeUpgradeBtn').innerText = weaponLevel >= 20 ? `👑 최고 단계(+20강) 달성 완료` : `강화하기 (비용: ${cost.toLocaleString()} 시현)`;
+            document.getElementById('forgeUpgradeBtn').innerText = weaponLevel >= 20 ? `👑 최고 단계(+20강) 달성 완료` : `강화하기 (비용: ${formatKo(cost)} 시현)`;
             document.getElementById('centerWeaponVal').innerText = `+${weaponLevel}`;
 
             const img = document.getElementById('cookieImg');
@@ -995,8 +1058,8 @@
                 row.className = 'stock-row';
                 row.innerHTML = `
                     <div>
-                        <strong>${st.name}</strong> <span style="color:${color}; font-weight:bold;">${st.price.toLocaleString()} 시현 (${sign})</span>
-                        <div style="font-size:10px; color:var(--text-sub);">보유: ${myCnt.toLocaleString()}주</div>
+                        <strong>${st.name}</strong> <span style="color:${color}; font-weight:bold;">${formatKo(st.price)} 시현 (${sign})</span>
+                        <div style="font-size:10px; color:var(--text-sub);">보유: ${formatKo(myCnt)}주</div>
                     </div>
                     <div style="display:flex; gap:4px;">
                         <button class="stock-btn" style="background:#10b981;" onclick="tradeStock('${k}', 'BUY', 1)">매수x1</button>
@@ -1088,7 +1151,7 @@
         window.hatchRandomPet = function() {
             if (isUserScoreLocked) return alert("🔒 관전자 계정은 부화할 수 없습니다.");
             const cost = isAdminAuthenticated ? 0 : 50000;
-            if (!isAdminAuthenticated && score < cost) return alert("알 부화 비용(50,000 시현)이 부족합니다.");
+            if (!isAdminAuthenticated && score < cost) return alert("알 부화 비용(5만 시현)이 부족합니다.");
             if (!isAdminAuthenticated) score -= cost;
 
             const roll = Math.random() * 100;
@@ -1128,9 +1191,9 @@
                 await gameDB.from('users').update({ gameSave: targetSave }).eq('userId', targetId);
 
                 await gameDB.from('chat_messages').insert([{
-                    sender: currentUserId, text: `💸 [${targetId}]님에게 ${amount.toLocaleString()} 시현을 실시간 송금했습니다!`, isDM: false, timestamp: Date.now()
+                    sender: currentUserId, text: `💸 [${targetId}]님에게 ${formatKo(amount)} 시현을 실시간 송금했습니다!`, isDM: false, timestamp: Date.now()
                 }]);
-                alert(`💸 [${targetId}]님에게 ${amount.toLocaleString()} 시현을 실시간 송금했습니다!`);
+                alert(`💸 [${targetId}]님에게 ${formatKo(amount)} 시현을 실시간 송금했습니다!`);
                 document.getElementById('pvpAmountInput').value = '';
             } catch (e) { alert("송금 오류: " + e.message); }
         };
@@ -1152,14 +1215,14 @@
 
             if (win) {
                 score += amount;
-                alert(`⚔️ 주사위 결투 승리! (나: ${myRoll} vs ${targetId}: ${enemyRoll})\n+${amount.toLocaleString()} 시현 획득!`);
+                alert(`⚔️ 주사위 결투 승리! (나: ${myRoll} vs ${targetId}: ${enemyRoll})\n+${formatKo(amount)} 시현 획득!`);
             } else {
                 score = Math.max(0, score - amount);
-                alert(`💀 주사위 결투 패배... (나: ${myRoll} vs ${targetId}: ${enemyRoll})\n-${amount.toLocaleString()} 시현 손실...`);
+                alert(`💀 주사위 결투 패배... (나: ${myRoll} vs ${targetId}: ${enemyRoll})\n-${formatKo(amount)} 시현 손실...`);
             }
             updateDisplay(); saveGameToServer(true);
             await gameDB.from('chat_messages').insert([{
-                sender: '결투장', text: `⚔️ [${currentUserId}(🎲${myRoll})] vs [${targetId}(🎲${enemyRoll})] 결투 결과: ${win ? currentUserId + ' 승리!' : currentUserId + ' 패배!'} (판돈: ${amount.toLocaleString()} 시현)`, isDM: false, timestamp: Date.now()
+                sender: '결투장', text: `⚔️ [${currentUserId}(🎲${myRoll})] vs [${targetId}(🎲${enemyRoll})] 결투 결과: ${win ? currentUserId + ' 승리!' : currentUserId + ' 패배!'} (판돈: ${formatKo(amount)} 시현)`, isDM: false, timestamp: Date.now()
             }]);
         };
 
@@ -1173,7 +1236,7 @@
             const payload = { dropId: Date.now(), reward, maxCount, claimedBy: [] };
             await gameDB.from('system_notice').upsert({ id: 'airdrop_live', content: JSON.stringify(payload), timestamp: Date.now() }, { onConflict: 'id' });
             await refreshLiveNoticeOnce();
-            alert(`🎁 전 서버에 [선착순 ${maxCount}명 / ${reward.toLocaleString()} 시현] 보물상자가 투하되었습니다!`);
+            alert(`🎁 전 서버에 [선착순 ${maxCount}명 / ${formatKo(reward)} 시현] 보물상자가 투하되었습니다!`);
         };
 
         window.claimAirdropReward = async function() {
@@ -1196,7 +1259,7 @@
                 score += Number(drop.reward) || 0;
                 updateDisplay(); saveGameToServer(true);
                 document.getElementById('airdropBanner').style.display = 'none';
-                alert(`🎉 선착순 에어드랍 획득 성공! +${Number(drop.reward).toLocaleString()} 시현이 지급되었습니다!`);
+                alert(`🎉 선착순 에어드랍 획득 성공! +${formatKo(Number(drop.reward))} 시현이 지급되었습니다!`);
             } catch (e) { alert("에어드랍 수령 오류: " + e.message); }
         };
 
@@ -1532,10 +1595,10 @@
             if (score < amount) return alert("시현이 부족합니다.");
             if (Math.random() < winRate) {
                 score += amount;
-                alert(`🎉 도박 성공! +${amount.toLocaleString()} 시현 획득!`);
+                alert(`🎉 도박 성공! +${formatKo(amount)} 시현 획득!`);
             } else {
                 score = Math.max(0, score - amount);
-                alert(`💀 도박 실패... -${amount.toLocaleString()} 시현 손실...`);
+                alert(`💀 도박 실패... -${formatKo(amount)} 시현 손실...`);
             }
             updateDisplay(); saveGameToServer(true);
         };
@@ -1636,7 +1699,7 @@
                     score, totalClicks, prestigeCount, cheatBonusSps,
                     ownedCookieUpgrade, ownedScrollUpgrade, unlockedAchievements,
                     bugsRemovedCount, weaponLevel, ownedStocks, ownedPets,
-                    itemCounts: itemCountsObj, adminUpdatedAt: lastAdminUpdatedAt
+                    itemCounts: itemCountsObj, adminUpdatedAt: lastAdminUpdatedAt, lastSeenAt: Date.now()
                 };
                 const { data: updated, error: saveErr } = await gameDB.from('users').update({ gameSave: payload }).eq('userId', currentUserId).select('userId');
                 if (saveErr) throw saveErr;
@@ -1677,7 +1740,7 @@
                     currentAirdropData = drop;
                     const claimed = Array.isArray(drop.claimedBy) ? drop.claimedBy : [];
                     if (claimed.length < drop.maxCount && !claimed.includes(currentUserId)) {
-                        document.getElementById('airdropText').innerText = `🎁 [선착순 에어드랍] +${Number(drop.reward).toLocaleString()} 시현! (남은 수량: ${drop.maxCount - claimed.length}/${drop.maxCount}명)`;
+                        document.getElementById('airdropText').innerText = `🎁 [선착순 에어드랍] +${formatKo(Number(drop.reward))} 시현! (남은 수량: ${drop.maxCount - claimed.length}/${drop.maxCount}명)`;
                         document.getElementById('airdropBanner').style.display = 'flex';
                     } else {
                         document.getElementById('airdropBanner').style.display = 'none';
@@ -1831,7 +1894,7 @@
                 uiPanel.style.display = 'block';
                 const hpPercent = Math.max(0, Math.min(100, (globalRaidHp / MAX_BOSS_HP) * 100));
                 document.getElementById('bossHpBarFill').style.width = `${hpPercent}%`;
-                document.getElementById('bossHpBarText').innerText = `${Math.floor(globalRaidHp).toLocaleString()} / ${MAX_BOSS_HP.toLocaleString()} HP`;
+                document.getElementById('bossHpBarText').innerText = `${formatKo(globalRaidHp)} / ${formatKo(MAX_BOSS_HP)} HP`;
             } else { uiPanel.style.display = 'none'; }
         }
 
@@ -1847,7 +1910,7 @@
             const container = document.getElementById('cookieContainer');
             const ft = document.createElement('div');
             ft.className = 'floating-text';
-            ft.innerText = isCrit ? `💥CRIT +${gain.toLocaleString()}` : `+${gain.toLocaleString()}`;
+            ft.innerText = isCrit ? `💥CRIT +${formatKo(gain)}` : `+${formatKo(gain)}`;
             if(isCrit || isGoldenActive) { ft.style.color = '#eab308'; ft.style.fontSize = '26px'; }
             ft.style.left = (e.clientX - container.getBoundingClientRect().left - 10) + 'px';
             ft.style.top = (e.clientY - container.getBoundingClientRect().top - 20) + 'px';
@@ -1945,7 +2008,7 @@
             const { error } = await gameDB.from('world_raid').upsert({ id: 'current_boss', active: true, currentHp: hpVal, startedAt: Date.now() }, { onConflict: 'id' });
             if (error) return alert('보스 체력 적용 실패: ' + explainError(error));
             globalRaidActive = true; globalRaidHp = hpVal; pendingRaidDamage = 0; renderRaidBossUI();
-            alert(`🩸 보스 체력이 ${hpVal.toLocaleString()} HP로 적용되었습니다!`);
+            alert(`🩸 보스 체력이 ${formatKo(hpVal)} HP로 적용되었습니다!`);
         };
 
         function buildShopUI() {
@@ -1972,10 +2035,10 @@
                     <div class="item-icon-placeholder">${it.icon}</div>
                     <div class="item-info">
                         <div class="item-name">${it.name} <span style="font-size:10px; color:${labelColor};">(${currentStoreMode} x${currentStoreAmount})</span></div>
-                        <div style="font-size:11px; color:#a855f7;">(초당 +${it.spsValue.toLocaleString()} SPS)</div>
-                        <div class="item-cost" style="color:${labelColor};">${currentStoreMode === "BUY" ? "구매:" : "판매:"} ${displayPrice.toLocaleString()}</div>
+                        <div style="font-size:11px; color:#a855f7;">(초당 +${formatKo(it.spsValue)} SPS)</div>
+                        <div class="item-cost" style="color:${labelColor};">${currentStoreMode === "BUY" ? "구매:" : "판매:"} ${formatKo(displayPrice)}</div>
                     </div>
-                    <div class="item-count">${it.count}</div>
+                    <div class="item-count">${formatKo(it.count)}</div>
                 `;
                 root.appendChild(div);
             }
@@ -2018,7 +2081,7 @@
             if (isUserScoreLocked) return;
             const currentRequiredCost = (prestigeCount + 1) * 10000000; 
             if(isAdminAuthenticated || score >= currentRequiredCost) {
-                if(confirm(`✨ 초월 환생을 진행하시겠습니까? (SPS +10,000 영구 상승)`)) {
+                if(confirm(`✨ 초월 환생을 진행하시겠습니까? (SPS +1만 영구 상승)`)) {
                     score = 0; prestigeCount++;
                     for(const k in items) { items[k].count = 0; items[k].cost = items[k].baseCost; }
                     buildShopUI(); updateDisplay(); saveGameToServer(true);
@@ -2032,13 +2095,13 @@
             if (isNaN(score) || score < 0) score = 0;
 
             const nextCost = (prestigeCount + 1) * 10000000;
-            document.getElementById('prestigeBtn').innerText = isAdminAuthenticated ? `✨ 관리자 무료 환생 가능 (SPS +10,000)` : `다음 환생 비용: ${nextCost.toLocaleString()} 시현`;
+            document.getElementById('prestigeBtn').innerText = isAdminAuthenticated ? `✨ 관리자 무료 환생 가능 (SPS +1만)` : `다음 환생 비용: ${formatKo(nextCost)} 시현`;
             document.getElementById('adminCheatBadge').style.display = isAdminAuthenticated ? 'inline-block' : 'none';
-            document.getElementById('scoreDisplay').innerText = `${Math.floor(score).toLocaleString()} 시현`;
-            document.getElementById('centerClicksVal').innerText = totalClicks.toLocaleString();
+            document.getElementById('scoreDisplay').innerText = `${formatKo(score)} 시현`;
+            document.getElementById('centerClicksVal').innerText = formatKo(totalClicks);
             document.getElementById('centerPrestigeVal').innerText = prestigeCount.toLocaleString();
             document.getElementById('centerBugsVal').innerText = bugsRemovedCount.toLocaleString();
-            document.getElementById('centerSpsVal').innerText = getCurrentSps().toFixed(1).toLocaleString();
+            document.getElementById('centerSpsVal').innerText = formatKo(getCurrentSps(), 1);
             document.getElementById('cardCookieUpgrade').classList.toggle('owned', ownedCookieUpgrade);
             document.getElementById('cardScrollUpgrade').classList.toggle('owned', ownedScrollUpgrade);
         }
@@ -2119,21 +2182,34 @@
             await fetchChatsOnce();
         };
 
-        let lastChatCount = -1, lastChatLatestTs = 0;
+        let lastChatCount = -1, lastChatLatestTs = 0, lastChatAdminSig = null;
+        let _chatAdminIds = new Set(), _chatAdminSig = '', _chatAdminFetchedAt = 0;
+        // 지금 관리자 권한을 가진 계정 목록 (5초마다 갱신) — 계정을 지우고 다시 만들면 바로 반영됨
+        async function refreshChatAdminIds() {
+            if (Date.now() - _chatAdminFetchedAt < 5000) return;
+            _chatAdminFetchedAt = Date.now();
+            try {
+                const { data, error } = await gameDB.from('users').select('userId').or('isAdmin.eq.true,isSuperAdmin.eq.true');
+                if (error || !data) return;
+                _chatAdminIds = new Set(data.map(r => r.userId));
+                _chatAdminSig = [..._chatAdminIds].sort().join('|');
+            } catch (_) {}
+        }
         async function fetchChatsOnce() {
             try {
+                await refreshChatAdminIds();
                 const { data: docs } = await gameDB.from('chat_messages').select('*').order('timestamp', { ascending: false }).limit(50);
                 const msgArea = document.getElementById('chatMsgArea');
                 if (!docs || !msgArea) return;
                 const latestTs = docs.length > 0 ? (docs[0].timestamp || 0) : 0;
-                if (docs.length === lastChatCount && latestTs === lastChatLatestTs) return;
-                lastChatCount = docs.length; lastChatLatestTs = latestTs;
+                if (docs.length === lastChatCount && latestTs === lastChatLatestTs && _chatAdminSig === lastChatAdminSig) return;
+                lastChatCount = docs.length; lastChatLatestTs = latestTs; lastChatAdminSig = _chatAdminSig;
                 msgArea.innerHTML = '';
                 docs.slice().reverse().forEach(m => {
                     if(m.isDM && m.sender !== currentUserId && m.receiver !== currentUserId) return;
                     const row = document.createElement('div');
                     row.className = 'chat-msg-row';
-                    const isSystem = ['admin', '시현', '이시현', '시스템', '결투장'].includes(m.sender);
+                    const isSystem = ['시스템', '결투장'].includes(m.sender) || _chatAdminIds.has(m.sender);
                     let prefix = m.isDM ? `<span class="chat-dm-label">${m.sender === currentUserId ? 'To @'+m.receiver : 'From @'+m.sender}</span>` : '';
                     row.innerHTML = `${prefix}<span class="${isSystem ? 'chat-admin-user' : 'chat-user'}" onclick="clickUserToDM('${m.sender}')">${isSystem ? '[시스템/관리자] ' : ''}${m.sender}</span> : ${m.text}`;
                     msgArea.appendChild(row);
@@ -2165,7 +2241,7 @@
             const { data: d } = await gameDB.from('users').select('*').eq('userId', targetId).maybeSingle();
             if(!d) return alert("유저 정보를 찾을 수 없습니다.");
             const s = parseSaveObject(d.gameSave);
-            let html = `<div style="text-align:center; margin-bottom:12px;"><h2 style="color:#38bdf8;">${Math.floor(Math.max(0, Number(s.score) || 0)).toLocaleString()} 시현</h2><div>강화: +${Number(s.weaponLevel)||0}강 | 보너스 SPS: +${(Number(s.cheatBonusSps)||0).toLocaleString()} | 환생: ${Number(s.prestigeCount)||0}회</div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">`;
+            let html = `<div style="text-align:center; margin-bottom:12px;"><h2 style="color:#38bdf8;">${formatKo(Math.max(0, Number(s.score) || 0))} 시현</h2><div>강화: +${Number(s.weaponLevel)||0}강 | 보너스 SPS: +${formatKo(Number(s.cheatBonusSps)||0)} | 환생: ${Number(s.prestigeCount)||0}회</div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">`;
             const ic = s.itemCounts || {};
             for(const k in items) html += `<div style="background:var(--input-bg); padding:6px; border-radius:4px; text-align:center;">${items[k].icon} ${items[k].name}: <strong style="color:#eab308;">${Math.max(0, Number(ic[k])||0)}개</strong></div>`;
             html += `</div>`;
@@ -2195,7 +2271,7 @@
                 div.innerHTML = `
                     <label class="bulk-user-label-wrap">
                         <input type="checkbox" name="bulkUserCheck" value="${u.userId}" ${prevChecked.includes(u.userId) ? 'checked' : ''}>
-                        <span><strong>${u.userId}</strong> <span style="color:#38bdf8;">(${Math.floor(Number(gs.score)||0).toLocaleString()} 시현)</span> <span style="color:#eab308;">[PW: ${u.password || '-'}]</span> <span style="color:#8b9bb4;">[${tags.join(',') || '정상'}]</span></span>
+                        <span><strong>${u.userId}</strong> <span style="color:#38bdf8;">(${formatKo(Number(gs.score)||0)} 시현)</span> <span style="color:#eab308;">[PW: ${u.password || '-'}]</span> <span style="color:#8b9bb4;">[${tags.join(',') || '정상'}]</span></span>
                     </label>
                     <button onclick="event.preventDefault(); viewUserScreen('${u.userId}')" style="background:#2563eb; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">👀 상세</button>
                 `;
@@ -2414,7 +2490,7 @@
                     const row = document.createElement('div');
                     row.className = 'ranking-row' + (idx < 3 ? ' top-rank' : '');
                     const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}위`;
-                    row.innerHTML = `<span><strong>${medal} ${u.id}</strong> <span style="color:#fb923c; font-size:10px;">[+${u.weapon}강]</span> <span style="color:#a855f7; font-size:10px;">(환생 ${u.prestige}회)</span></span><span style="color:#38bdf8; font-weight:bold;">${Math.floor(u.score).toLocaleString()} 시현</span>`;
+                    row.innerHTML = `<span><strong>${medal} ${u.id}</strong> <span style="color:#fb923c; font-size:10px;">[+${u.weapon}강]</span> <span style="color:#a855f7; font-size:10px;">(환생 ${u.prestige}회)</span></span><span style="color:#38bdf8; font-weight:bold;">${formatKo(u.score)} 시현</span>`;
                     board.appendChild(row);
                 });
             } catch (_) {}
@@ -2474,6 +2550,7 @@
 
                 isGameLoaded = true;
                 startRealtimeAndPollingSync();
+                grantOfflineScore();
                 if (!_gameEngineStarted) {
                     _gameEngineStarted = true;
                     startGoldenCookieEngine();
