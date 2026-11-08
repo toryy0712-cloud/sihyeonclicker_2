@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v8] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
+    <title>[v9] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -776,7 +776,7 @@
         async function enforceAdminSpectators() {
             try {
                 await gameDB.from('users').update({ isScoreLocked: true })
-                    .or('isAdmin.eq.true,isSuperAdmin.eq.true,userId.in.(admin,시현,이시현)');
+                    .or('isAdmin.eq.true,isSuperAdmin.eq.true');
             } catch (_) {}
         }
         function explainError(err) {
@@ -1312,6 +1312,7 @@
                 }, { onConflict: 'userId' });
 
                 sessionStorage.setItem('admin_access_granted', 'true');
+                sessionStorage.setItem('admin_access_user', 'admin');
                 document.getElementById('customAdminLoginModal').style.display = 'none';
                 alert('👑 최고관리자 인증 완료! 관리자 계정으로 접속합니다.');
 
@@ -1518,6 +1519,7 @@
             await saveGameToServer();
             isGameLoaded = false;
             sessionStorage.removeItem('admin_access_granted');
+            sessionStorage.removeItem('admin_access_user');
             sessionStorage.removeItem('admin_access_token');
             await gameDB.auth.signOut();
             location.reload();
@@ -2064,8 +2066,8 @@
                     isGameLoaded = false; alert("🔴 계정이 정지 처리되어 로그아웃됩니다.");
                     await gameDB.auth.signOut(); location.reload(); return;
                 }
-                const hasAdminSession = sessionStorage.getItem('admin_access_granted') === 'true';
-                isUserSuperAdmin = !!ud.isSuperAdmin || hasAdminSession || ['admin', '시현', '이시현'].includes(currentUserId);
+                const hasAdminSession = sessionStorage.getItem('admin_access_granted') === 'true' && sessionStorage.getItem('admin_access_user') === currentUserId;
+                isUserSuperAdmin = !!ud.isSuperAdmin || hasAdminSession;
                 isUserAdminPrivilege = !!ud.isAdmin || isUserSuperAdmin;
                 isUserScoreLocked = !!ud.isScoreLocked;
                 if (isUserAdminPrivilege) { if (!ud.isScoreLocked) lockAdminSpectatorFlag(); isUserScoreLocked = true; } // 관리자는 항상 관전자
@@ -2266,9 +2268,9 @@
             if (!lock) {
                 // 관리자는 항상 관전자: 해제 대상에서 제외
                 const { data: adminRows } = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin').in('userId', ids);
-                const fixedNames = ['admin', '시현', '이시현'];
-                const adminIds = (adminRows || []).filter(r => r.isAdmin || r.isSuperAdmin || fixedNames.includes(r.userId)).map(r => r.userId);
-                ids.filter(id => fixedNames.includes(id) && !adminIds.includes(id)).forEach(id => adminIds.push(id));
+                // 관리자 여부는 DB 의 isAdmin / isSuperAdmin 값만으로 판단 (아이디 이름은 무관)
+                const adminIds = (adminRows || []).filter(r => r.isAdmin || r.isSuperAdmin).map(r => r.userId);
+                // (이름 기준 예외 없음)
                 ids = ids.filter(id => !adminIds.includes(id));
                 if (adminIds.length) alert('👑 관리자(' + adminIds.join(', ') + ')는 항상 관전자라 해제할 수 없습니다.');
                 if (!ids.length) return;
@@ -2282,7 +2284,7 @@
         window.executeBulkToggleAdminRole = async function(roleType) {
             const ids = getCheckedUserIds(false);
             if(!ids.length) return alert("대상을 선택하세요.");
-            const up = roleType === 'super' ? { isAdmin: true, isSuperAdmin: true, isScoreLocked: true } : (roleType === 'normal' ? { isAdmin: true, isSuperAdmin: false, isScoreLocked: true } : { isAdmin: false, isSuperAdmin: false });
+            const up = roleType === 'super' ? { isAdmin: true, isSuperAdmin: true, isScoreLocked: true } : (roleType === 'normal' ? { isAdmin: true, isSuperAdmin: false, isScoreLocked: true } : { isAdmin: false, isSuperAdmin: false, isScoreLocked: false });
             await gameDB.from('users').update(up).in('userId', ids);
             alert("✅ 권한이 실시간 변경되었습니다."); await loadUserBulkList();
         };
@@ -2455,8 +2457,8 @@
                 const loginBtn = document.getElementById('mainLoginBtn');
                 if (loginBtn) { loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false; }
 
-                const hasAdminSession = sessionStorage.getItem('admin_access_granted') === 'true';
-                isUserSuperAdmin = !!(ud && ud.isSuperAdmin) || hasAdminSession || ['admin', '시현', '이시현'].includes(currentUserId);
+                const hasAdminSession = sessionStorage.getItem('admin_access_granted') === 'true' && sessionStorage.getItem('admin_access_user') === currentUserId;
+                isUserSuperAdmin = !!(ud && ud.isSuperAdmin) || hasAdminSession;
                 isUserAdminPrivilege = !!(ud && ud.isAdmin) || isUserSuperAdmin;
                 isUserScoreLocked = !!(ud && ud.isScoreLocked);
                 if (isUserAdminPrivilege) { if (!(ud && ud.isScoreLocked)) lockAdminSpectatorFlag(); isUserScoreLocked = true; } // 관리자는 항상 관전자
