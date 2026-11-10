@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v14] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
+    <title>[v15] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -852,6 +852,13 @@
             return String(n);
         }
 
+        // 점수가 숫자 한계(약 1.8e308)를 넘어 ∞ 가 되는 것을 막음 (∞ 는 저장될 때 null → 0 으로 사라지기 때문)
+        const SCORE_CAP = 1e308;
+        function clampScore() {
+            if (typeof score === 'number' && score <= SCORE_CAP && score >= 0) return;   // 정상 범위 (NaN 은 여기서 걸러짐)
+            score = isNaN(score) ? 0 : (score > SCORE_CAP ? SCORE_CAP : 0);
+        }
+
         // ===== 오프라인 점수 =====
         const OFFLINE_RATE = 0.5;      // 접속 중 수익의 50%
         const OFFLINE_MIN_SEC = 30;    // 이보다 짧은 자리비움(새로고침 등)은 무시
@@ -1032,6 +1039,7 @@
             if (jail) {
                 const min = parseFloat(document.getElementById('admJailMinutesInput').value);
                 const bail = parseFloat(document.getElementById('admJailBailInput').value);
+                if (!isNaN(bail) && !isFinite(bail)) return alert('보석금 값이 너무 큽니다. (올바른 숫자를 입력하세요)');
                 upd = { isJailed: true, jailExpiry: (!isNaN(min) && min > 0) ? Date.now() + Math.round(min * 60000) : 0, jailBail: (!isNaN(bail) && bail > 0) ? bail : 0 };
             }
             const { data: changed, error } = await gameDB.from('users').update(upd).in('userId', targets).select('userId');
@@ -1425,7 +1433,7 @@
 
         function applyServerSaveToClient(s) {
             const parsed = parseSaveObject(s);
-            score = Math.max(0, Number(parsed.score) || 0);
+            score = Math.max(0, Number(parsed.score) || 0); clampScore();
             totalClicks = Math.max(0, Number(parsed.totalClicks) || 0);
             prestigeCount = Math.max(0, Number(parsed.prestigeCount) || 0);
             cheatBonusSps = Math.max(0, Number(parsed.cheatBonusSps) || 0);
@@ -2132,7 +2140,7 @@
         window.saveGameToServer = async function(forceLocal = false) {
             if (!isGameLoaded || !currentUserId || currentUserId === 'undefined') return;
             if (isUserScoreLocked) { score = 0; cheatBonusSps = 0; }
-            score = Math.max(0, Number(score) || 0);
+            clampScore(); score = Math.max(0, Number(score) || 0);
 
             try {
                 if (!forceLocal) {
@@ -2577,7 +2585,7 @@
         function updateDisplay() {
             if (isUserScoreLocked) { score = 0; cheatBonusSps = 0; document.getElementById('scoreLockBadge').style.display = 'inline-block'; }
             else document.getElementById('scoreLockBadge').style.display = 'none';
-            if (isNaN(score) || score < 0) score = 0;
+            clampScore();
 
             const nextCost = (prestigeCount + 1) * 10000000;
             document.getElementById('prestigeBtn').innerText = isAdminAuthenticated ? `✨ 관리자 무료 환생 가능 (SPS +1만)` : `다음 환생 비용: ${formatKo(nextCost)} 시현`;
@@ -2595,7 +2603,7 @@
             if (!currentUserSession || !isGameLoaded) return;
             if (goldenCookieBuffTimer > 0) goldenCookieBuffTimer = Math.max(0, goldenCookieBuffTimer - 0.1);
             let sps = getCurrentSps() * (goldenCookieBuffTimer > 0 ? 77 : 1);
-            score += sps / 10;
+            score += sps / 10; clampScore();
             if (globalRaidActive && globalRaidHp > 0 && sps > 0) {
                 let autoDmg = (sps / 10) * 15000;
                 globalRaidHp = Math.max(0, globalRaidHp - autoDmg);
@@ -2775,7 +2783,7 @@
             if (!isUserSuperAdmin) return;
             const targetIds = getCheckedUserIds(true);
             const amount = parseFloat(document.getElementById('admAmountInput').value);
-            if(!targetIds.length || isNaN(amount) || amount < 0 || (operation !== 'set' && amount === 0)) return alert("대상 유저 선택 및 수치를 확인하세요.");
+            if(!targetIds.length || isNaN(amount) || !isFinite(amount) || amount < 0 || (operation !== 'set' && amount === 0)) return alert("대상 유저 선택 및 수치를 확인하세요.");
             const { data: list } = await gameDB.from('users').select('*').in('userId', targetIds);
             const nowTs = Date.now(), mult = operation === 'plus' ? 1 : -1;
             for(const u of list) {
