@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v12] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
+    <title>[v13] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -145,6 +145,16 @@
             cursor: pointer; z-index: 999; box-shadow: 0 0 20px #eab308; animation: pulseGlow 0.5s infinite alternate;
         }
         @keyframes pulseGlow { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
+        body.pepero-theme {
+            --pepero-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Ctext x='10' y='45' font-size='34' opacity='0.22'%3E🍫%3C/text%3E%3Ctext x='66' y='105' font-size='30' opacity='0.18'%3E🍪%3C/text%3E%3C/svg%3E");
+            background-color: #1c0f08 !important;
+            background-image: var(--pepero-pattern) !important;
+            background-size: 120px 120px;
+        }
+        body.pepero-theme #leftPanel {
+            background-image: var(--pepero-pattern), linear-gradient(rgba(124,45,18,.30), rgba(28,15,8,.45)) !important;
+            background-size: 120px 120px, auto;
+        }
         .pepero-entity {
             position: absolute; width: 55px; height: 55px; background-color: #7c2d12; border: 3px solid #fdba74;
             border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;
@@ -317,6 +327,18 @@
     <div id="airdropBanner">
         <span id="airdropText">🎁 [돌발 에어드랍] 보물상자가 투하되었습니다!</span>
         <button class="airdrop-claim-btn" onclick="claimAirdropReward()">⚡ 선착순 수령하기</button>
+    </div>
+
+    <div id="jailOverlay" style="display:none; position:fixed; inset:0; z-index:100001; background:rgba(8,8,12,.97); color:#fff; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;">
+        <div style="font-size:64px;">🚔⛓️</div>
+        <h2 style="margin:8px 0;">감옥 서버</h2>
+        <div id="jailInfoText" style="color:#fca5a5; margin-bottom:12px;">관리자에 의해 수감되었습니다.</div>
+        <div id="jailChatArea" style="width:min(420px,90vw); height:180px; overflow:auto; background:#111827; border:1px solid #374151; border-radius:8px; padding:8px; text-align:left; font-size:13px;"></div>
+        <div style="display:flex; gap:6px; width:min(420px,90vw); margin-top:8px;">
+            <input id="jailChatInput" type="text" placeholder="감옥 채팅 (수감자·관리자만 볼 수 있어요)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #374151; background:#0b1220; color:#fff;" onkeydown="if(event.key==='Enter') sendJailChat('jailChatInput')">
+            <button onclick="sendJailChat('jailChatInput')" style="padding:8px 14px; border:none; border-radius:6px; background:#f97316; color:#fff; font-weight:bold; cursor:pointer;">전송</button>
+        </div>
+        <button onclick="handleLogout()" style="margin-top:14px; padding:8px 16px; border:1px solid #4b5563; border-radius:6px; background:transparent; color:#9ca3af; cursor:pointer;">로그아웃</button>
     </div>
 
     <div id="peperoBanner" style="display:none; margin:6px auto; max-width:900px; background:linear-gradient(90deg,#7c2d12,#b45309); color:#fff; padding:8px 12px; border-radius:8px; align-items:center; justify-content:space-between; gap:8px; font-size:13px; flex-wrap:wrap;">
@@ -597,6 +619,7 @@
                     </div>
                     <div class="admin-action-row">
                         <button class="admin-action-btn" style="background-color: #f59e0b !important; color: black !important;" onclick="executeAdminBulkScoreReset()">🔄 선택유저 점수 0으로 즉시 초기화</button>
+                        <button class="admin-action-btn btn-purple" onclick="adjustUserStat('score', 'set')">🎯 점수를 입력값으로 지정</button>
                     </div>
                 </div>
 
@@ -672,6 +695,21 @@
                 <div class="form-group" style="display:flex; gap:6px;">
                     <input type="password" id="admTargetNewPwInput" placeholder="새 비밀번호 입력" style="flex:1; margin:0;">
                     <button class="admin-action-btn btn-ban" style="flex:0.4;" onclick="executeAdminUserPasswordOverride()">⚠️ 강제 덮어쓰기</button>
+                </div>
+
+                <div id="adminSectionJail">
+                    <div class="admin-section-title" style="color:#f97316; border-color:#f97316;">🚔 감옥 서버 (체크된 유저를 가둠)</div>
+                    <div class="form-group">
+                        <input type="number" id="admJailMinutesInput" placeholder="수감 시간(분) — 비워두면 석방할 때까지">
+                    </div>
+                    <div class="admin-action-row">
+                        <button class="admin-action-btn btn-ban" onclick="executeAdminJail(true)">🚔 감옥에 넣기</button>
+                        <button class="admin-action-btn btn-unban" onclick="executeAdminJail(false)">🔓 석방</button>
+                    </div>
+                    <div id="adminJailChatArea" style="height:110px; overflow:auto; background:#111827; border-radius:6px; padding:6px; font-size:12px; margin:6px 0;"></div>
+                    <div class="form-group">
+                        <input type="text" id="adminJailChatInput" placeholder="감옥에 메시지 보내기 (Enter)" onkeydown="if(event.key==='Enter') sendJailChat('adminJailChatInput')">
+                    </div>
                 </div>
 
                 <div id="adminSectionBan">
@@ -808,7 +846,7 @@
         function grantOfflineScore() {
             const last = loadedLastSeenAt;
             loadedLastSeenAt = Date.now();                 // 같은 접속에서 두 번 지급되지 않도록
-            if (!last || isUserScoreLocked) return;
+            if (!last || isUserScoreLocked || isUserJailed) return;
             let sec = Math.floor((Date.now() - last) / 1000);
             if (sec < OFFLINE_MIN_SEC) return;             // 시계가 거꾸로 간 경우도 여기서 걸러짐
             if (OFFLINE_MAX_SEC > 0) sec = Math.min(sec, OFFLINE_MAX_SEC);
@@ -838,6 +876,7 @@
             const b = document.getElementById('peperoBanner');
             if (!b) return;
             b.style.display = isPeperoEvent() ? 'flex' : 'none';
+            document.body.classList.toggle('pepero-theme', isPeperoEvent());
             const t = document.getElementById('peperoCountText');
             if (t) t.innerText = `(오늘 수집 ${peperoCountToday()}/${PEPERO_MAX_PER_DAY})`;
         }
@@ -856,7 +895,7 @@
                 + '• 지금은 친구·연인·가족·동료에게 고마움과 응원을 전하는 비공식 기념일이에요. (같은 날 농업인의 날, 가래떡데이도 있어요!)');
         };
         function collectPepero() {
-            if (isUserScoreLocked || !isPeperoEvent()) return;
+            if (isUserScoreLocked || isUserJailed || !isPeperoEvent()) return;
             const today = peperoTodayKey();
             if (peperoDay !== today) { peperoDay = today; peperoCount = 0; }
             if (peperoCount >= PEPERO_MAX_PER_DAY) return;
@@ -875,7 +914,7 @@
         function startPeperoEngine() {
             setInterval(() => {
                 updatePeperoBanner();
-                if (!isPeperoEvent() || !currentUserSession || !isGameLoaded || isUserScoreLocked) return;
+                if (!isPeperoEvent() || !currentUserSession || !isGameLoaded || isUserScoreLocked || isUserJailed) return;
                 if (document.getElementById('peperoEntityNode') || peperoCountToday() >= PEPERO_MAX_PER_DAY || Math.random() > 0.5) return;
                 const leftPanel = document.getElementById('leftPanel');
                 if (!leftPanel) return;
@@ -888,6 +927,78 @@
                 setTimeout(() => { if (pp.parentNode) pp.remove(); }, 6000);
             }, 15000);
         }
+        // ===== 🚔 감옥 서버 =====
+        const JAIL_ROOM = '__jail__';       // 감옥 채팅방 표식 (일반 대화방에는 보이지 않음)
+        let isUserJailed = false, jailExpiryTs = 0;
+        function jailEsc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        function updateJailOverlay() {
+            const ov = document.getElementById('jailOverlay');
+            if (!ov) return;
+            const was = ov.style.display === 'flex';
+            ov.style.display = isUserJailed ? 'flex' : 'none';
+            if (isUserJailed) {
+                const t = document.getElementById('jailInfoText');
+                if (t) t.innerText = jailExpiryTs > 0
+                    ? '관리자에 의해 수감되었습니다. 남은 시간: ' + formatDuration(Math.max(0, (jailExpiryTs - Date.now()) / 1000))
+                    : '관리자에 의해 수감되었습니다. 석방될 때까지 기다려 주세요.';
+                if (!was) refreshJailChat();
+            } else if (was) {
+                alert('🔓 석방되었습니다! 다시 게임을 즐기세요.');
+            }
+        }
+        // 서버의 내 계정 정보로 수감 상태 갱신 (관리자는 수감되지 않음, 형기가 끝나면 자동 석방)
+        function applyJailState(ud) {
+            const jailed = !!(ud && ud.isJailed) && !isUserAdminPrivilege;
+            const exp = Number(ud && ud.jailExpiry) || 0;
+            if (jailed && exp > 0 && Date.now() >= exp) {
+                gameDB.from('users').update({ isJailed: false, jailExpiry: 0 }).eq('userId', currentUserId).then(() => {}, () => {});
+                isUserJailed = false; jailExpiryTs = 0;
+            } else {
+                isUserJailed = jailed; jailExpiryTs = jailed ? exp : 0;
+            }
+            updateJailOverlay();
+        }
+        async function refreshJailChat() {
+            const areas = ['jailChatArea', 'adminJailChatArea'].map(id => document.getElementById(id)).filter(a => a && a.offsetParent !== null);
+            if (!areas.length) return;
+            try {
+                const { data } = await gameDB.from('chat_messages').select('*').eq('receiver', JAIL_ROOM).order('timestamp', { ascending: false }).limit(40);
+                if (!data) return;
+                const html = data.slice().reverse().map(m =>
+                    `<div><b style="color:${_chatAdminIds.has(m.sender) ? '#f87171' : '#93c5fd'};">${_chatAdminIds.has(m.sender) ? '👑 ' : ''}${jailEsc(m.sender)}</b>: ${jailEsc(m.text)}</div>`).join('');
+                areas.forEach(a => { a.innerHTML = html; a.scrollTop = a.scrollHeight; });
+            } catch (_) {}
+        }
+        window.sendJailChat = async function(inputId) {
+            const inp = document.getElementById(inputId);
+            const text = ((inp && inp.value) || '').trim();
+            if (!text || !currentUserId || !(isUserJailed || isUserAdminPrivilege)) return;
+            inp.value = '';
+            await gameDB.from('chat_messages').insert([{ sender: currentUserId, receiver: JAIL_ROOM, text: text.slice(0, 200), isDM: false, timestamp: Date.now() }]);
+            refreshJailChat();
+        };
+        window.executeAdminJail = async function(jail) {
+            if (!isUserSuperAdmin) return;
+            const ids = getCheckedUserIds(false);
+            if (!ids.length) return alert('대상을 선택하세요.');
+            const { data: rows } = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin').in('userId', ids);
+            const targets = (rows || []).filter(r => !(r.isAdmin || r.isSuperAdmin)).map(r => r.userId);
+            if (!targets.length) return alert('대상이 없습니다. (관리자는 수감할 수 없어요)');
+            let upd = { isJailed: false, jailExpiry: 0 };
+            if (jail) {
+                const min = parseFloat(document.getElementById('admJailMinutesInput').value);
+                upd = { isJailed: true, jailExpiry: (!isNaN(min) && min > 0) ? Date.now() + Math.round(min * 60000) : 0 };
+            }
+            const { data: changed, error } = await gameDB.from('users').update(upd).in('userId', targets).select('userId');
+            if (error) return alert('감옥 처리 실패: ' + explainError(error));
+            if (jail) {
+                gameDB.from('chat_messages').insert([{ sender: '시스템', text: `🚔 [${targets.join(', ')}]님이 감옥에 수감되었습니다!`, isDM: false, timestamp: Date.now() }]).then(() => {}, () => {});
+            }
+            alert((jail ? '🚔 수감' : '🔓 석방') + ` 완료: ${(changed || []).length}명`);
+            await loadUserBulkList();
+        };
+        setInterval(() => { if (currentUserSession && (isUserJailed || isUserAdminPrivilege)) refreshJailChat(); }, 2500);
+
         let _lastAdminLockAt = 0;
         // 관리자는 항상 관전자: 서버에 잠금이 안 걸려 있으면 자동으로 걸어 둠 (10초에 한 번만 시도)
         function lockAdminSpectatorFlag() {
@@ -1955,7 +2066,7 @@
         }
 
         function getCurrentSps() {
-            if (isUserScoreLocked) return 0;
+            if (isUserScoreLocked || isUserJailed) return 0;
             let sps = 0;
             for (const key in items) sps += items[key].count * items[key].spsValue;
             if(ownedScrollUpgrade) sps += 5000;
@@ -1978,7 +2089,7 @@
         }
 
         window.handleCookieClick = async function(e) {
-            if (!currentUserSession || isUserScoreLocked) return;
+            if (!currentUserSession || isUserScoreLocked || isUserJailed) return;
             let isGoldenActive = goldenCookieBuffTimer > 0;
             let baseGain = (ownedCookieUpgrade ? 5 : 1) * Math.pow(1.5, weaponLevel);
             const petBonus = getPetBonuses();
@@ -2214,6 +2325,7 @@
                 isUserScoreLocked = !!ud.isScoreLocked;
                 if (isUserAdminPrivilege) { if (!ud.isScoreLocked) lockAdminSpectatorFlag(); isUserScoreLocked = true; } // 관리자는 항상 관전자
 
+                applyJailState(ud);
                 document.getElementById('reopenAdminBtn').style.display = (isUserSuperAdmin || isUserAdminPrivilege) ? 'block' : 'none';
                 document.getElementById('adminChatClearBtn').style.display = (isUserSuperAdmin || isUserAdminPrivilege) ? 'inline-block' : 'none';
 
@@ -2277,7 +2389,7 @@
         async function fetchChatsOnce() {
             try {
                 await refreshChatAdminIds();
-                const { data: docs } = await gameDB.from('chat_messages').select('*').order('timestamp', { ascending: false }).limit(50);
+                const { data: docs } = await gameDB.from('chat_messages').select('*').or('receiver.is.null,receiver.neq.__jail__').order('timestamp', { ascending: false }).limit(50);
                 const msgArea = document.getElementById('chatMsgArea');
                 if (!docs || !msgArea) return;
                 const latestTs = docs.length > 0 ? (docs[0].timestamp || 0) : 0;
@@ -2285,6 +2397,7 @@
                 lastChatCount = docs.length; lastChatLatestTs = latestTs; lastChatAdminSig = _chatAdminSig;
                 msgArea.innerHTML = '';
                 docs.slice().reverse().forEach(m => {
+                    if(m.receiver === JAIL_ROOM) return;
                     if(m.isDM && m.sender !== currentUserId && m.receiver !== currentUserId) return;
                     const row = document.createElement('div');
                     row.className = 'chat-msg-row';
@@ -2306,7 +2419,7 @@
         function showAdminDashboard() {
             document.getElementById('adminModal').classList.add('active');
             const superStyle = isUserSuperAdmin ? 'block' : 'none';
-            ['adminSectionRanking','adminSectionCreateUser','adminSectionStats','adminSectionBan','adminSectionGambling','adminSectionItems'].forEach(id => {
+            ['adminSectionRanking','adminSectionCreateUser','adminSectionStats','adminSectionJail','adminSectionBan','adminSectionGambling','adminSectionItems'].forEach(id => {
                 document.getElementById(id).style.display = superStyle;
             });
             loadUserBulkList(); refreshAdminTicketsNow();
@@ -2344,6 +2457,7 @@
                 if(u.isSuperAdmin) tags.push("👑최고관리자");
                 else if(u.isAdmin) tags.push("🛡️일반관리자");
                 if(u.isScoreLocked) tags.push("🔒관전자");
+            if(u.isJailed) tags.push("🚔감옥");
                 const gs = parseSaveObject(u.gameSave);
                 const div = document.createElement('div');
                 div.className = 'bulk-user-item';
@@ -2366,12 +2480,12 @@
             if (!isUserSuperAdmin) return;
             const targetIds = getCheckedUserIds(true);
             const amount = parseFloat(document.getElementById('admAmountInput').value);
-            if(!targetIds.length || isNaN(amount) || amount <= 0) return alert("대상 유저 선택 및 수치를 확인하세요.");
+            if(!targetIds.length || isNaN(amount) || amount < 0 || (operation !== 'set' && amount === 0)) return alert("대상 유저 선택 및 수치를 확인하세요.");
             const { data: list } = await gameDB.from('users').select('*').in('userId', targetIds);
             const nowTs = Date.now(), mult = operation === 'plus' ? 1 : -1;
             for(const u of list) {
                 const gs = parseSaveObject(u.gameSave);
-                if (statType === 'score') gs.score = Math.max(0, (Number(gs.score)||0) + amount * mult);
+                if (statType === 'score') gs.score = operation === 'set' ? amount : Math.max(0, (Number(gs.score)||0) + amount * mult);
                 else gs.cheatBonusSps = Math.max(0, (Number(gs.cheatBonusSps)||0) + amount * mult);
                 gs.adminUpdatedAt = nowTs;
                 await gameDB.from('users').update({ gameSave: gs }).eq('userId', u.userId);
@@ -2624,6 +2738,7 @@
                     document.getElementById('adminChatClearBtn').style.display = 'inline-block';
                 }
 
+                applyJailState(ud);
                 if (ud && ud.gameSave) applyServerSaveToClient(ud.gameSave);
                 else { buildShopUI(); buildAchievementsUI(); renderPetsUI(); renderStockUI(); updateForgeUI(); updateDisplay(); }
 
@@ -2644,7 +2759,7 @@
             setTimeout(() => { if (session && session.user && !isGameLoaded) initializeAppWithSession(session); }, 0);
         });
 
-        window.addEventListener('load', () => setTimeout(() => runDbHealthCheck(), 800));
+        window.addEventListener('load', () => { updatePeperoBanner(); setTimeout(() => runDbHealthCheck(), 800); });
 
         // --- PWA 서비스 워커 등록 및 원클릭 앱 설치 제어 ---
         if ('serviceWorker' in navigator) {
