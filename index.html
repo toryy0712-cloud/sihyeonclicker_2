@@ -36,6 +36,23 @@
                 --border-color: #ccd0d5; --text-main: #1c1e21; --text-sub: #606770; --modal-bg: #ffffff;
             }
         }
+
+        /* ===== 감옥 채팅: 라이트/다크 모두에서 글씨가 보이도록 변수 사용 ===== */
+        #jailChatArea { --jc-text:#f3f4f6; --jc-admin:#f87171; --jc-user:#93c5fd; }
+        #adminJailChatArea { --jc-text:var(--text-main); --jc-admin:#b91c1c; --jc-user:#1d4ed8; background-color:var(--input-bg) !important; border:1px solid var(--border-color); color:var(--text-main); }
+        @media (prefers-color-scheme: dark) { #adminJailChatArea { --jc-admin:#f87171; --jc-user:#93c5fd; } }
+        .jc-line { margin:2px 0; word-break:break-all; }
+        .jc-name.admin { color:var(--jc-admin); font-weight:bold; }
+        .jc-name.user { color:var(--jc-user); font-weight:bold; }
+        .jc-text { color:var(--jc-text); }
+        .jc-empty { color:var(--text-sub); }
+        /* ===== 일반관리자 모드: 밴 / 감옥 / 비밀번호 덮어쓰기만 표시 ===== */
+        body.normal-admin-mode #adminModalBody > *:not(.adm-normal-ok) { display:none !important; }
+        body.normal-admin-mode .adm-super-only { display:none !important; }
+        /* 구글 인증 버튼 */
+        .google-auth-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; color:#3c4043; border:1px solid #dadce0; padding:13px; font-size:15px; font-weight:bold; border-radius:10px; cursor:pointer; }
+        .google-auth-btn:hover { background:#f7f8f8; }
+        .google-auth-btn:disabled { opacity:.6; cursor:wait; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
         body {
             background-color: var(--bg-main); color: var(--text-main); height: 100dvh;
@@ -333,7 +350,7 @@
         <div style="font-size:64px;">🚔⛓️</div>
         <h2 style="margin:8px 0;">감옥 서버</h2>
         <div id="jailInfoText" style="color:#fca5a5; margin-bottom:12px;">관리자에 의해 수감되었습니다.</div>
-        <div id="jailChatArea" style="width:min(420px,90vw); height:180px; overflow:auto; background:#111827; border:1px solid #374151; border-radius:8px; padding:8px; text-align:left; font-size:13px;"></div>
+        <div id="jailChatArea" style="width:min(420px,90vw); height:180px; overflow:auto; background:#111827; color:#f3f4f6; border:1px solid #374151; border-radius:8px; padding:8px; text-align:left; font-size:13px;"></div>
         <div style="display:flex; gap:6px; width:min(420px,90vw); margin-top:8px;">
             <input id="jailChatInput" type="text" placeholder="감옥 채팅 (수감자·관리자만 볼 수 있어요)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #374151; background:#0b1220; color:#fff;" onkeydown="if(event.key==='Enter') sendJailChat('jailChatInput')">
             <button onclick="sendJailChat('jailChatInput')" style="padding:8px 14px; border:none; border-radius:6px; background:#f97316; color:#fff; font-weight:bold; cursor:pointer;">전송</button>
@@ -420,12 +437,15 @@
     </div>
 
     <div id="customAdminLoginModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100000; justify-content: center; align-items: center;">
-        <div style="background-color: #fdfaf6; border-radius: 16px; padding: 25px 30px; width: 380px; position: relative; color: #333;">
+        <div style="background: #fdfaf2; padding: 30px; border-radius: 16px; width: min(380px, 90vw); position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.4);">
             <button onclick="document.getElementById('customAdminLoginModal').style.display='none'" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 20px; color: #666; cursor: pointer;">✕</button>
-            <h2 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 800; color: #4a3c31;">✨ 관리자 모드 (Season 2 Alpha)</h2>
-            <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b5d54;">설정해 둔 관리자 비밀번호를 입력하세요.</p>
-            <input type="password" id="customAdminPwdInput" placeholder="비밀번호" onkeydown="if(event.key==='Enter') submitCustomAdminLogin()" style="width: 100%; padding: 14px 15px; border: 2px solid #e0d5c1; border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 20px; background: #fff; color: #333;">
-            <button onclick="submitCustomAdminLogin()" style="width: 100%; background: linear-gradient(180deg, #5c9df5, #3b82f6); color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer;">로그인</button>
+            <h2 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 800; color: #4a3c31;">👑 최고관리자 인증</h2>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b5d54; line-height:1.5;">최고관리자는 <b>허용된 구글 계정</b>으로 인증해야만 들어올 수 있어요. 비밀번호 로그인은 사용할 수 없습니다.</p>
+            <button id="googleAdminBtn" class="google-auth-btn" onclick="startGoogleAdminLogin()">
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.100 0 24s.9 7.600 2.600 10.800l7.900-6.100z"/><path fill="#34A853" d="M24 48c6.3 0 11.600-2.100 15.500-5.700l-7.600-5.900c-2.100 1.400-4.800 2.300-7.900 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg>
+                Google 계정으로 인증
+            </button>
+            <p style="margin:14px 0 0 0; font-size:12px; color:#8a7b70; line-height:1.5;">허용 목록에 없는 구글 계정은 인증 즉시 거부되고 로그아웃됩니다.</p>
         </div>
     </div>
 
@@ -517,7 +537,7 @@
             <div class="prestige-altar-box">
                 <div class="altar-title">✨ 은하계 환생 제단</div>
                 <div class="altar-desc">환생 시 소지금과 상점 아이템은 초기화되지만 초당 생산량(SPS)이 영구히 +1만 상승합니다.</div>
-                <button class="altar-btn" id="prestigeBtn" onclick="triggerPrestige()">다음 환생 비용: 1000만 시현</button>
+                <button class="altar-btn" id="prestigeBtn" onclick="triggerPrestige()">다음 환생 비용: 3000만 시현</button>
             </div>
 
             <div class="global-ranking-container">
@@ -580,15 +600,15 @@
                 <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (Season 2 Alpha)</div>
                 <button onclick="exitAdminConsole(true)" style="background:none; border:none; color:white; font-size:16px; cursor:pointer; font-weight:bold;">✕</button>
             </div>
-            <div class="modal-body">
-                <div class="admin-section-title" style="color: #00ffcc; border-color: #00ffcc; margin-top:0; display:flex; justify-content:space-between; align-items:center;">
+            <div class="modal-body" id="adminModalBody">
+                <div class="admin-section-title adm-super-only" style="color: #00ffcc; border-color: #00ffcc; margin-top:0; display:flex; justify-content:space-between; align-items:center;">
                     <span>📬 실시간 가입요청 / 1:1 문의 피드 (원클릭 승인)</span>
                     <div style="display:flex; gap:5px;">
                         <button class="chat-clear-btn" style="display:inline-block; background-color:#2563eb;" onclick="refreshAdminTicketsNow()">🔄 새로고침</button>
                         <button class="chat-clear-btn" style="display:inline-block; background-color:#b91c1c;" onclick="executeAdminClearAllTickets()">🧹 전체삭제</button>
                     </div>
                 </div>
-                <div class="admin-ticket-feed" id="admTicketFeedArea"></div>
+                <div class="admin-ticket-feed adm-super-only" id="admTicketFeedArea"></div>
 
                 <div id="adminSectionCreateUser">
                     <div class="admin-section-title" style="color: #38bdf8; border-color: #38bdf8;">👤 신규 유저 직접 생성 (한글 아이디 / 짧은 비번 가능, 초기 0시현)</div>
@@ -601,7 +621,7 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px;">
+                <div class="form-group adm-normal-ok" style="margin-top: 12px;">
                     <label style="color:#00ffcc; font-weight:bold; display: flex; justify-content: space-between; align-items: center; margin-bottom:6px;">
                         <span>👥 제어 대상 유저 멀티 선택</span>
                         <div style="display:flex; gap:6px;">
@@ -668,7 +688,7 @@
                 <div id="adminSectionRanking">
                     <div class="admin-section-title" style="color: #facc15; border-color: #facc15;">💰 랭킹 보상 & 도박 승률 제어</div>
                     <div class="admin-action-row">
-                        <button class="admin-action-btn" style="background-color: #eab308 !important; color: black !important;" onclick="executeRankingRewards()">🏆 랭킹 1~3등 보상 즉시 지급 (30만/20만/10만)</button>
+                        <button class="admin-action-btn" style="background-color: #eab308 !important; color: black !important;" onclick="executeRankingRewards()">🏆 랭킹 1~3등 보상 즉시 지급 (5만/3만/1만)</button>
                     </div>
                 </div>
 
@@ -699,10 +719,12 @@
                     <button class="admin-action-btn btn-unban" onclick="executeAdminDetonateServer(false)">✅ 폭발 해제/정상화</button>
                 </div>
 
+                <div class="adm-normal-ok">
                 <div class="admin-section-title">🔐 선택 유저 비밀번호 강제 변경 (글자 수 제한 없음)</div>
                 <div class="form-group" style="display:flex; gap:6px;">
                     <input type="password" id="admTargetNewPwInput" placeholder="새 비밀번호 입력" style="flex:1; margin:0;">
                     <button class="admin-action-btn btn-ban" style="flex:0.4;" onclick="executeAdminUserPasswordOverride()">⚠️ 강제 덮어쓰기</button>
+                </div>
                 </div>
 
                 <div id="adminSectionSeason">
@@ -722,7 +744,7 @@
                     <div id="adminLogBox" style="max-height:220px; overflow:auto; background:#111827; border-radius:6px; padding:6px; font-size:11px; line-height:1.5;"></div>
                 </div>
 
-                <div id="adminSectionJail">
+                <div id="adminSectionJail" class="adm-normal-ok">
                     <div class="admin-section-title" style="color:#f97316; border-color:#f97316;">🚔 감옥 서버 (체크된 유저를 가둠)</div>
                     <div class="form-group">
                         <input type="number" id="admJailMinutesInput" placeholder="수감 시간(분) — 비워두면 석방할 때까지">
@@ -732,14 +754,14 @@
                         <button class="admin-action-btn btn-ban" onclick="executeAdminJail(true)">🚔 감옥에 넣기</button>
                         <button class="admin-action-btn btn-unban" onclick="executeAdminJail(false)">🔓 석방</button>
                     </div>
-                    <div id="adminJailChatArea" style="height:110px; overflow:auto; background:#111827; border-radius:6px; padding:6px; font-size:12px; margin:6px 0;"></div>
+                    <div id="adminJailChatArea" style="height:110px; overflow:auto; border-radius:6px; padding:6px; font-size:12px; margin:6px 0;"></div>
                     <div class="form-group">
                         <input type="text" id="adminJailChatInput" placeholder="감옥에 메시지 보내기 (Enter)" onkeydown="if(event.key==='Enter') sendJailChat('adminJailChatInput')">
                     </div>
                 </div>
 
-                <div id="adminSectionBan">
-                    <div class="admin-section-title" style="color: #e11d48; border-color: #e11d48;">🛑 원격 제재 및 관리자 권한 임명</div>
+                <div id="adminSectionBan" class="adm-normal-ok">
+                    <div class="admin-section-title" style="color: #e11d48; border-color: #e11d48;">🛑 밴 / 제재 (최고관리자 전용: 채팅차단·관전자·권한임명·계정삭제)</div>
                     <div class="form-group">
                         <input type="number" id="admBanSecondsInput" placeholder="기간제 정지 시간(초) 입력 (예: 60)">
                     </div>
@@ -748,19 +770,18 @@
                         <button class="admin-action-btn btn-minus" onclick="executeAdminBulkPermBan()">🔴 일괄 영구 밴</button>
                         <button class="admin-action-btn btn-unban" onclick="executeAdminBulkUnban()">🔓 모든 밴 해제</button>
                     </div>
-                    <div class="admin-action-row">
+                    <div class="admin-action-row adm-super-only">
                         <button class="admin-action-btn btn-purple" onclick="executeBulkToggleChatBan(true)">🚫 채팅 차단</button>
                         <button class="admin-action-btn btn-unban" onclick="executeBulkToggleChatBan(false)">✅ 채팅 허용</button>
                         <button class="admin-action-btn btn-minus" onclick="executeBulkToggleScoreLock(true)">🔒 관전자 지정</button>
                         <button class="admin-action-btn btn-unban" onclick="executeBulkToggleScoreLock(false)">🔓 관전자 해제</button>
                     </div>
-                    <div class="admin-action-row">
-                        <button class="admin-action-btn btn-purple" onclick="executeBulkToggleAdminRole('super')">👑 최고관리자 임명</button>
+                    <div class="admin-action-row adm-super-only">
                         <button class="admin-action-btn btn-plus" onclick="executeBulkToggleAdminRole('normal')">🛡️ 일반관리자 임명</button>
                         <button class="admin-action-btn btn-unban" onclick="executeBulkToggleAdminRole('revoke')">👤 권한 해제</button>
                     </div>
-                    <button class="admin-btn-danger" onclick="executeBulkDeleteUserAccounts()">❌ 선택한 유저 계정 영구 삭제</button>
-                    <button class="admin-btn-danger" style="background-color: #d97706;" onclick="executeCleanCorruptedAccounts()">🧹 'undefined' 오류 계정 일괄 청소</button>
+                    <button class="admin-btn-danger adm-super-only" onclick="executeBulkDeleteUserAccounts()">❌ 선택한 유저 계정 영구 삭제</button>
+                    <button class="admin-btn-danger adm-super-only" style="background-color: #d97706;" onclick="executeCleanCorruptedAccounts()">🧹 'undefined' 오류 계정 일괄 청소</button>
                 </div>
             </div>
             <div class="admin-footer-controls">
@@ -860,9 +881,9 @@
         }
 
         // ===== 오프라인 점수 =====
-        const OFFLINE_RATE = 0.5;      // 접속 중 수익의 50%
+        const OFFLINE_RATE = 0.1;      // 접속 중 수익의 10%
         const OFFLINE_MIN_SEC = 30;    // 이보다 짧은 자리비움(새로고침 등)은 무시
-        const OFFLINE_MAX_SEC = 0;     // 오프라인 보상 최대 시간(초). 0 = 제한 없음 (예: 24시간 제한은 86400)
+        const OFFLINE_MAX_SEC = 4 * 3600;  // 오프라인 보상 최대 4시간
         let loadedLastSeenAt = 0, _lastOfflineAlertAt = 0;
 
         function formatDuration(totalSec) {
@@ -890,13 +911,13 @@
             saveGameToServer(true);                        // 새 접속 시각과 함께 바로 저장
             if (Date.now() - _lastOfflineAlertAt > 20000) {
                 _lastOfflineAlertAt = Date.now();
-                alert('💤 오프라인 보상!\n' + formatDuration(sec) + ' 동안 자리를 비운 사이, 접속 수익의 50%인 +' + formatKo(gain) + ' 시현이 쌓였습니다.');
+                alert('💤 오프라인 보상!\n' + formatDuration(sec) + ' 동안 자리를 비운 사이, 접속 수익의 10%(최대 4시간)인 +' + formatKo(gain) + ' 시현이 쌓였습니다.');
             }
         }
         // ===== 🍫 빼빼로데이 이벤트 (11월 11일) =====
         const PEPERO_MAX_PER_DAY = 11;      // 하루 최대 수집 개수
         const PEPERO_SPS_MULT = 1.1111;     // 이벤트 날 SPS 보너스 (+11.11%)
-        const PEPERO_REWARD_SEC = 1111;     // 빼빼로 1개 = SPS 1,111초 분량
+        const PEPERO_REWARD_SEC = 60;       // 빼빼로 1개 = SPS 60초 분량
         let peperoDay = '', peperoCount = 0;
         function peperoTodayKey() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
         function isPeperoEvent() {
@@ -933,7 +954,7 @@
             if (peperoDay !== today) { peperoDay = today; peperoCount = 0; }
             if (peperoCount >= PEPERO_MAX_PER_DAY) return;
             peperoCount++;
-            const reward = Math.max(1111, Math.floor(getCurrentSps() * PEPERO_REWARD_SEC));
+            const reward = Math.max(300, Math.floor(getCurrentSps() * PEPERO_REWARD_SEC));
             score += reward;
             showPeperoToast(`🍫 빼빼로 ${peperoCount}/${PEPERO_MAX_PER_DAY}개째! +${formatKo(reward)} 시현`);
             if (peperoCount >= PEPERO_MAX_PER_DAY) {
@@ -1001,7 +1022,7 @@
                 const { data } = await gameDB.from('chat_messages').select('*').eq('receiver', JAIL_ROOM).order('timestamp', { ascending: false }).limit(40);
                 if (!data) return;
                 const html = data.slice().reverse().map(m =>
-                    `<div><b style="color:${_chatAdminIds.has(m.sender) ? '#f87171' : '#93c5fd'};">${_chatAdminIds.has(m.sender) ? '👑 ' : ''}${jailEsc(m.sender)}</b>: ${jailEsc(m.text)}</div>`).join('');
+                    `<div class="jc-line"><b class="jc-name ${_chatAdminIds.has(m.sender) ? 'admin' : 'user'}">${_chatAdminIds.has(m.sender) ? '👑 ' : ''}${jailEsc(m.sender)}</b><span class="jc-text">: ${jailEsc(m.text)}</span></div>`).join('');
                 areas.forEach(a => { a.innerHTML = html; a.scrollTop = a.scrollHeight; });
             } catch (_) {}
         }
@@ -1029,7 +1050,7 @@
             gameDB.from('chat_messages').insert([{ sender: '시스템', text: `💰 [${currentUserId}]님이 보석금 ${formatKo(bail)} 시현을 내고 석방되었습니다!`, isDM: false, timestamp: Date.now() }]).then(() => {}, () => {});
         };
         window.executeAdminJail = async function(jail) {
-            if (!isUserSuperAdmin) return;
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
             const ids = getCheckedUserIds(false);
             if (!ids.length) return alert('대상을 선택하세요.');
             const { data: rows } = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin').in('userId', ids);
@@ -1066,7 +1087,7 @@
             const today = dateKeyOf(new Date());
             if (dailyDay !== today) { dailyDay = today; dailyStats = { clicks: 0, bugs: 0, golden: 0, gambles: 0 }; dailyClaimed = {}; }
         }
-        function dailyRewardBase() { return Math.max(3000, Math.floor(getCurrentSps() * 900)); } // 미션 1개 = SPS 15분 분량
+        function dailyRewardBase() { return Math.max(500, Math.floor(getCurrentSps() * 120)); } // 미션 1개 = SPS 2분 분량
         function renderDailyPanel() {
             const box = document.getElementById('dailyPanelBody');
             if (!box) return;
@@ -1109,15 +1130,15 @@
             const yesterday = dateKeyOf(new Date(now.getTime() - 86400000));
             attendStreak = (attendDay === yesterday) ? attendStreak + 1 : 1;
             attendDay = today;
-            const reward = Math.max(5000, Math.floor(getCurrentSps() * 600 * Math.min(attendStreak, 7)));
+            const reward = Math.max(1000, Math.floor(getCurrentSps() * 180 * Math.min(attendStreak, 7)));
             score += reward;
             updateDisplay(); saveGameToServer(true);
             setTimeout(() => alert(`📅 출석 ${attendStreak}일 연속! 출석 보너스 +${formatKo(reward)} 시현` + (attendStreak < 7 ? '\n(7일 연속까지 보너스가 점점 커져요)' : '\n(최대 보너스 달성!)')), 400);
         }
 
         // ===== ⚔️ 레이드 기여도 =====
-        const RAID_REWARD_POOL = 5e10;   // 격파 보상 총량 (500억 시현) — 대미지 비율로 나눔
-        const RAID_MIN_REWARD = 1e8;     // 대미지를 준 참가자 최소 보상 (1억 시현)
+        const RAID_REWARD_POOL = 2e5;   // 격파 보상 총량 (20만 시현) — 대미지 비율로 나눔
+        const RAID_MIN_REWARD = 3000;   // 대미지를 준 참가자 최소 보상 (3천 시현)
         let myRaidKey = 0, myRaidDamage = 0;
         async function ensureMyRaidKey(key) {
             if (!key || key === myRaidKey || !currentUserId) return;
@@ -1374,9 +1395,21 @@
         let isGameLoaded = false, lastAdminUpdatedAt = 0;
         let currentStoreMode = "BUY", currentStoreAmount = 1;
         let goldenCookieBuffTimer = 0, globalRaidActive = false;
-        const MAX_BOSS_HP = 1000000000000000000;
+        const MAX_BOSS_HP = 20000000000;
         let globalRaidHp = MAX_BOSS_HP, pendingRaidDamage = 0, lastRewardedRaidStart = 0;
         let currentAirdropData = null;
+
+        // ===== 💰 경제 상수 (여기만 고치면 난이도 조절 가능) =====
+        const ITEM_COST_GROWTH = 1.18;        // 아이템 1개 살 때마다 가격 +18%
+        const SELL_REFUND_RATE = 0.4;         // 판매 환급률 40%
+        const COOKIE_UPGRADE_COST = 25000, COOKIE_UPGRADE_MULT = 3;     // 클릭 x3
+        const SCROLL_UPGRADE_COST = 150000, SCROLL_UPGRADE_SPS = 25;    // SPS +25
+        const WEAPON_BASE_COST = 5000, WEAPON_COST_GROWTH = 2.5, WEAPON_CLICK_MULT = 1.25;
+        const PRESTIGE_BASE_COST = 3e7, PRESTIGE_COST_GROWTH = 2, PRESTIGE_SPS_BONUS = 0.10; // 환생 1회당 SPS +10%
+        const GOLDEN_MULT = 7, GOLDEN_SECONDS = 10;
+        const PET_EGG_COST = 40000;
+        const STOCK_SELL_FEE = 0.03;          // 주식 매도 수수료 3%
+        function prestigeCost(n) { return Math.floor(PRESTIGE_BASE_COST * Math.pow(PRESTIGE_COST_GROWTH, n)); }
 
         const stocks = {
             sihyun: { name: "시현전자", price: 1000, basePrice: 1000, lastChange: 0 },
@@ -1394,15 +1427,15 @@
         ];
 
         const items = {
-            item1: { name: "Cursor", cost: 15, count: 0, spsValue: 0.1, baseCost: 15, icon: "👆" },
-            item2: { name: "Grandma", cost: 100, count: 0, spsValue: 1, baseCost: 100, icon: "👵" },
-            item3: { name: "Farm", cost: 1100, count: 0, spsValue: 8, baseCost: 1100, icon: "🌱" },
-            item4: { name: "Mine", cost: 12000, count: 0, spsValue: 47, baseCost: 12000, icon: "⛏️" },
-            item5: { name: "AI 직원", cost: 130000, count: 0, spsValue: 260, baseCost: 130000, icon: "🤖" },
-            item6: { name: "Temple", cost: 1000000, count: 0, spsValue: 1500, baseCost: 1000000, icon: "🏛️" },
-            item7: { name: "괴물시현", cost: 100000000, count: 0, spsValue: 150000, baseCost: 100000000, icon: "👹" },
-            item8: { name: "보스시현", cost: 1000000000, count: 0, spsValue: 2000000, baseCost: 1000000000, icon: "👑" },
-            item9: { name: "불가능보스", cost: 100000000000000000000000, count: 0, spsValue: 999999999999999, baseCost: 100000000000000000000000, icon: "☠️" }
+            item1: { name: "Cursor", cost: 60, count: 0, spsValue: 0.05, baseCost: 60, icon: "👆" },
+            item2: { name: "Grandma", cost: 600, count: 0, spsValue: 0.4, baseCost: 600, icon: "👵" },
+            item3: { name: "Farm", cost: 7000, count: 0, spsValue: 3, baseCost: 7000, icon: "🌱" },
+            item4: { name: "Mine", cost: 90000, count: 0, spsValue: 18, baseCost: 90000, icon: "⛏️" },
+            item5: { name: "AI 직원", cost: 1400000, count: 0, spsValue: 120, baseCost: 1400000, icon: "🤖" },
+            item6: { name: "Temple", cost: 20000000, count: 0, spsValue: 800, baseCost: 20000000, icon: "🏛️" },
+            item7: { name: "괴물시현", cost: 500000000, count: 0, spsValue: 5000, baseCost: 500000000, icon: "👹" },
+            item8: { name: "보스시현", cost: 20000000000, count: 0, spsValue: 40000, baseCost: 20000000000, icon: "👑" },
+            item9: { name: "불가능보스", cost: 1000000000000000, count: 0, spsValue: 500000, baseCost: 1000000000000000, icon: "☠️" }
         };
 
         const achievementData = [
@@ -1457,16 +1490,16 @@
             const ic = parsed.itemCounts || {};
             for (const k in items) {
                 items[k].count = Math.max(0, Number(ic[k]) || 0);
-                items[k].cost = Math.floor(items[k].baseCost * Math.pow(1.15, items[k].count));
+                items[k].cost = Math.floor(items[k].baseCost * Math.pow(ITEM_COST_GROWTH, items[k].count));
             }
             buildShopUI(); buildAchievementsUI(); renderPetsUI(); renderStockUI(); updateForgeUI(); updateDisplay();
         }
 
         // --- 1. 쿠키 강화 대장간 ---
         function updateForgeUI() {
-            const cost = isAdminAuthenticated ? 0 : Math.floor(500 * Math.pow(2.2, weaponLevel));
+            const cost = isAdminAuthenticated ? 0 : Math.floor(WEAPON_BASE_COST * Math.pow(WEAPON_COST_GROWTH, weaponLevel));
             const chance = Math.max(15, 100 - weaponLevel * 4);
-            const mult = Math.pow(1.5, weaponLevel).toFixed(1);
+            const mult = Math.pow(WEAPON_CLICK_MULT, weaponLevel).toFixed(2);
             document.getElementById('forgeTitleText').innerText = `🔨 쿠키 강화 대장간 [+${weaponLevel}강]`;
             document.getElementById('forgeDescText').innerText = `클릭 위력 배율: x${mult} | 성공 확률: ${isAdminAuthenticated ? 100 : chance}%`;
             document.getElementById('forgeUpgradeBtn').innerText = weaponLevel >= 20 ? `👑 최고 단계(+20강) 달성 완료` : `강화하기 (비용: ${formatKo(cost)} 시현)`;
@@ -1483,7 +1516,7 @@
         window.executeWeaponForge = async function() {
             if (isUserScoreLocked) return alert("🔒 관전자 계정은 강화할 수 없습니다.");
             if (weaponLevel >= 20) return alert("이미 최고 단계(+20강)입니다!");
-            const cost = isAdminAuthenticated ? 0 : Math.floor(500 * Math.pow(2.2, weaponLevel));
+            const cost = isAdminAuthenticated ? 0 : Math.floor(WEAPON_BASE_COST * Math.pow(WEAPON_COST_GROWTH, weaponLevel));
             if (!isAdminAuthenticated && score < cost) return alert("강화 비용이 부족합니다!");
             if (!isAdminAuthenticated) score -= cost;
 
@@ -1541,7 +1574,7 @@
             } else {
                 const myCnt = ownedStocks[key] || 0;
                 if (myCnt <= 0) return alert("보유 중인 주식이 없습니다.");
-                score += myCnt * st.price;
+                score += Math.floor(myCnt * st.price * (1 - STOCK_SELL_FEE));
                 ownedStocks[key] = 0;
             }
             renderStockUI(); updateDisplay(); saveGameToServer(true);
@@ -1551,7 +1584,7 @@
             if (!isGameLoaded) return;
             for (const k in stocks) {
                 const st = stocks[k];
-                const pct = Math.floor((Math.random() * 30) - 14);
+                const pct = Math.floor((Math.random() * 30) - 15);   // -15% ~ +14% (장기적으로 우하향, 투기성)
                 st.lastChange = pct;
                 st.price = Math.max(50, Math.floor(st.price * (1 + pct / 100)));
             }
@@ -1609,8 +1642,8 @@
 
         window.hatchRandomPet = function() {
             if (isUserScoreLocked) return alert("🔒 관전자 계정은 부화할 수 없습니다.");
-            const cost = isAdminAuthenticated ? 0 : 50000;
-            if (!isAdminAuthenticated && score < cost) return alert("알 부화 비용(5만 시현)이 부족합니다.");
+            const cost = isAdminAuthenticated ? 0 : PET_EGG_COST;
+            if (!isAdminAuthenticated && score < cost) return alert(`알 부화 비용(${formatKo(PET_EGG_COST)} 시현)이 부족합니다.`);
             if (!isAdminAuthenticated) score -= cost;
 
             const roll = Math.random() * 100;
@@ -1754,99 +1787,42 @@
         // --- 관리자 시크릿 로그인 (Failed to fetch 원천 차단: DB & Auth 직접 검증) ---
         window.showAdminLoginModal = function() {
             document.getElementById('customAdminLoginModal').style.display = 'flex';
-            document.getElementById('customAdminPwdInput').value = '';
-            document.getElementById('customAdminPwdInput').focus();
         };
 
-        window.submitCustomAdminLogin = async function() {
-            const pwd = document.getElementById('customAdminPwdInput').value.trim();
-            const btn = document.querySelector('#customAdminLoginModal button[onclick="submitCustomAdminLogin()"]');
-            if (!pwd) return alert('관리자 비밀번호를 입력하세요.');
-            if (btn) btn.disabled = true;
+        // ===== 최고관리자: 구글 계정 인증 =====
+        // ⚠️ 여기에 최고관리자로 허용할 구글 이메일을 적으세요 (소문자). 목록에 없으면 아무도 최고관리자가 될 수 없습니다.
+        const SUPER_ADMIN_GOOGLE_EMAILS = ['toryy0712.2@gmail.com'];
+        const SUPER_ADMIN_USER_ID = 'admin';
 
+        function isGoogleSuperAdminSession(session) {
             try {
-                const loginEmail = 'admin@clicker.com';
-                const authPw = pwToAuthPw(pwd);
+                const u = session && session.user; if (!u) return false;
+                const viaGoogle = (u.app_metadata && u.app_metadata.provider === 'google') || (u.identities || []).some(i => i.provider === 'google');
+                if (!viaGoogle) return false;
+                const email = String(u.email || '').trim().toLowerCase();
+                const verified = !!u.email_confirmed_at || !!(u.user_metadata && u.user_metadata.email_verified);
+                return verified && SUPER_ADMIN_GOOGLE_EMAILS.map(e => String(e).trim().toLowerCase()).includes(email);
+            } catch (_) { return false; }
+        }
+        function isGoogleSession(session) {
+            const u = session && session.user;
+            return !!u && ((u.app_metadata && u.app_metadata.provider === 'google') || (u.identities || []).some(i => i.provider === 'google'));
+        }
 
-                const { data: adminRow, error: dbReadErr } = await gameDB
-                    .from('users')
-                    .select('*')
-                    .eq('userId', 'admin')
-                    .maybeSingle();
-
-                if (dbReadErr) throw dbReadErr;
-
-                // 관리자 행이 없거나 비밀번호가 비어 있으면 최초 설정으로 처리
-                const bootstrapAdmin = !adminRow || !adminRow.password;
-                if (bootstrapAdmin && !confirm('관리자 계정이 아직 설정되지 않았습니다.\n입력한 비밀번호로 최초 관리자 계정을 만들까요?')) return;
-
-                if (adminRow && adminRow.password && String(adminRow.password) !== pwd) {
-                    throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-                }
-
-                let { data: signInData, error: signInErr } = await gameDB.auth.signInWithPassword({
-                    email: loginEmail,
-                    password: authPw
+        window.startGoogleAdminLogin = async function() {
+            const btn = document.getElementById('googleAdminBtn');
+            if (btn) btn.disabled = true;
+            try {
+                sessionStorage.setItem('admin_google_pending', '1');
+                const { error } = await gameDB.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: 'select_account' } }
                 });
-
-                if (signInErr) {
-                    if (!bootstrapAdmin && adminRow && String(adminRow.password) === pwd && await tryHealAuthPassword('admin', pwd)) {
-                        const healed = await gameDB.auth.signInWithPassword({ email: loginEmail, password: authPw });
-                        if (!healed.error) { signInData = healed.data; signInErr = null; }
-                    }
-                    const secondTry = await gameDB.auth.signInWithPassword({
-                        email: loginEmail,
-                        password: pwd
-                    });
-                    if (!secondTry.error) {
-                        signInData = secondTry.data;
-                        signInErr = null;
-                    }
-                }
-
-                if (signInErr) {
-                    if (bootstrapAdmin || (adminRow && String(adminRow.password) === pwd)) {
-                        const adminSignUp = await gameDB.auth.signUp({
-                            email: loginEmail,
-                            password: authPw,
-                            options: { data: { userId: 'admin' } }
-                        });
-                        const retry = await gameDB.auth.signInWithPassword({
-                            email: loginEmail,
-                            password: authPw
-                        });
-                        if (retry.error) {
-                            if (adminSignUp.error && !/already/i.test(adminSignUp.error.message || '')) throw adminSignUp.error;
-                            if (/invalid login/i.test(retry.error.message || '')) throw new Error('Supabase Auth에 이미 있는 admin@clicker.com 계정의 비밀번호가 입력한 값과 다릅니다.\nAuthentication → Users 에서 admin@clicker.com 을 삭제한 뒤 다시 로그인하세요.');
-                            throw retry.error;
-                        }
-                        signInData = retry.data;
-                    } else {
-                        throw new Error('관리자 비밀번호가 올바르지 않습니다.');
-                    }
-                }
-
-                await gameDB.from('users').upsert({
-                    userId: 'admin',
-                    password: pwd,
-                    isAdmin: true,
-                    isSuperAdmin: true
-                }, { onConflict: 'userId' });
-
-                sessionStorage.setItem('admin_access_granted', 'true');
-                sessionStorage.setItem('admin_access_user', 'admin');
-                document.getElementById('customAdminLoginModal').style.display = 'none';
-                alert('👑 최고관리자 인증 완료! 관리자 계정으로 접속합니다.');
-
-                const sessionToUse = signInData?.session || (await gameDB.auth.getSession()).data.session;
-                if (sessionToUse) {
-                    await initializeAppWithSession(sessionToUse, 'admin');
-                }
+                if (error) throw error;
             } catch (e) {
-                console.error('관리자 로그인 오류:', e);
-                alert('관리자 로그인 실패: ' + explainError(e));
-            } finally {
+                sessionStorage.removeItem('admin_google_pending');
                 if (btn) btn.disabled = false;
+                alert('구글 인증 시작 실패: ' + explainError(e) + '\n\n(Supabase → Authentication → Providers 에서 Google 이 켜져 있는지 확인하세요)');
             }
         };
 
@@ -1965,6 +1941,7 @@
             const pw = document.getElementById('loginPw').value.trim();
             const loginBtn = document.getElementById('mainLoginBtn');
             if(!id || !pw || id === 'undefined' || id === 'null') return alert("아이디와 비밀번호를 정확히 입력하세요.");
+            if (id === SUPER_ADMIN_USER_ID) return alert("🔐 최고관리자 계정은 일반 로그인을 사용할 수 없어요.\n오른쪽 아래 ☢️🛡️ 버튼에서 구글 인증으로 들어오세요.");
 
             const authEmail = idToAuthEmail(id);
             const authPassword = pwToAuthPw(pw);
@@ -2040,9 +2017,7 @@
         window.handleLogout = async function() {
             await saveGameToServer();
             isGameLoaded = false;
-            sessionStorage.removeItem('admin_access_granted');
-            sessionStorage.removeItem('admin_access_user');
-            sessionStorage.removeItem('admin_access_token');
+            sessionStorage.removeItem('admin_google_pending');
             await gameDB.auth.signOut();
             location.reload();
         };
@@ -2080,7 +2055,7 @@
             let list = users.filter(u => u.userId && u.userId !== 'undefined' && !u.isAdmin && !u.isSuperAdmin && !u.isScoreLocked)
                 .map(u => { const gs = parseSaveObject(u.gameSave); return { id: u.userId, score: Number(gs.score) || 0, rawSave: gs }; })
                 .sort((a, b) => b.score - a.score);
-            const rewards = [300000, 200000, 100000];
+            const rewards = [50000, 30000, 10000];
             const nowTs = Date.now();
             for (let i = 0; i < 3 && i < list.length; i++) {
                 const newSave = { ...list[i].rawSave, score: Math.max(0, list[i].score + rewards[i]), adminUpdatedAt: nowTs };
@@ -2331,8 +2306,8 @@
                 gc.onclick = function(event) {
                     event.stopPropagation();
                     if(isUserScoreLocked) return gc.remove();
-                    goldenCookieBuffTimer = 7; bumpDaily('golden');
-                    alert("⚡ [황금 쿠키 축복] 7초 동안 모든 효율 77배 폭증!");
+                    goldenCookieBuffTimer = GOLDEN_SECONDS; bumpDaily('golden');
+                    alert(`⚡ [황금 쿠키 축복] ${GOLDEN_SECONDS}초 동안 모든 효율 ${GOLDEN_MULT}배!`);
                     gc.remove();
                 };
                 leftPanel.appendChild(gc);
@@ -2344,10 +2319,10 @@
             if (isUserScoreLocked || isUserJailed) return 0;
             let sps = 0;
             for (const key in items) sps += items[key].count * items[key].spsValue;
-            if(ownedScrollUpgrade) sps += 5000;
-            sps += prestigeCount * 10000 + cheatBonusSps;
+            if(ownedScrollUpgrade) sps += SCROLL_UPGRADE_SPS;
             const petBonus = getPetBonuses();
-            sps = sps * (1 + petBonus.spsMult);
+            sps = sps * (1 + petBonus.spsMult) * (1 + prestigeCount * PRESTIGE_SPS_BONUS);
+            sps += cheatBonusSps;
             if (isPeperoEvent()) sps *= PEPERO_SPS_MULT;
             return Math.max(0, sps);
         }
@@ -2366,10 +2341,10 @@
         window.handleCookieClick = async function(e) {
             if (!currentUserSession || isUserScoreLocked || isUserJailed) return;
             let isGoldenActive = goldenCookieBuffTimer > 0;
-            let baseGain = (ownedCookieUpgrade ? 5 : 1) * Math.pow(1.5, weaponLevel);
+            let baseGain = (ownedCookieUpgrade ? COOKIE_UPGRADE_MULT : 1) * Math.pow(WEAPON_CLICK_MULT, weaponLevel);
             const petBonus = getPetBonuses();
             const isCrit = Math.random() < petBonus.critChance;
-            let gain = Math.floor(baseGain * (isGoldenActive ? 77 : 1) * (isCrit ? 10 : 1));
+            let gain = Math.floor(baseGain * (isGoldenActive ? GOLDEN_MULT : 1) * (isCrit ? 10 : 1));
 
             score += gain; totalClicks++; bumpDaily('clicks');
             const container = document.getElementById('cookieContainer');
@@ -2383,7 +2358,7 @@
             setTimeout(() => ft.remove(), 800);
 
             if (globalRaidActive && globalRaidHp > 0) {
-                let dmgAmt = gain * 500000;
+                let dmgAmt = gain * 20000;
                 globalRaidHp = Math.max(0, globalRaidHp - dmgAmt);
                 pendingRaidDamage += dmgAmt;
                 renderRaidBossUI();
@@ -2514,11 +2489,11 @@
                 if (currentStoreMode === "BUY") {
                     if (!isAdminAuthenticated) {
                         let tempCount = it.count;
-                        for (let i = 0; i < currentStoreAmount; i++) { displayPrice += Math.floor(it.baseCost * Math.pow(1.15, tempCount)); tempCount++; }
+                        for (let i = 0; i < currentStoreAmount; i++) { displayPrice += Math.floor(it.baseCost * Math.pow(ITEM_COST_GROWTH, tempCount)); tempCount++; }
                     }
                 } else {
                     let tempCount = it.count;
-                    for (let i = 0; i < currentStoreAmount; i++) { if (tempCount > 0) { displayPrice += Math.floor(Math.floor(it.baseCost * Math.pow(1.15, tempCount - 1)) * 0.5); tempCount--; } }
+                    for (let i = 0; i < currentStoreAmount; i++) { if (tempCount > 0) { displayPrice += Math.floor(Math.floor(it.baseCost * Math.pow(ITEM_COST_GROWTH, tempCount - 1)) * SELL_REFUND_RATE); tempCount--; } }
                 }
                 const div = document.createElement('div');
                 div.className = 'shop-item';
@@ -2545,14 +2520,14 @@
                 if (isAdminAuthenticated || score >= calculatedPrice) {
                     if (!isAdminAuthenticated) score -= calculatedPrice;
                     it.count += currentStoreAmount;
-                    it.cost = Math.floor(it.baseCost * Math.pow(1.15, it.count));
+                    it.cost = Math.floor(it.baseCost * Math.pow(ITEM_COST_GROWTH, it.count));
                     buildShopUI(); saveGameToServer();
                 } else alert("시현 점수가 부족합니다.");
             } else {
                 if (it.count >= currentStoreAmount) {
                     score += calculatedPrice;
                     it.count -= currentStoreAmount;
-                    it.cost = Math.floor(it.baseCost * Math.pow(1.15, it.count));
+                    it.cost = Math.floor(it.baseCost * Math.pow(ITEM_COST_GROWTH, it.count));
                     buildShopUI(); saveGameToServer();
                 } else alert("보유 개수가 부족합니다.");
             }
@@ -2561,20 +2536,20 @@
 
         window.buySpecial = function(type) {
             if (isUserScoreLocked) return;
-            if(type === 'cookie' && !ownedCookieUpgrade && (isAdminAuthenticated || score >= 5000)) {
-                if (!isAdminAuthenticated) score -= 5000;
-                ownedCookieUpgrade = true; alert("🔥 수련 완료! 기본 클릭 효율 증가!"); updateDisplay(); saveGameToServer();
-            } else if(type === 'scroll' && !ownedScrollUpgrade && (isAdminAuthenticated || score >= 30000)) {
-                if (!isAdminAuthenticated) score -= 30000;
-                ownedScrollUpgrade = true; alert("💫 최적화 알고리즘 터득! (SPS +5,000)"); updateDisplay(); saveGameToServer();
+            if(type === 'cookie' && !ownedCookieUpgrade && (isAdminAuthenticated || score >= COOKIE_UPGRADE_COST)) {
+                if (!isAdminAuthenticated) score -= COOKIE_UPGRADE_COST;
+                ownedCookieUpgrade = true; alert("🔥 수련 완료! 기본 클릭 효율 x" + COOKIE_UPGRADE_MULT + "!"); updateDisplay(); saveGameToServer();
+            } else if(type === 'scroll' && !ownedScrollUpgrade && (isAdminAuthenticated || score >= SCROLL_UPGRADE_COST)) {
+                if (!isAdminAuthenticated) score -= SCROLL_UPGRADE_COST;
+                ownedScrollUpgrade = true; alert("💫 최적화 알고리즘 터득! (SPS +" + SCROLL_UPGRADE_SPS + ")"); updateDisplay(); saveGameToServer();
             } else alert("이미 보유 중이거나 점수가 부족합니다.");
         };
 
         window.triggerPrestige = function() {
             if (isUserScoreLocked) return;
-            const currentRequiredCost = (prestigeCount + 1) * 10000000; 
+            const currentRequiredCost = prestigeCost(prestigeCount);
             if(isAdminAuthenticated || score >= currentRequiredCost) {
-                if(confirm(`✨ 초월 환생을 진행하시겠습니까? (SPS +1만 영구 상승)`)) {
+                if(confirm(`✨ 초월 환생을 진행하시겠습니까? (모든 SPS +${Math.round(PRESTIGE_SPS_BONUS * 100)}% 영구 상승, 점수·아이템 초기화)`)) {
                     score = 0; prestigeCount++;
                     for(const k in items) { items[k].count = 0; items[k].cost = items[k].baseCost; }
                     buildShopUI(); updateDisplay(); saveGameToServer(true);
@@ -2587,8 +2562,8 @@
             else document.getElementById('scoreLockBadge').style.display = 'none';
             clampScore();
 
-            const nextCost = (prestigeCount + 1) * 10000000;
-            document.getElementById('prestigeBtn').innerText = isAdminAuthenticated ? `✨ 관리자 무료 환생 가능 (SPS +1만)` : `다음 환생 비용: ${formatKo(nextCost)} 시현`;
+            const nextCost = prestigeCost(prestigeCount);
+            document.getElementById('prestigeBtn').innerText = isAdminAuthenticated ? `✨ 관리자 무료 환생 가능 (SPS +10%)` : `다음 환생 비용: ${formatKo(nextCost)} 시현`;
             document.getElementById('adminCheatBadge').style.display = isAdminAuthenticated ? 'inline-block' : 'none';
             document.getElementById('scoreDisplay').innerText = `${formatKo(score)} 시현`;
             document.getElementById('centerClicksVal').innerText = formatKo(totalClicks);
@@ -2602,10 +2577,10 @@
         setInterval(() => {
             if (!currentUserSession || !isGameLoaded) return;
             if (goldenCookieBuffTimer > 0) goldenCookieBuffTimer = Math.max(0, goldenCookieBuffTimer - 0.1);
-            let sps = getCurrentSps() * (goldenCookieBuffTimer > 0 ? 77 : 1);
+            let sps = getCurrentSps() * (goldenCookieBuffTimer > 0 ? GOLDEN_MULT : 1);
             score += sps / 10; clampScore();
             if (globalRaidActive && globalRaidHp > 0 && sps > 0) {
-                let autoDmg = (sps / 10) * 15000;
+                let autoDmg = (sps / 10) * 2000;
                 globalRaidHp = Math.max(0, globalRaidHp - autoDmg);
                 pendingRaidDamage += autoDmg;
                 renderRaidBossUI();
@@ -2622,15 +2597,14 @@
                     isGameLoaded = false; alert("🔴 계정이 정지 처리되어 로그아웃됩니다.");
                     await gameDB.auth.signOut(); location.reload(); return;
                 }
-                const hasAdminSession = sessionStorage.getItem('admin_access_granted') === 'true' && sessionStorage.getItem('admin_access_user') === currentUserId;
-                isUserSuperAdmin = !!ud.isSuperAdmin || hasAdminSession;
-                isUserAdminPrivilege = !!ud.isAdmin || isUserSuperAdmin;
+                isUserSuperAdmin = isGoogleSuperAdminSession(currentUserSession);
+                isUserAdminPrivilege = !!ud.isAdmin || !!ud.isSuperAdmin || isUserSuperAdmin;
                 isUserScoreLocked = !!ud.isScoreLocked;
                 if (isUserAdminPrivilege) { if (!ud.isScoreLocked) lockAdminSpectatorFlag(); isUserScoreLocked = true; } // 관리자는 항상 관전자
 
                 applyJailState(ud);
                 document.getElementById('reopenAdminBtn').style.display = (isUserSuperAdmin || isUserAdminPrivilege) ? 'block' : 'none';
-                document.getElementById('adminChatClearBtn').style.display = (isUserSuperAdmin || isUserAdminPrivilege) ? 'inline-block' : 'none';
+                document.getElementById('adminChatClearBtn').style.display = isUserSuperAdmin ? 'inline-block' : 'none';
 
                 const serverSave = parseSaveObject(ud.gameSave);
                 if ((Number(serverSave.adminUpdatedAt) || 0) > lastAdminUpdatedAt) {
@@ -2721,8 +2695,9 @@
 
         function showAdminDashboard() {
             document.getElementById('adminModal').classList.add('active');
+            document.body.classList.toggle('normal-admin-mode', !isUserSuperAdmin);
             const superStyle = isUserSuperAdmin ? 'block' : 'none';
-            ['adminSectionRanking','adminSectionCreateUser','adminSectionStats','adminSectionSeason','adminSectionLogs','adminSectionJail','adminSectionBan','adminSectionGambling','adminSectionItems'].forEach(id => {
+            ['adminSectionRanking','adminSectionCreateUser','adminSectionStats','adminSectionSeason','adminSectionLogs','adminSectionGambling','adminSectionItems'].forEach(id => {
                 document.getElementById(id).style.display = superStyle;
             });
             loadUserBulkList(); refreshAdminTicketsNow(); loadAdminLogs(); renderSeasonInfo();
@@ -2835,6 +2810,7 @@
         };
 
         window.executeBulkToggleScoreLock = async function(lock) {
+            if (!isUserSuperAdmin) return alert('최고관리자 전용 권한입니다.');
             let ids = getCheckedUserIds(false);
             if(!ids.length) return alert("대상을 선택하세요.");
             if (!lock) {
@@ -2854,6 +2830,8 @@
         };
 
         window.executeBulkToggleAdminRole = async function(roleType) {
+            if (!isUserSuperAdmin) return alert('최고관리자 전용 권한입니다.');
+            if (roleType === 'super') return alert('최고관리자는 구글 인증(허용 이메일 목록)으로만 지정됩니다.');
             const ids = getCheckedUserIds(false);
             if(!ids.length) return alert("대상을 선택하세요.");
             const up = roleType === 'super' ? { isAdmin: true, isSuperAdmin: true, isScoreLocked: true } : (roleType === 'normal' ? { isAdmin: true, isSuperAdmin: false, isScoreLocked: true } : { isAdmin: false, isSuperAdmin: false, isScoreLocked: false });
@@ -2861,29 +2839,45 @@
             alert("✅ 권한이 실시간 변경되었습니다."); await loadUserBulkList();
         };
 
+        // 일반관리자는 다른 관리자를 건드릴 수 없음 (최고관리자만 관리자를 제재 가능)
+        async function filterTargetsForRole(ids) {
+            if (isUserSuperAdmin) return ids;
+            const { data: rows } = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin').in('userId', ids);
+            const blocked = (rows || []).filter(r => r.isAdmin || r.isSuperAdmin).map(r => r.userId);
+            if (blocked.length) alert('🛡️ 일반관리자는 관리자 계정(' + blocked.join(', ') + ')을 제재할 수 없어요.');
+            return ids.filter(id => !blocked.includes(id));
+        }
         window.executeAdminBulkTimeBan = async function() {
-            const ids = getCheckedUserIds(false), sec = parseInt(document.getElementById('admBanSecondsInput').value);
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            let ids = getCheckedUserIds(false); const sec = parseInt(document.getElementById('admBanSecondsInput').value);
             if(!ids.length || isNaN(sec) || sec <= 0) return alert("대상 및 시간을 확인하세요.");
+            ids = await filterTargetsForRole(ids); if (!ids.length) return;
             await gameDB.from('users').update({ banExpiry: Date.now() + sec * 1000, isPermanentBan: false }).in('userId', ids);
             alert(`⚡ ${ids.length}명 ${sec}초 정지 완료.`); await loadUserBulkList();
         };
 
         window.executeAdminBulkPermBan = async function() {
-            const ids = getCheckedUserIds(false);
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            let ids = getCheckedUserIds(false);
             if(!ids.length) return alert("대상을 선택하세요.");
+            ids = await filterTargetsForRole(ids); if (!ids.length) return;
             await gameDB.from('users').update({ isPermanentBan: true, banExpiry: 0 }).in('userId', ids);
             alert(`🔴 ${ids.length}명 영구 정지 완료.`); await loadUserBulkList();
         };
 
         window.executeAdminBulkUnban = async function() {
-            const ids = getCheckedUserIds(true);
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            let ids = getCheckedUserIds(true);
             if(!ids.length) return alert("대상을 선택하세요.");
-            await gameDB.from('users').update({ isPermanentBan: false, banExpiry: 0, isChatBanned: false, isDMBanned: false, isScoreLocked: false }).in('userId', ids);
+            // 일반관리자는 '밴'만 해제 (채팅차단·관전자 상태는 최고관리자만 변경)
+            const upd = isUserSuperAdmin ? { isPermanentBan: false, banExpiry: 0, isChatBanned: false, isDMBanned: false, isScoreLocked: false } : { isPermanentBan: false, banExpiry: 0 };
+            await gameDB.from('users').update(upd).in('userId', ids);
             await enforceAdminSpectators();
             alert(`🔓 모든 밴 해제 완료.`); await loadUserBulkList();
         };
 
         window.executeBulkToggleChatBan = async function(ban) {
+            if (!isUserSuperAdmin) return alert('최고관리자 전용 권한입니다.');
             const ids = getCheckedUserIds(false);
             if(!ids.length) return alert("대상을 선택하세요.");
             await gameDB.from('users').update({ isChatBanned: ban }).in('userId', ids);
@@ -2891,6 +2885,7 @@
         };
 
         window.executeBulkDeleteUserAccounts = async function() {
+            if (!isUserSuperAdmin) return alert('최고관리자 전용 권한입니다.');
             const ids = getCheckedUserIds(false);
             if (!ids.length || !confirm(`🔥 ${ids.length}명의 계정을 영구 삭제하시겠습니까?`)) return;
             await gameDB.from('users').delete().in('userId', ids);
@@ -2898,8 +2893,10 @@
         };
 
         window.executeAdminUserPasswordOverride = async function() {
-            const ids = getCheckedUserIds(true), newPw = document.getElementById('admTargetNewPwInput').value.trim();
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return;
+            let ids = getCheckedUserIds(true); const newPw = document.getElementById('admTargetNewPwInput').value.trim();
             if(!ids.length || !newPw) return alert("대상 유저와 새 비밀번호를 입력하세요.");
+            ids = await filterTargetsForRole(ids); if (!ids.length) return;
             for(const id of ids) {
                 const { data: snap } = await gameDB.from('users').select('password').eq('userId', id).maybeSingle();
                 await gameDB.from('users').update({ password: newPw }).eq('userId', id);
@@ -2951,6 +2948,7 @@
 
         window.exitAdminConsole = function(keepAuthAlive) {
             isAdminAuthenticated = !!keepAuthAlive;
+            document.body.classList.remove('normal-admin-mode');
             document.getElementById('adminModal').classList.remove('active');
             buildShopUI(); updateForgeUI(); updateDisplay();
         };
@@ -3019,6 +3017,17 @@
             _initializingSession = true;
             try {
                 currentUserSession = session;
+                if (isGoogleSession(session)) {
+                    if (!isGoogleSuperAdminSession(session)) {
+                        sessionStorage.removeItem('admin_google_pending');
+                        alert('🚫 허용되지 않은 구글 계정입니다. 최고관리자 인증이 거부되었습니다.');
+                        await gameDB.auth.signOut(); location.reload(); return;
+                    }
+                    explicitId = SUPER_ADMIN_USER_ID;
+                    // 최고관리자 행 보장 (비밀번호 없음: 비밀번호 로그인 불가)
+                    await gameDB.from('users').upsert({ userId: SUPER_ADMIN_USER_ID, isAdmin: true, isSuperAdmin: true, isScoreLocked: true }, { onConflict: 'userId' });
+                    sessionStorage.removeItem('admin_google_pending');
+                }
                 const derivedId = explicitId || authEmailToId(session.user.email, session.user.user_metadata);
                 const { data: ud } = await gameDB.from('users').select('*').eq('userId', derivedId).maybeSingle();
 
@@ -3029,16 +3038,15 @@
                 const loginBtn = document.getElementById('mainLoginBtn');
                 if (loginBtn) { loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false; }
 
-                const hasAdminSession = sessionStorage.getItem('admin_access_granted') === 'true' && sessionStorage.getItem('admin_access_user') === currentUserId;
-                isUserSuperAdmin = !!(ud && ud.isSuperAdmin) || hasAdminSession;
-                isUserAdminPrivilege = !!(ud && ud.isAdmin) || isUserSuperAdmin;
+                isUserSuperAdmin = isGoogleSuperAdminSession(session);
+                isUserAdminPrivilege = !!(ud && (ud.isAdmin || ud.isSuperAdmin)) || isUserSuperAdmin;
                 isUserScoreLocked = !!(ud && ud.isScoreLocked);
                 if (isUserAdminPrivilege) { if (!(ud && ud.isScoreLocked)) lockAdminSpectatorFlag(); isUserScoreLocked = true; } // 관리자는 항상 관전자
 
                 if (isUserSuperAdmin || isUserAdminPrivilege) {
                     isAdminAuthenticated = true;
                     document.getElementById('reopenAdminBtn').style.display = 'block';
-                    document.getElementById('adminChatClearBtn').style.display = 'inline-block';
+                    document.getElementById('adminChatClearBtn').style.display = isUserSuperAdmin ? 'inline-block' : 'none';
                 }
 
                 applyJailState(ud);
@@ -3062,6 +3070,20 @@
         gameDB.auth.onAuthStateChange((event, session) => {
             setTimeout(() => { if (session && session.user && !isGameLoaded) initializeAppWithSession(session); }, 0);
         });
+
+
+        // ===== 일반관리자 차단 가드: 최고관리자 전용 기능을 한 번에 보호 =====
+        (function installSuperOnlyGuards() {
+            const names = ['executeAdminTriggerAirdrop','executeAdminStockControl','executeRankingRewards','setGamblingRate','executeAdminSetBossHp','executeAdminControlRaid','executeAdminPublishNotice','executeAdminDetonateServer','executeAdminEndSeason','adminCreateUser','adjustUserStat','adjustUserItem','executeAdminBulkScoreReset','executeAdminClearAllChatLogs','executeAdminClearAllTickets','approveJoinTicket','deleteSingleTicket','refreshAdminTicketsNow'];
+            names.forEach(n => {
+                const orig = window[n];
+                if (typeof orig !== 'function') return;
+                window[n] = function(...a) {
+                    if (!isUserSuperAdmin) { if (n !== 'refreshAdminTicketsNow') alert('🚫 최고관리자 전용 기능입니다.'); return; }
+                    return orig.apply(this, a);
+                };
+            });
+        })();
 
         window.addEventListener('load', () => { updatePeperoBanner(); applyAdminLogWrappers(); setTimeout(() => runDbHealthCheck(), 800); });
 
