@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v15] 시현클리커 시즌2 알파 (Sihyun Clicker Season 2 Alpha)</title>
+    <title>[v1] 시현클리커 시즌2 (Sihyun Clicker Season 2)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -326,7 +326,7 @@
     <div id="topNavBar">
         <div class="nav-left">
             현재 로그인 계정: <span id="navUserId" class="user-highlight">-</span>
-            <span style="margin-left: 6px; color: #38bdf8; font-size: 11px; font-weight: bold;">[Season 2 Alpha]</span>
+            <span style="margin-left: 6px; color: #38bdf8; font-size: 11px; font-weight: bold;">[Season 2 · v1]</span>
             <span id="adminCheatBadge" style="display:none; margin-left: 8px; background-color: #ff0055; color: white; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">👑 관리자 치트 ON</span>
             <span id="scoreLockBadge" style="display:none; margin-left: 8px; background-color: #6b7280; color: white; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">🔒 관전자 모드</span>
         </div>
@@ -338,7 +338,7 @@
 
     <div id="globalNoticeTickerBar">
         <span class="notice-badge">Notice</span>
-        <div id="liveNoticeContentText">시현클리커 시즌2 알파 실시간 서버 연동 중...</div>
+        <div id="liveNoticeContentText">시현클리커 시즌2 정식버전 실시간 서버 연동 중...</div>
     </div>
 
     <div id="airdropBanner">
@@ -374,11 +374,11 @@
     
     <div id="chatbotContainer">
         <div class="chatbot-header">
-            <span>🤖 시현클리커 시즌2 알파 가이드</span>
+            <span>🤖 시현클리커 시즌2 정식버전 가이드</span>
             <button onclick="toggleChatbot()" style="background:none;border:none;color:black;font-size:16px;cursor:pointer;font-weight:bold;">✕</button>
         </div>
         <div id="chatbotMessages">
-            <div class="chatbot-msg bot">안녕하세요! 시현클리커 시즌2 알파에 오신 것을 환영합니다. 주식, 강화, 펫, 송금/결투, 레이드, 환생 등 무엇이든 물어보세요!</div>
+            <div class="chatbot-msg bot">안녕하세요! 시현클리커 시즌2 정식버전에 오신 것을 환영합니다. 주식, 강화, 펫, 송금/결투, 레이드, 환생 등 무엇이든 물어보세요!</div>
         </div>
         <div class="chatbot-input-area">
             <input type="text" id="chatbotInput" placeholder="궁금한 점을 입력하세요..." onkeydown="if(event.key==='Enter') sendChatbotMessage()">
@@ -416,6 +416,8 @@
                     <input type="password" id="loginPw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter') handleLogin()">
                 </div>
                 <button class="auth-btn" id="mainLoginBtn" onclick="handleLogin()">게임 접속하기</button>
+                <div style="text-align:center; color:var(--text-sub); font-size:12px; margin:10px 0;">― 또는 ―</div>
+                <button class="google-auth-btn" onclick="startGoogleUserLogin('login')"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.6-2.1 15.5-5.7l-7.6-5.9c-2.1 1.4-4.8 2.3-7.9 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg> Google로 로그인</button>
                 <div class="auth-external-link-wrap">
                     <button class="auth-external-toggle-btn" onclick="switchAuthTab('ticket')">관리자에게 일반 회원가입 요청 보내기</button>
                 </div>
@@ -431,6 +433,8 @@
                     <input type="password" id="regTicketPw" placeholder="생성할 비밀번호 입력">
                 </div>
                 <button class="auth-btn" style="background-color: #10b981; color: white;" onclick="handleRegisterTicketSend()">관리자에게 가입요청 보내기</button>
+                <div style="text-align:center; color:var(--text-sub); font-size:12px; margin:10px 0;">― 또는 (위 아이디만 입력하고, 비밀번호는 필요 없어요) ―</div>
+                <button class="google-auth-btn" onclick="startGoogleUserLogin('signup')"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.6 5.9c4.4-4.1 6.9-10.1 6.9-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.6-2.1 15.5-5.7l-7.6-5.9c-2.1 1.4-4.8 2.3-7.9 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg> Google로 가입요청 보내기</button>
             </div>
         </div>
         <div id="adminSecretShield" onclick="showAdminLoginModal()" style="position: absolute; bottom: 25px; right: 25px; font-size: 45px; cursor: pointer; z-index: 10001;" title="System Core">☢️🛡️</div>
@@ -451,7 +455,7 @@
 
     <div id="mainContainer">
         <div id="leftPanel">
-            <div class="left-meta-author">Made by <span>시현, 이수</span> Season 2 Alpha</div>
+            <div class="left-meta-author">Made by <span>시현, 이수</span> Season 2 v1</div>
             <div class="bakery-title">이시현의 제과점</div>
             <div id="scoreDisplay">0 시현</div>
             
@@ -597,7 +601,7 @@
     <div class="modal-overlay" id="adminModal">
         <div class="modal-box">
             <div class="modal-header">
-                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (Season 2 Alpha)</div>
+                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (Season 2 v1)</div>
                 <button onclick="exitAdminConsole(true)" style="background:none; border:none; color:white; font-size:16px; cursor:pointer; font-weight:bold;">✕</button>
             </div>
             <div class="modal-body" id="adminModalBody">
@@ -725,6 +729,13 @@
                     <input type="password" id="admTargetNewPwInput" placeholder="새 비밀번호 입력" style="flex:1; margin:0;">
                     <button class="admin-action-btn btn-ban" style="flex:0.4;" onclick="executeAdminUserPasswordOverride()">⚠️ 강제 덮어쓰기</button>
                 </div>
+                </div>
+
+                <div id="adminSectionWipe">
+                    <div class="admin-section-title" style="color:#ef4444; border-color:#ef4444;">☠️ 유저 완전 초기화 (최고관리자 전용)</div>
+                    <div style="font-size:11px; color:var(--text-sub); margin-bottom:6px; line-height:1.5;">선택한 유저의 점수·아이템·강화·환생·펫·주식·업적·출석·미션·트로피를 모두 처음 상태로 되돌립니다. 아이디, 비밀번호, 구글 연결, 권한, 밴/감옥 상태는 유지돼요. <b>되돌릴 수 없어요.</b></div>
+                    <button class="admin-btn-danger" onclick="executeAdminWipeUsers(false)">☠️ 선택한 유저 완전 초기화</button>
+                    <button class="admin-btn-danger" style="background-color:#7f1d1d; margin-top:6px;" onclick="executeAdminWipeUsers(true)">💣 전체 일반 유저 완전 초기화 (관리자 제외)</button>
                 </div>
 
                 <div id="adminSectionSeason">
@@ -1767,7 +1778,7 @@
             addChatbotMessage('user', text);
             input.value = '';
             setTimeout(() => {
-                let reply = "시현클리커 시즌2 알파에서는 쿠키 강화 대장간, 실시간 주식 거래소, 펫 부화소, 1:1 송금/결투, 월드 레이드, 환생을 즐길 수 있습니다!";
+                let reply = "시현클리커 시즌2 정식버전에서는 쿠키 강화 대장간, 실시간 주식 거래소, 펫 부화소, 1:1 송금/결투, 월드 레이드, 환생을 즐길 수 있습니다!";
                 if (text.includes("주식")) reply = "📈 주식 거래소에서는 5초마다 시현전자, 이수바이오, 버그코인의 가격이 변동합니다. 저점에 매수해 고점에 매도하세요!";
                 else if (text.includes("강화")) reply = "🔨 좌측 하단 대장간에서 쿠키를 최대 +20강까지 강화할 수 있습니다. 단계별 오라 이펙트와 강력한 클릭 배율이 적용됩니다!";
                 else if (text.includes("펫")) reply = "🐾 펫 부화소에서 알을 부화시키면 치명타(10배 클릭) 확률과 SPS 보너스, 버그 자동사냥 능력을 얻습니다!";
@@ -1809,11 +1820,86 @@
             return !!u && ((u.app_metadata && u.app_metadata.provider === 'google') || (u.identities || []).some(i => i.provider === 'google'));
         }
 
+
+        // ===== 일반 유저: 구글 로그인 / 구글 가입요청 =====
+        // 구글 계정(이메일)이 게임 아이디에 연결(users."googleEmail")되어 있어야 로그인됩니다.
+        window.startGoogleUserLogin = async function(mode) {
+            if (mode === 'signup') {
+                const wantId = document.getElementById('regTicketId').value.trim().toLowerCase().replace(/\s+/g, '');
+                if (!wantId || wantId === 'undefined' || wantId === 'null') return alert('먼저 요청할 아이디를 입력하세요.');
+                if (wantId === SUPER_ADMIN_USER_ID) return alert('사용할 수 없는 아이디입니다.');
+                sessionStorage.setItem('google_signup_id', wantId);
+            } else sessionStorage.removeItem('google_signup_id');
+            sessionStorage.setItem('google_pending_mode', mode);
+            sessionStorage.removeItem('admin_google_pending');
+            try {
+                const { error } = await gameDB.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: 'select_account' } }
+                });
+                if (error) throw error;
+            } catch (e) {
+                sessionStorage.removeItem('google_pending_mode'); sessionStorage.removeItem('google_signup_id');
+                alert('구글 로그인 시작 실패: ' + explainError(e));
+            }
+        };
+
+        // 구글 이메일에 연결된 게임 아이디 찾기 (없으면 null)
+        async function resolveGoogleUserId(email) {
+            const { data, error } = await gameDB.from('users').select('userId').eq('googleEmail', email).maybeSingle();
+            if (error) throw error;
+            return data ? data.userId : null;
+        }
+
+        // 연결된 계정이 없는 구글 계정: 가입요청이면 티켓 발송, 아니면 안내
+        async function handleUnlinkedGoogle(email) {
+            const mode = sessionStorage.getItem('google_pending_mode');
+            const wantId = sessionStorage.getItem('google_signup_id');
+            sessionStorage.removeItem('google_pending_mode'); sessionStorage.removeItem('google_signup_id');
+            try {
+                if (mode === 'signup' && wantId) {
+                    const { data: exist } = await gameDB.from('users').select('userId').eq('userId', wantId).maybeSingle();
+                    if (exist) alert('이미 사용 중인 아이디입니다. 다른 아이디로 다시 요청하세요.');
+                    else {
+                        const { error } = await gameDB.from('admin_tickets').insert([{
+                            senderId: `(구글가입요청) ${wantId}`,
+                            message: `구글 가입 승인 요청 | ID: [${wantId}] / 구글: [${email}]`,
+                            timestamp: Date.now()
+                        }]);
+                        if (error) throw error;
+                        alert('📬 구글 가입요청이 관리자에게 전송되었습니다!\n승인되면 "Google로 로그인"으로 들어올 수 있어요.');
+                    }
+                } else {
+                    alert('이 구글 계정에 연결된 게임 계정이 없어요.\n"관리자에게 일반 회원가입 요청" → "Google로 가입요청"을 먼저 해주세요.');
+                }
+            } catch (e) { alert('처리 오류: ' + explainError(e)); }
+            await gameDB.auth.signOut(); location.reload();
+        }
+
+        window.approveGoogleJoinTicket = async function(ticketId, reqId, email, senderIdText) {
+            if (!isUserSuperAdmin) return alert('최고관리자 전용 권한입니다.');
+            reqId = String(reqId || '').trim().toLowerCase(); email = String(email || '').trim().toLowerCase();
+            if (!reqId || !email || reqId === SUPER_ADMIN_USER_ID) return alert('요청 정보가 올바르지 않습니다.');
+            try {
+                const { data: byId } = await gameDB.from('users').select('userId').eq('userId', reqId).maybeSingle();
+                if (byId) return alert('이미 존재하는 아이디입니다. 요청을 삭제하거나 거절하세요.');
+                const { data: byMail } = await gameDB.from('users').select('userId').eq('googleEmail', email).maybeSingle();
+                if (byMail) return alert('이 구글 계정은 이미 [' + byMail.userId + '] 아이디에 연결되어 있습니다.');
+                const initialSave = { score: 0, totalClicks: 0, prestigeCount: 0, cheatBonusSps: 0, weaponLevel: 0, ownedStocks: { sihyun: 0, isu: 0, bugcoin: 0 }, ownedPets: {}, itemCounts: {}, adminUpdatedAt: Date.now() };
+                const { error } = await gameDB.from('users').insert({ userId: reqId, password: '', googleEmail: email, gameSave: initialSave });
+                if (error) throw error;
+                if (ticketId) await gameDB.from('admin_tickets').delete().eq('id', ticketId);
+                else if (senderIdText) await gameDB.from('admin_tickets').delete().eq('senderId', senderIdText);
+                alert('✅ [' + reqId + '] 구글 계정 가입 승인 완료! (0 시현 시작)');
+                await refreshAdminTicketsNow(); await loadUserBulkList();
+            } catch (e) { alert('구글 가입 승인 실패: ' + explainError(e) + '\n(users 테이블에 googleEmail 열이 있는지 확인하세요)'); }
+        };
+
         window.startGoogleAdminLogin = async function() {
             const btn = document.getElementById('googleAdminBtn');
             if (btn) btn.disabled = true;
             try {
-                sessionStorage.setItem('admin_google_pending', '1');
+                sessionStorage.setItem('admin_google_pending', '1'); sessionStorage.removeItem('google_pending_mode');
                 const { error } = await gameDB.auth.signInWithOAuth({
                     provider: 'google',
                     options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: 'select_account' } }
@@ -2091,6 +2177,7 @@
         };
 
         window.executeUserPasswordChange = async function() {
+            if (isGoogleSession(currentUserSession)) return alert('🔐 구글 계정으로 로그인한 경우 비밀번호가 없어서 변경할 수 없어요.');
             const newPw = document.getElementById('userNewPwInput').value.trim();
             if (!newPw) return alert('새 비밀번호를 입력해주세요.');
             if (!confirm('비밀번호를 변경하시겠습니까?')) return;
@@ -2155,7 +2242,7 @@
                 const { data } = await gameDB.from('system_notice').select('*').in('id', ['live', 'gamble_rate', 'airdrop_live', 'stock_event', 'season_info']);
                 if (!data) return;
                 const liveRow = data.find(r => r.id === 'live');
-                if (liveRow) document.getElementById('liveNoticeContentText').innerText = liveRow.content || '시현클리커 시즌2 알파 실시간 서버 연동 완료.';
+                if (liveRow) document.getElementById('liveNoticeContentText').innerText = liveRow.content || '시현클리커 시즌2 정식버전 실시간 서버 연동 완료.';
 
                 const seasonRow = data.find(r => r.id === 'season_info');
                 if (seasonRow && seasonRow.content) { try { seasonInfo = JSON.parse(seasonRow.content); } catch (_) {} }
@@ -2697,7 +2784,7 @@
             document.getElementById('adminModal').classList.add('active');
             document.body.classList.toggle('normal-admin-mode', !isUserSuperAdmin);
             const superStyle = isUserSuperAdmin ? 'block' : 'none';
-            ['adminSectionRanking','adminSectionCreateUser','adminSectionStats','adminSectionSeason','adminSectionLogs','adminSectionGambling','adminSectionItems'].forEach(id => {
+            ['adminSectionRanking','adminSectionWipe','adminSectionCreateUser','adminSectionStats','adminSectionSeason','adminSectionLogs','adminSectionGambling','adminSectionItems'].forEach(id => {
                 document.getElementById(id).style.display = superStyle;
             });
             loadUserBulkList(); refreshAdminTicketsNow(); loadAdminLogs(); renderSeasonInfo();
@@ -2770,6 +2857,47 @@
                 if(u.userId === currentUserId) applyServerSaveToClient(gs);
             }
             alert(`✅ ${targetIds.length}명 스탯 실시간 반영 완료!`);
+            await loadUserBulkList();
+        };
+
+
+        // ===== ☠️ 유저 완전 초기화 (최고관리자 전용) =====
+        function makeFreshSave() {
+            return {
+                score: 0, totalClicks: 0, prestigeCount: 0, cheatBonusSps: 0, weaponLevel: 0,
+                ownedCookieUpgrade: false, ownedScrollUpgrade: false,
+                ownedStocks: { sihyun: 0, isu: 0, bugcoin: 0 }, ownedPets: {}, itemCounts: {},
+                unlockedAchievements: {}, bugsRemovedCount: 0,
+                peperoDay: '', peperoCount: 0, attendDay: '', attendStreak: 0,
+                dailyDay: '', dailyStats: { clicks: 0, bugs: 0, golden: 0, gambles: 0 }, dailyClaimed: {},
+                seasonTrophies: 0, adminUpdatedAt: Date.now()
+            };
+        }
+        window.executeAdminWipeUsers = async function(allUsers) {
+            if (!isUserSuperAdmin) return alert('🚫 최고관리자 전용 기능입니다.');
+            let targets = [];
+            if (allUsers) {
+                const { data: rows, error } = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin');
+                if (error) return alert('유저 목록 조회 실패: ' + explainError(error));
+                targets = (rows || []).filter(r => !r.isAdmin && !r.isSuperAdmin).map(r => r.userId);
+            } else {
+                targets = getCheckedUserIds(true);
+            }
+            if (!targets.length) return alert('초기화할 유저가 없습니다. (유저를 선택하세요)');
+            const label = allUsers ? `전체 일반 유저 ${targets.length}명` : `선택한 ${targets.length}명 (${targets.slice(0, 5).join(', ')}${targets.length > 5 ? ' …' : ''})`;
+            if (!confirm(`☠️ ${label}을(를) 완전 초기화합니다.\n점수·아이템·강화·환생·펫·주식·업적 등이 모두 사라지고 되돌릴 수 없어요.\n\n계속할까요?`)) return;
+            const typed = prompt('확인을 위해 "완전초기화"를 입력하세요.');
+            if (typed !== '완전초기화') return alert('입력이 일치하지 않아 취소되었습니다.');
+            let done = 0, fail = 0;
+            for (const id of targets) {
+                const fresh = makeFreshSave();
+                const { error } = await gameDB.from('users').update({ gameSave: fresh }).eq('userId', id);
+                if (error) { fail++; continue; }
+                done++;
+                if (id === currentUserId) applyServerSaveToClient(fresh);
+            }
+            gameDB.from('chat_messages').insert([{ sender: '시스템', text: `☠️ 관리자에 의해 ${allUsers ? '전체 유저가' : '일부 유저가'} 완전 초기화되었습니다.`, isDM: false, timestamp: Date.now() }]).then(() => {}, () => {});
+            alert(`☠️ 완전 초기화 완료: ${done}명` + (fail ? ` / 실패 ${fail}명` : ''));
             await loadUserBulkList();
         };
 
@@ -2925,6 +3053,8 @@
             snapshot.forEach(data => {
                 const senderStr = String(data.senderId || ''), msgStr = String(data.message || '');
                 const isJoinReq = senderStr.includes('(가입요청)') || msgStr.includes('희망PW:');
+                const gMail = msgStr.match(/구글:\s*\[([^\]]+)\]/), gIdM = msgStr.match(/ID:\s*\[([^\]]+)\]/);
+                const isGoogleReq = !!(gMail && gIdM && senderStr.includes('구글가입요청'));
                 let extractedId = isJoinReq ? senderStr.replace('(가입요청)', '').trim().toLowerCase() : '';
                 const pwMatch = msgStr.match(/희망PW:\s*\[\s*([^\]]+?)\s*\]/);
                 let extractedPw = pwMatch ? pwMatch[1].trim() : '';
@@ -2933,11 +3063,12 @@
                 row.className = 'ticket-row';
                 row.innerHTML = `
                     <div class="ticket-meta">
-                        <span style="color:${isJoinReq ? '#facc15' : '#00ffcc'}; font-weight:bold;">${isJoinReq ? '🆕 [가입요청]' : '📬 [문의]'} ${senderStr}</span>
+                        <span style="color:${isJoinReq ? '#facc15' : '#00ffcc'}; font-weight:bold;">${isGoogleReq ? '🆕 [구글 가입요청]' : (isJoinReq ? '🆕 [가입요청]' : '📬 [문의]')} ${senderStr}</span>
                         <span>${data.timestamp ? new Date(data.timestamp).toLocaleString() : '-'}</span>
                     </div>
                     <div>${msgStr}</div>
                     <div class="ticket-actions">
+                        ${isGoogleReq ? `<button class="ticket-approve-btn" onclick="approveGoogleJoinTicket(${ticketIdParam}, '${gIdM[1].replace(/'/g,"\\'")}', '${gMail[1].replace(/'/g,"\\'")}', '${senderStr.replace(/'/g,"\\'")}')">✅ 구글 가입승인 (${gIdM[1]})</button>` : ''}
                         ${isJoinReq && extractedId && extractedPw ? `<button class="ticket-approve-btn" onclick="approveJoinTicket(${ticketIdParam}, '${extractedId.replace(/'/g,"\\'")}', '${extractedPw.replace(/'/g,"\\'")}', '${senderStr.replace(/'/g,"\\'")}')">✅ 원클릭 가입승인 (${extractedId})</button>` : ''}
                         <button class="ticket-del-btn" onclick="deleteSingleTicket(${ticketIdParam}, '${senderStr.replace(/'/g,"\\'")}', ${data.timestamp || 0})">🗑️ 삭제</button>
                     </div>
@@ -2995,7 +3126,7 @@
             if (_realtimeStarted) return;
             _realtimeStarted = true;
             refreshLiveNoticeOnce(); checkServerExplosionOnce(); syncGlobalRaidOnce(); fetchRankingOnce(); fetchChatsOnce();
-            gameDB.channel('realtime_all_s2_alpha')
+            gameDB.channel('realtime_all_s2')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'system_notice' }, () => refreshLiveNoticeOnce())
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'server_status' }, () => checkServerExplosionOnce())
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'world_raid' }, () => syncGlobalRaidOnce())
@@ -3018,15 +3149,28 @@
             try {
                 currentUserSession = session;
                 if (isGoogleSession(session)) {
-                    if (!isGoogleSuperAdminSession(session)) {
+                    const gEmail = String(session.user.email || '').trim().toLowerCase();
+                    if (isGoogleSuperAdminSession(session) && !sessionStorage.getItem('google_pending_mode')) {
+                        explicitId = SUPER_ADMIN_USER_ID;
+                        // 최고관리자 행 보장 (비밀번호 없음: 비밀번호 로그인 불가)
+                        await gameDB.from('users').upsert({ userId: SUPER_ADMIN_USER_ID, isAdmin: true, isSuperAdmin: true, isScoreLocked: true }, { onConflict: 'userId' });
+                        sessionStorage.removeItem('admin_google_pending');
+                    } else if (sessionStorage.getItem('admin_google_pending')) {
                         sessionStorage.removeItem('admin_google_pending');
                         alert('🚫 허용되지 않은 구글 계정입니다. 최고관리자 인증이 거부되었습니다.');
                         await gameDB.auth.signOut(); location.reload(); return;
+                    } else {
+                        // 일반 유저의 구글 로그인
+                        let linked = null;
+                        try { linked = gEmail ? await resolveGoogleUserId(gEmail) : null; }
+                        catch (e) {
+                            alert('구글 계정 확인 실패: ' + explainError(e) + '\n(users 테이블에 googleEmail 열이 필요합니다)');
+                            await gameDB.auth.signOut(); location.reload(); return;
+                        }
+                        if (!linked || linked === SUPER_ADMIN_USER_ID) { await handleUnlinkedGoogle(gEmail); return; }
+                        sessionStorage.removeItem('google_pending_mode'); sessionStorage.removeItem('google_signup_id');
+                        explicitId = linked;
                     }
-                    explicitId = SUPER_ADMIN_USER_ID;
-                    // 최고관리자 행 보장 (비밀번호 없음: 비밀번호 로그인 불가)
-                    await gameDB.from('users').upsert({ userId: SUPER_ADMIN_USER_ID, isAdmin: true, isSuperAdmin: true, isScoreLocked: true }, { onConflict: 'userId' });
-                    sessionStorage.removeItem('admin_google_pending');
                 }
                 const derivedId = explicitId || authEmailToId(session.user.email, session.user.user_metadata);
                 const { data: ud } = await gameDB.from('users').select('*').eq('userId', derivedId).maybeSingle();
@@ -3074,7 +3218,7 @@
 
         // ===== 일반관리자 차단 가드: 최고관리자 전용 기능을 한 번에 보호 =====
         (function installSuperOnlyGuards() {
-            const names = ['executeAdminTriggerAirdrop','executeAdminStockControl','executeRankingRewards','setGamblingRate','executeAdminSetBossHp','executeAdminControlRaid','executeAdminPublishNotice','executeAdminDetonateServer','executeAdminEndSeason','adminCreateUser','adjustUserStat','adjustUserItem','executeAdminBulkScoreReset','executeAdminClearAllChatLogs','executeAdminClearAllTickets','approveJoinTicket','deleteSingleTicket','refreshAdminTicketsNow'];
+            const names = ['executeAdminTriggerAirdrop','executeAdminStockControl','executeRankingRewards','setGamblingRate','executeAdminSetBossHp','executeAdminControlRaid','executeAdminPublishNotice','executeAdminDetonateServer','executeAdminEndSeason','adminCreateUser','adjustUserStat','adjustUserItem','executeAdminBulkScoreReset','executeAdminWipeUsers','executeAdminClearAllChatLogs','executeAdminClearAllTickets','approveJoinTicket','approveGoogleJoinTicket','deleteSingleTicket','refreshAdminTicketsNow'];
             names.forEach(n => {
                 const orig = window[n];
                 if (typeof orig !== 'function') return;

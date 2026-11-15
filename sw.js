@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sihyun-clicker-s2-alpha-v2';
+const CACHE_NAME = 'sihyun-clicker-s2-v1';
 const ASSETS = [
   './',
   './index.html',

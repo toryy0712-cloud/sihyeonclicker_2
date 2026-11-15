@@ -1,12 +1,12 @@
 {
-  "name": "시현클리커 시즌2 알파",
+  "name": "시현클리커 시즌2",
   "short_name": "시현클리커 S2",
-  "description": "이시현의 제과점 - 시현클리커 시즌2 알파버전",
+  "description": "이시현의 제과점 - 시현클리커 시즌2 정식버전 v1",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0c1017",
   "theme_color": "#0c1017",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     {
       "src": "icon-192.png",
