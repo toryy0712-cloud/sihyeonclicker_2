@@ -53,6 +53,29 @@
         .google-auth-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; color:#3c4043; border:1px solid #dadce0; padding:13px; font-size:15px; font-weight:bold; border-radius:10px; cursor:pointer; }
         .google-auth-btn:hover { background:#f7f8f8; }
         .google-auth-btn:disabled { opacity:.6; cursor:wait; }
+
+        /* ===== 🌌 확장 시스템 ===== */
+        #extHud { display:flex; flex-direction:column; align-items:center; gap:4px; margin:6px 0; font-size:12px; color:var(--text-main); }
+        #extHud .ext-line { min-height:16px; font-weight:bold; }
+        #extCombo { color:#f97316; } #extBuffs { color:#a855f7; }
+        #extOpenBtn { background:linear-gradient(90deg,#7c3aed,#2563eb); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-weight:bold; font-size:13px; cursor:pointer; }
+        .ext-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:8px 12px; border-bottom:1px solid var(--border-color); background:var(--bg-panel); }
+        .ext-tab { background:var(--input-bg); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:6px 9px; font-size:12px; cursor:pointer; }
+        .ext-tab.on { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+        .ext-card { display:flex; align-items:center; gap:10px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); border-radius:8px; padding:10px; margin:6px 0; }
+        .ext-card.done { opacity:.65; }
+        .ext-sub { font-size:11px; color:var(--text-sub); }
+        .ext-note { font-size:12px; color:var(--text-sub); margin-bottom:6px; line-height:1.5; }
+        .ext-money { font-weight:bold; color:#d97706; margin-bottom:4px; }
+        .ext-ok { color:#16a34a; font-weight:bold; font-size:12px; white-space:nowrap; }
+        .ext-btn { background:#7c3aed; color:#fff; border:none; border-radius:6px; padding:7px 10px; font-weight:bold; font-size:12px; cursor:pointer; white-space:nowrap; }
+        .ext-btn:disabled { background:#6b7280; opacity:.5; cursor:not-allowed; }
+        .ext-bar { height:6px; background:var(--border-color); border-radius:3px; margin:4px 0; overflow:hidden; }
+        .ext-bar > div { height:100%; background:#7c3aed; }
+        .ext-result { margin:8px 0; padding:10px; border-radius:8px; background:var(--input-bg); color:var(--text-main); border:1px dashed #7c3aed; text-align:center; font-weight:bold; font-size:13px; }
+        .ext-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:6px; margin-top:8px; }
+        .ext-dex { text-align:center; border:1px solid var(--border-color); border-radius:8px; padding:8px 4px; background:var(--input-bg); color:var(--text-main); opacity:.55; }
+        .ext-dex.got { opacity:1; } .ext-dex.on { border-color:#7c3aed; box-shadow:0 0 0 2px #7c3aed55; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
         body {
             background-color: var(--bg-main); color: var(--text-main); height: 100dvh;
@@ -440,6 +463,14 @@
         <div id="adminSecretShield" onclick="showAdminLoginModal()" style="position: absolute; bottom: 25px; right: 25px; font-size: 45px; cursor: pointer; z-index: 10001;" title="System Core">☢️🛡️</div>
     </div>
 
+    <div class="modal-overlay user-screen" id="extModal" onclick="if(event.target===this) closeExtModal()">
+        <div class="modal-box" style="border-color:#7c3aed; width:min(640px,95vw);">
+            <div class="modal-header"><div class="modal-title" style="color:#7c3aed;">🌌 확장 시스템</div><button onclick="closeExtModal()" style="background:none; border:none; font-size:20px; color:var(--text-main); cursor:pointer;">✕</button></div>
+            <div class="ext-tabs" id="extTabs"></div>
+            <div class="modal-body" id="extBody"></div>
+        </div>
+    </div>
+
     <div id="customAdminLoginModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100000; justify-content: center; align-items: center;">
         <div style="background: #fdfaf2; padding: 30px; border-radius: 16px; width: min(380px, 90vw); position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.4);">
             <button onclick="document.getElementById('customAdminLoginModal').style.display='none'" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 20px; color: #666; cursor: pointer;">✕</button>
@@ -458,6 +489,12 @@
             <div class="left-meta-author">Made by <span>시현, 이수</span> Season 2 v1</div>
             <div class="bakery-title">이시현의 제과점</div>
             <div id="scoreDisplay">0 시현</div>
+            <div id="extHud">
+                <div class="ext-line" id="extWeather"></div>
+                <div class="ext-line" id="extCombo"></div>
+                <div class="ext-line" id="extBuffs"></div>
+                <button id="extOpenBtn" onclick="openExtModal()">🌌 확장 (상자·연구·퀘스트·도감·스킨·행성)</button>
+            </div>
             
             <div id="cookieContainer" onclick="handleCookieClick(event)">
                 <img id="cookieImg" src="1000000883.jpg" alt="Clicker Target">
@@ -1085,43 +1122,89 @@
         setInterval(() => { if (currentUserSession && (isUserJailed || isUserAdminPrivilege)) refreshJailChat(); }, 2500);
 
         // ===== 📅 출석 · 일일 미션 =====
-        let attendDay = '', attendStreak = 0, dailyDay = '', dailyStats = { clicks: 0, bugs: 0, golden: 0, gambles: 0 }, dailyClaimed = {}, seasonTrophies = 0;
-        const DAILY_MISSIONS = [
-            { id: 'clicks',  name: '클릭 300번',        key: 'clicks',  target: 300 },
-            { id: 'bugs',    name: '버그 3마리 퇴치',   key: 'bugs',    target: 3 },
-            { id: 'golden',  name: '황금쿠키 1개 잡기', key: 'golden',  target: 1 },
-            { id: 'gambles', name: '도박 3회',          key: 'gambles', target: 3 }
-        ];
+        function newDailyStats() { return { clicks: 0, bugs: 0, golden: 0, gambles: 0, buys: 0, sells: 0, forges: 0, trades: 0, hatches: 0, chats: 0 }; }
+        let attendDay = '', attendStreak = 0, attendSignupDay = '', dailyDay = '', dailyStats = newDailyStats(), dailyClaimed = {}, seasonTrophies = 0;
+
+        // ----- 📅 출석 보상표 (연속 출석 N일차 → 시현). 7일차 이후엔 계속 1000 -----
+        const ATTEND_REWARDS = [100, 200, 300, 500, 700, 850, 1000];
+
+        // ----- 📋 일일 미션 100개 (하루에 미션1·미션2 두 개를 랜덤으로 뽑음) -----
+        const MISSION_DEFS = {
+            clicks:  { name: n => `쿠키 ${n}번 클릭하기`,   tiers: [50,100,150,200,300,400,500,600,800,1000,1200,1500,2000,2500,3000,4000,5000,6000,8000,10000] },
+            bugs:    { name: n => `버그 ${n}마리 퇴치`,     tiers: [1,2,3,4,5,6,8,10,12,15,20,25,30,40] },
+            gambles: { name: n => `도박 ${n}회 하기`,       tiers: [1,2,3,4,5,6,8,10,12,15,20,25,30,40] },
+            buys:    { name: n => `아이템 ${n}개 구매`,     tiers: [1,2,3,5,8,10,15,20,30,40,50,75] },
+            trades:  { name: n => `주식 거래 ${n}회`,       tiers: [1,2,3,4,5,6,8,10,15,20] },
+            golden:  { name: n => `황금쿠키 ${n}개 잡기`,   tiers: [1,2,3,4,5,6] },
+            forges:  { name: n => `무기 강화 ${n}회 시도`,  tiers: [1,2,3,4,5,6,8,10] },
+            chats:   { name: n => `채팅 ${n}번 보내기`,     tiers: [1,2,3,5,8,10] },
+            hatches: { name: n => `펫 알 ${n}개 부화`,      tiers: [1,2,3,4,5] },
+            sells:   { name: n => `아이템 ${n}개 판매`,     tiers: [1,3,5,10,20] }
+        };
+        const DAILY_MISSIONS = (function buildMissions() {
+            const cats = Object.keys(MISSION_DEFS), out = [];
+            const rounds = Math.max(...cats.map(c => MISSION_DEFS[c].tiers.length));
+            for (let r = 0; r < rounds; r++) {
+                for (const c of cats) {
+                    const d = MISSION_DEFS[c];
+                    if (r < d.tiers.length) {
+                        const n = d.tiers[r];
+                        out.push({ id: `${c}_${n}`, key: c, target: n, name: d.name(n), w: 1 + Math.floor(r * 3 / d.tiers.length) }); // 난이도 가중치 1~3
+                    }
+                }
+            }
+            return out; // 총 100개
+        })();
+        const MISSIONS_PER_DAY = 2;
         let _dailyRenderTimer = null;
         function dateKeyOf(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+        // 날마다 랜덤 2개 (서로 다른 종류). 같은 유저는 하루 동안 같은 미션이 유지되고, 다음 날엔 새로 뽑혀요.
+        function todaysMissions() {
+            const seed = (currentUserId || 'guest') + '|' + dateKeyOf(new Date());
+            const pick = [], usedKeys = new Set();
+            for (let n = 0; pick.length < MISSIONS_PER_DAY && n < 60; n++) {
+                const m = DAILY_MISSIONS[stockHash(seed + '|' + n) % DAILY_MISSIONS.length];
+                if (usedKeys.has(m.key)) continue;
+                pick.push(m); usedKeys.add(m.key);
+            }
+            return pick;
+        }
         function ensureDailyDay() {
             const today = dateKeyOf(new Date());
-            if (dailyDay !== today) { dailyDay = today; dailyStats = { clicks: 0, bugs: 0, golden: 0, gambles: 0 }; dailyClaimed = {}; }
+            if (dailyDay !== today) { dailyDay = today; dailyStats = newDailyStats(); dailyClaimed = {}; }
         }
-        function dailyRewardBase() { return Math.max(500, Math.floor(getCurrentSps() * 120)); } // 미션 1개 = SPS 2분 분량
+        function dailyRewardBase() { return Math.max(300, Math.floor(getCurrentSps() * 60)); } // 미션 기본 = SPS 1분 분량 (최소 300) × 난이도 가중치
         function renderDailyPanel() {
             const box = document.getElementById('dailyPanelBody');
             if (!box) return;
             ensureDailyDay();
+            const list = todaysMissions();
             const sum = document.getElementById('dailyPanelSummary');
-            const doneCnt = DAILY_MISSIONS.filter(m => dailyClaimed[m.id]).length;
-            if (sum) sum.innerText = `📅 출석 ${attendStreak}일 연속 · 오늘의 미션 ${doneCnt}/${DAILY_MISSIONS.length}`;
-            const reward = formatKo(dailyRewardBase());
-            box.innerHTML = DAILY_MISSIONS.map(m => {
+            const doneCnt = list.filter(m => dailyClaimed[m.id]).length;
+            const locked = attendSignupDay && attendSignupDay === dateKeyOf(new Date());
+            if (sum) sum.innerText = `📅 출석 ${attendStreak}일 연속 · 오늘의 미션 ${doneCnt}/${list.length}`;
+            const base = dailyRewardBase();
+            const nextDay = Math.min(attendStreak + 1, 7);
+            const attendLine = locked
+                ? `📅 출석은 <b>가입 다음 날</b>부터 가능해요`
+                : (attendDay === dateKeyOf(new Date()) ? `📅 오늘 출석 완료 (+${formatKo(ATTEND_REWARDS[Math.min(Math.max(attendStreak,1),7) - 1])})` : `📅 내일 출석 보상: +${formatKo(ATTEND_REWARDS[nextDay - 1])}`);
+            box.innerHTML = list.map((m, i) => {
                 const cur = Math.min(Number(dailyStats[m.key]) || 0, m.target);
-                return `<div style="margin:3px 0;">${dailyClaimed[m.id] ? '✅' : '⬜'} ${m.name} <span style="color:#9ca3af;">(${cur}/${m.target})</span> <span style="color:#fbbf24;">+${reward}</span></div>`;
-            }).join('') + `<div style="margin-top:4px; color:#9ca3af;">전체 완료 보너스 ${dailyClaimed.all ? '✅ 수령' : '⬜'} (+${formatKo(dailyRewardBase() * 4)}) · 출석 보너스는 접속할 때 자동 지급</div>`;
+                return `<div style="margin:3px 0;">${dailyClaimed[m.id] ? '✅' : '⬜'} 미션${i + 1}. ${m.name} <span style="color:#9ca3af;">(${formatKo(cur)}/${formatKo(m.target)})</span> <span style="color:#fbbf24;">+${formatKo(base * m.w)}</span></div>`;
+            }).join('') + `<div style="margin-top:4px; color:#9ca3af;">전체 완료 보너스 ${dailyClaimed.all ? '✅ 수령' : '⬜'} (+${formatKo(base * 2)}) · ${attendLine}</div>`;
         }
         function checkDailyMissions() {
             ensureDailyDay();
+            const list = todaysMissions();
             let gained = 0; const done = [];
-            for (const m of DAILY_MISSIONS) {
-                if (!dailyClaimed[m.id] && (Number(dailyStats[m.key]) || 0) >= m.target) { dailyClaimed[m.id] = true; gained += dailyRewardBase(); done.push(m.name); }
+            for (const m of list) {
+                if (!dailyClaimed[m.id] && (Number(dailyStats[m.key]) || 0) >= m.target) { dailyClaimed[m.id] = true; gained += dailyRewardBase() * m.w; done.push(m.name); }
             }
-            if (DAILY_MISSIONS.every(m => dailyClaimed[m.id]) && !dailyClaimed.all) { dailyClaimed.all = true; gained += dailyRewardBase() * 4; done.push('전체 완료 보너스'); }
+            if (list.every(m => dailyClaimed[m.id]) && !dailyClaimed.all) { dailyClaimed.all = true; gained += dailyRewardBase() * 2; done.push('전체 완료 보너스'); }
             if (gained > 0) {
                 score += gained;
                 showPeperoToast(`📅 미션 완료! ${done.join(', ')} +${formatKo(gained)} 시현`);
+                extOnMission(done.includes('전체 완료 보너스'), done.filter(x => x !== '전체 완료 보너스').length);
                 updateDisplay(); saveGameToServer(true);
             }
             renderDailyPanel();
@@ -1130,21 +1213,22 @@
             if (!isGameLoaded || isUserScoreLocked || isUserJailed) return;
             ensureDailyDay();
             dailyStats[key] = (Number(dailyStats[key]) || 0) + n;
-            const m = DAILY_MISSIONS.find(x => x.key === key);
-            if (m && !dailyClaimed[m.id] && dailyStats[key] >= m.target) { checkDailyMissions(); return; }
+            const hit = todaysMissions().find(x => x.key === key && !dailyClaimed[x.id] && dailyStats[key] >= x.target);
+            if (hit) { checkDailyMissions(); return; }
             if (!_dailyRenderTimer) _dailyRenderTimer = setTimeout(() => { _dailyRenderTimer = null; renderDailyPanel(); }, 1000);
         }
         function claimAttendance() {
             if (isUserScoreLocked || isUserJailed) return;
             const now = new Date(), today = dateKeyOf(now);
+            if (attendSignupDay && attendSignupDay === today) return; // 가입 당일에는 출석 불가 (다음 날부터)
             if (attendDay === today) return;
             const yesterday = dateKeyOf(new Date(now.getTime() - 86400000));
             attendStreak = (attendDay === yesterday) ? attendStreak + 1 : 1;
             attendDay = today;
-            const reward = Math.max(1000, Math.floor(getCurrentSps() * 180 * Math.min(attendStreak, 7)));
+            const reward = ATTEND_REWARDS[Math.min(attendStreak, ATTEND_REWARDS.length) - 1];
             score += reward;
             updateDisplay(); saveGameToServer(true);
-            setTimeout(() => alert(`📅 출석 ${attendStreak}일 연속! 출석 보너스 +${formatKo(reward)} 시현` + (attendStreak < 7 ? '\n(7일 연속까지 보너스가 점점 커져요)' : '\n(최대 보너스 달성!)')), 400);
+            setTimeout(() => alert(`📅 출석 ${attendStreak}일 연속! 출석 보상 +${formatKo(reward)} 시현` + (attendStreak < 7 ? `\n(내일은 +${formatKo(ATTEND_REWARDS[Math.min(attendStreak + 1, 7) - 1])} · 7일 연속이면 최대 ${formatKo(ATTEND_REWARDS[6])})` : '\n(7일 연속 달성! 이후에도 매일 최대 보상)')), 400);
         }
 
         // ===== ⚔️ 레이드 기여도 =====
@@ -1494,9 +1578,11 @@
             peperoCount = Math.max(0, Number(parsed.peperoCount) || 0);
             attendDay = String(parsed.attendDay || ''); attendStreak = Math.max(0, Number(parsed.attendStreak) || 0);
             dailyDay = String(parsed.dailyDay || '');
-            dailyStats = Object.assign({ clicks: 0, bugs: 0, golden: 0, gambles: 0 }, parsed.dailyStats || {});
+            dailyStats = Object.assign(newDailyStats(), parsed.dailyStats || {});
+            attendSignupDay = (typeof parsed.attendSignupDay === 'string') ? parsed.attendSignupDay : ((!parsed.lastSeenAt && !(Number(parsed.score) > 0) && !(Number(parsed.totalClicks) > 0) && !parsed.attendDay) ? dateKeyOf(new Date()) : '');
             dailyClaimed = (parsed.dailyClaimed && typeof parsed.dailyClaimed === 'object') ? parsed.dailyClaimed : {};
             seasonTrophies = Math.max(0, Number(parsed.seasonTrophies) || 0);
+            ext = normalizeExt(parsed.ext); ext._tab = ext._tab || 'boxes'; applyExtSkin();
 
             const ic = parsed.itemCounts || {};
             for (const k in items) {
@@ -1530,6 +1616,7 @@
             const cost = isAdminAuthenticated ? 0 : Math.floor(WEAPON_BASE_COST * Math.pow(WEAPON_COST_GROWTH, weaponLevel));
             if (!isAdminAuthenticated && score < cost) return alert("강화 비용이 부족합니다!");
             if (!isAdminAuthenticated) score -= cost;
+            bumpDaily('forges');
 
             const chance = isAdminAuthenticated ? 100 : Math.max(15, 100 - weaponLevel * 4);
             if (Math.random() * 100 < chance) {
@@ -1574,8 +1661,9 @@
             }
         }
 
-        window.tradeStock = function(key, mode, qty) {
+        window.tradeStock = async function(key, mode, qty) {
             if (isUserScoreLocked) return alert("🔒 관전자 계정은 주식 거래가 불가합니다.");
+            if (!(await fetchStockPrices())) return alert("📉 주식 시세 서버에 연결할 수 없어 거래할 수 없어요.\n(관리자: stock_market SQL 설정이 필요합니다)");
             const st = stocks[key];
             if (mode === 'BUY') {
                 const cost = isAdminAuthenticated ? 0 : st.price * qty;
@@ -1588,36 +1676,40 @@
                 score += Math.floor(myCnt * st.price * (1 - STOCK_SELL_FEE));
                 ownedStocks[key] = 0;
             }
+            bumpDaily('trades');
             renderStockUI(); updateDisplay(); saveGameToServer(true);
         };
 
-        setInterval(() => {
-            if (!isGameLoaded) return;
-            for (const k in stocks) {
-                const st = stocks[k];
-                const pct = Math.floor((Math.random() * 30) - 15);   // -15% ~ +14% (장기적으로 우하향, 투기성)
-                st.lastChange = pct;
-                st.price = Math.max(50, Math.floor(st.price * (1 + pct / 100)));
-            }
-            renderStockUI();
-        }, 5000);
+        // ===== 📈 전 서버 공통 주식 시세 (Supabase 서버가 계산 → 모든 유저가 같은 가격) =====
+        // 가격은 DB(stock_market 테이블)에서 10초마다 서버가 랜덤으로 갱신합니다. 클라이언트는 읽기만 해요.
+        let stockServerOk = false;
+        // 문자열 → 숫자 해시 (일일 미션 랜덤 시드용)
+        function stockHash(str) {
+            let h = 1779033703 ^ str.length;
+            for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+            h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
+            return (h ^ (h >>> 16)) >>> 0;
+        }
+        async function fetchStockPrices() {
+            try {
+                const { data, error } = await gameDB.from('stock_market').select('key, price, last_change');
+                if (error || !data || !data.length) { stockServerOk = false; return false; }
+                data.forEach(r => { if (stocks[r.key]) { stocks[r.key].price = Number(r.price) || stocks[r.key].price; stocks[r.key].lastChange = Number(r.last_change) || 0; } });
+                stockServerOk = true;
+                if (isGameLoaded) renderStockUI();
+                return true;
+            } catch (_) { stockServerOk = false; return false; }
+        }
+        fetchStockPrices();
+        setInterval(fetchStockPrices, 5000);
 
         window.executeAdminStockControl = async function(type) {
-            if (!isAdminAuthenticated) return;
-            await gameDB.from('system_notice').upsert({ id: 'stock_event', content: `${type}:${Date.now()}`, timestamp: Date.now() }, { onConflict: 'id' });
-            applyStockEvent(type);
-            alert(`📈 전 서버 주식 시장에 [${type}] 이벤트가 실시간 발동되었습니다!`);
+            if (!isUserSuperAdmin) return alert('🚫 최고관리자(구글 인증) 전용 기능입니다.');
+            const { error } = await gameDB.rpc('admin_stock_event', { p_type: type });
+            if (error) return alert('주식 이벤트 실패: ' + explainError(error) + '\n(stock_market SQL 설정과 구글 최고관리자 이메일을 확인하세요)');
+            await fetchStockPrices();
+            alert(`📈 전 서버 주식 시장에 [${type}] 이벤트가 발동되었습니다!`);
         };
-
-        let lastAppliedStockEvent = '';
-        function applyStockEvent(type) {
-            for (const k in stocks) {
-                if (type === 'BOOM') { stocks[k].price = Math.floor(stocks[k].price * 3); stocks[k].lastChange = 200; }
-                else if (type === 'CRASH') { stocks[k].price = Math.max(50, Math.floor(stocks[k].price * 0.2)); stocks[k].lastChange = -80; }
-                else if (type === 'RESET') { stocks[k].price = stocks[k].basePrice; stocks[k].lastChange = 0; }
-            }
-            renderStockUI();
-        }
 
         // --- 3. 펫 부화소 및 도감 ---
         function getPetBonuses() {
@@ -1667,6 +1759,7 @@
             else picked = petCatalog[0];
 
             ownedPets[picked.id] = (ownedPets[picked.id] || 0) + 1;
+            bumpDaily('hatches');
             renderPetsUI(); updateDisplay(); saveGameToServer(true);
             alert(`🥚 알에서 [${picked.grade}] ${picked.icon} ${picked.name}이(가) 태어났습니다!\n효과: ${picked.desc}`);
         };
@@ -1942,7 +2035,7 @@
             if (confirm("🚨 정말로 모든 게임 데이터를 0으로 초기화하시겠습니까?")) {
                 score = 0; totalClicks = 0; prestigeCount = 0; cheatBonusSps = 0;
                 ownedCookieUpgrade = false; ownedScrollUpgrade = false;
-                unlockedAchievements = {}; bugsRemovedCount = 0; weaponLevel = 0;
+                unlockedAchievements = {}; bugsRemovedCount = 0; weaponLevel = 0; ext = newExt(); applyExtSkin();
                 ownedStocks = { sihyun: 0, isu: 0, bugcoin: 0 }; ownedPets = {};
                 for (const k in items) { items[k].count = 0; items[k].cost = items[k].baseCost; }
                 await saveGameToServer(true);
@@ -2221,7 +2314,7 @@
                     score, totalClicks, prestigeCount, cheatBonusSps,
                     ownedCookieUpgrade, ownedScrollUpgrade, unlockedAchievements,
                     bugsRemovedCount, weaponLevel, ownedStocks, ownedPets,
-                    itemCounts: itemCountsObj, adminUpdatedAt: lastAdminUpdatedAt, lastSeenAt: Date.now(), peperoDay, peperoCount, attendDay, attendStreak, dailyDay, dailyStats, dailyClaimed, seasonTrophies
+                    itemCounts: itemCountsObj, adminUpdatedAt: lastAdminUpdatedAt, lastSeenAt: Date.now(), peperoDay, peperoCount, attendDay, attendStreak, attendSignupDay, dailyDay, dailyStats, dailyClaimed, seasonTrophies, ext
                 };
                 const { data: updated, error: saveErr } = await gameDB.from('users').update({ gameSave: payload }).eq('userId', currentUserId).select('userId');
                 if (saveErr) throw saveErr;
@@ -2254,11 +2347,6 @@
                     document.getElementById('gambleRateBadge').innerText = `(현재 승률: ${(winRate * 100).toFixed(0)}%)`;
                 }
 
-                const stockRow = data.find(r => r.id === 'stock_event');
-                if (stockRow && stockRow.content && stockRow.content !== lastAppliedStockEvent) {
-                    lastAppliedStockEvent = stockRow.content;
-                    applyStockEvent(stockRow.content.split(':')[0]);
-                }
 
                 const dropRow = data.find(r => r.id === 'airdrop_live');
                 if (dropRow && dropRow.content) {
@@ -2369,14 +2457,14 @@
                 if(!currentUserSession || isUserScoreLocked || Math.random() > 0.4) return;
                 const b = getPetBonuses();
                 if (b.autoBug && Math.random() < 0.6) {
-                    bugsRemovedCount++; bumpDaily('bugs'); updateDisplay(); checkAchievements(); return;
+                    bugsRemovedCount++; bumpDaily('bugs'); extOnBug(); updateDisplay(); checkAchievements(); return;
                 }
                 const leftPanel = document.getElementById('leftPanel');
                 const bug = document.createElement('div');
                 bug.className = 'bug-entity'; bug.innerText = '🐛';
                 bug.style.left = (Math.floor(Math.random() * Math.max(50, leftPanel.offsetWidth - 50)) + 10) + 'px';
                 bug.style.top = (Math.floor(Math.random() * 180) + 80) + 'px';
-                bug.onclick = function(event) { event.stopPropagation(); bugsRemovedCount++; bumpDaily('bugs'); updateDisplay(); checkAchievements(); bug.remove(); };
+                bug.onclick = function(event) { event.stopPropagation(); bugsRemovedCount++; bumpDaily('bugs'); extOnBug(); updateDisplay(); checkAchievements(); bug.remove(); };
                 leftPanel.appendChild(bug);
                 setTimeout(() => { if(bug.parentNode) bug.remove(); }, 4000);
             }, 8000);
@@ -2393,7 +2481,7 @@
                 gc.onclick = function(event) {
                     event.stopPropagation();
                     if(isUserScoreLocked) return gc.remove();
-                    goldenCookieBuffTimer = GOLDEN_SECONDS; bumpDaily('golden');
+                    goldenCookieBuffTimer = GOLDEN_SECONDS + extGoldenBonus(); bumpDaily('golden'); extOnGolden();
                     alert(`⚡ [황금 쿠키 축복] ${GOLDEN_SECONDS}초 동안 모든 효율 ${GOLDEN_MULT}배!`);
                     gc.remove();
                 };
@@ -2408,7 +2496,7 @@
             for (const key in items) sps += items[key].count * items[key].spsValue;
             if(ownedScrollUpgrade) sps += SCROLL_UPGRADE_SPS;
             const petBonus = getPetBonuses();
-            sps = sps * (1 + petBonus.spsMult) * (1 + prestigeCount * PRESTIGE_SPS_BONUS);
+            sps = sps * (1 + petBonus.spsMult) * (1 + prestigeCount * PRESTIGE_SPS_BONUS) * extSpsMult();
             sps += cheatBonusSps;
             if (isPeperoEvent()) sps *= PEPERO_SPS_MULT;
             return Math.max(0, sps);
@@ -2428,12 +2516,13 @@
         window.handleCookieClick = async function(e) {
             if (!currentUserSession || isUserScoreLocked || isUserJailed) return;
             let isGoldenActive = goldenCookieBuffTimer > 0;
-            let baseGain = (ownedCookieUpgrade ? COOKIE_UPGRADE_MULT : 1) * Math.pow(WEAPON_CLICK_MULT, weaponLevel);
+            let baseGain = (ownedCookieUpgrade ? COOKIE_UPGRADE_MULT : 1) * Math.pow(WEAPON_CLICK_MULT, weaponLevel) * extClickMult();
             const petBonus = getPetBonuses();
-            const isCrit = Math.random() < petBonus.critChance;
-            let gain = Math.floor(baseGain * (isGoldenActive ? GOLDEN_MULT : 1) * (isCrit ? 10 : 1));
+            const isCrit = Math.random() < extCritChance(petBonus.critChance);
+            const comboMult = extComboTick();
+            let gain = Math.max(1, Math.floor(baseGain * (isGoldenActive ? GOLDEN_MULT : 1) * (isCrit ? 10 : 1) * comboMult));
 
-            score += gain; totalClicks++; bumpDaily('clicks');
+            score += gain; totalClicks++; bumpDaily('clicks'); extOnClick();
             const container = document.getElementById('cookieContainer');
             const ft = document.createElement('div');
             ft.className = 'floating-text';
@@ -2608,6 +2697,7 @@
                     if (!isAdminAuthenticated) score -= calculatedPrice;
                     it.count += currentStoreAmount;
                     it.cost = Math.floor(it.baseCost * Math.pow(ITEM_COST_GROWTH, it.count));
+                    bumpDaily('buys', currentStoreAmount);
                     buildShopUI(); saveGameToServer();
                 } else alert("시현 점수가 부족합니다.");
             } else {
@@ -2615,6 +2705,7 @@
                     score += calculatedPrice;
                     it.count -= currentStoreAmount;
                     it.cost = Math.floor(it.baseCost * Math.pow(ITEM_COST_GROWTH, it.count));
+                    bumpDaily('sells', currentStoreAmount);
                     buildShopUI(); saveGameToServer();
                 } else alert("보유 개수가 부족합니다.");
             }
@@ -2732,6 +2823,7 @@
             } else {
                 if(myData.isChatBanned) return alert("🚫 채팅 발언권이 정지되었습니다.");
                 await gameDB.from('chat_messages').insert([{ sender: currentUserId, text: text, isDM: false, timestamp: Date.now() }]);
+                bumpDaily('chats');
                 input.value = '';
             }
             await fetchChatsOnce();
@@ -2870,7 +2962,7 @@
                 unlockedAchievements: {}, bugsRemovedCount: 0,
                 peperoDay: '', peperoCount: 0, attendDay: '', attendStreak: 0,
                 dailyDay: '', dailyStats: { clicks: 0, bugs: 0, golden: 0, gambles: 0 }, dailyClaimed: {},
-                seasonTrophies: 0, adminUpdatedAt: Date.now()
+                seasonTrophies: 0, ext: newExt(), adminUpdatedAt: Date.now()
             };
         }
         window.executeAdminWipeUsers = async function(allUsers) {
@@ -3215,6 +3307,403 @@
             setTimeout(() => { if (session && session.user && !isGameLoaded) initializeAppWithSession(session); }, 0);
         });
 
+
+        // =====================================================================
+        // 🌌 확장 시스템: 랜덤 상자 · 크리티컬 · 콤보 · 날씨 · 퀘스트 · 도감 · 연구 · 스킨 · 행성
+        // =====================================================================
+        function newExt() {
+            return { boxes: { common: 0, rare: 0, legend: 0 }, opened: 0, buffs: [], permSps: 0, permCrit: 0,
+                     research: {}, questClaimed: {}, codex: {}, codexClaimed: {}, skins: { cookie: true }, skin: 'default',
+                     planet: 0, goldens: 0, clickCounter: 0 };
+        }
+        function normalizeExt(raw) {
+            const d = newExt();
+            if (!raw || typeof raw !== 'object') return d;
+            const e = Object.assign(d, raw);
+            e.boxes = Object.assign({ common: 0, rare: 0, legend: 0 }, raw.boxes || {});
+            for (const k in e.boxes) e.boxes[k] = Math.max(0, Number(e.boxes[k]) || 0);
+            e.buffs = Array.isArray(raw.buffs) ? raw.buffs.filter(b => b && b.until > Date.now()) : [];
+            e.research = (raw.research && typeof raw.research === 'object') ? raw.research : {};
+            e.questClaimed = (raw.questClaimed && typeof raw.questClaimed === 'object') ? raw.questClaimed : {};
+            e.codex = (raw.codex && typeof raw.codex === 'object') ? raw.codex : {};
+            e.codexClaimed = (raw.codexClaimed && typeof raw.codexClaimed === 'object') ? raw.codexClaimed : {};
+            e.skins = Object.assign({ cookie: true }, (raw.skins && typeof raw.skins === 'object') ? raw.skins : {});
+            e.skin = typeof raw.skin === 'string' ? raw.skin : 'default';
+            e.permSps = Math.min(200, Math.max(0, Number(raw.permSps) || 0));
+            e.permCrit = Math.min(30, Math.max(0, Number(raw.permCrit) || 0));
+            e.planet = Math.max(0, Math.min(5, Number(raw.planet) || 0));
+            e.opened = Math.max(0, Number(raw.opened) || 0);
+            e.goldens = Math.max(0, Number(raw.goldens) || 0);
+            e.clickCounter = Math.max(0, Number(raw.clickCounter) || 0);
+            return e;
+        }
+        let ext = newExt();
+
+        // ---------- 데이터 ----------
+        const EXT_TIERS = {
+            common: { name: '일반', icon: '📦', color: '#9ca3af' },
+            rare:   { name: '희귀', icon: '🎁', color: '#60a5fa' },
+            legend: { name: '전설', icon: '🏆', color: '#f59e0b' }
+        };
+        const PLANETS = [
+            { id: 0, name: '지구',   icon: '🌍', cost: 0,          bonus: 0,    skin: null },
+            { id: 1, name: '달',     icon: '🌙', cost: 50000,      bonus: 0.10, skin: 'moon' },
+            { id: 2, name: '화성',   icon: '🔴', cost: 400000,     bonus: 0.25, skin: 'mars' },
+            { id: 3, name: '목성',   icon: '🪐', cost: 3000000,    bonus: 0.45, skin: 'jupiter' },
+            { id: 4, name: '성운',   icon: '🌠', cost: 30000000,   bonus: 0.70, skin: 'nebula' },
+            { id: 5, name: '은하 중심', icon: '🌌', cost: 400000000, bonus: 1.00, skin: 'galaxy' }
+        ];
+        const SKINS = {
+            default: { name: '시현 쿠키 (기본)', icon: '🍪', src: '기본 제공' },
+            cookie:  { name: '초코칩 쿠키', icon: '🍪', bg: ['#fcd34d', '#b45309'], src: '기본 해금' },
+            donut:   { name: '핑크 도넛',   icon: '🍩', bg: ['#f9a8d4', '#be185d'], src: '퀘스트: 쿠키 1만 번 클릭' },
+            cake:    { name: '생일 케이크', icon: '🎂', bg: ['#fde68a', '#dc2626'], src: '퀘스트: 버그 50마리 퇴치' },
+            moon:    { name: '달토끼 달',   icon: '🌙', bg: ['#e5e7eb', '#475569'], src: '행성: 달 해금' },
+            mars:    { name: '붉은 화성',   icon: '🔴', bg: ['#fb923c', '#7f1d1d'], src: '행성: 화성 해금' },
+            jupiter: { name: '거대 목성',   icon: '🪐', bg: ['#fde68a', '#92400e'], src: '행성: 목성 해금' },
+            nebula:  { name: '보라 성운',   icon: '🌠', bg: ['#c4b5fd', '#1e1b4b'], src: '행성: 성운 해금' },
+            galaxy:  { name: '은하수',      icon: '🌌', bg: ['#60a5fa', '#0b1020'], src: '행성: 은하 중심 해금' },
+            crown:   { name: '황금 왕관',   icon: '👑', bg: ['#fde047', '#a16207'], src: '전설 상자에서 획득' },
+            alien:   { name: '외계인',      icon: '👽', bg: ['#86efac', '#14532d'], src: '전설 상자에서 획득' },
+            rainbow: { name: '무지개',      icon: '🌈', bg: ['#f0abfc', '#0ea5e9'], src: '전설 상자에서 획득' }
+        };
+        const WEATHERS = [
+            { id: 'clear',   name: '맑음',   icon: '☀️', mult: 1.00, w: 45 },
+            { id: 'rain',    name: '비',     icon: '🌧️', mult: 1.10, w: 20 },
+            { id: 'wind',    name: '바람',   icon: '🍃', mult: 1.15, w: 15 },
+            { id: 'rainbow', name: '무지개', icon: '🌈', mult: 1.30, w: 12 },
+            { id: 'aurora',  name: '오로라', icon: '💫', mult: 1.50, w: 8 }
+        ];
+        const WEATHER_SLOT_MS = 30 * 60 * 1000; // 날씨는 30분마다 바뀌고, 접속한 모두에게 같아요
+        const RESEARCH = [
+            { id: 'dough',    name: '효율적인 반죽', desc: '클릭 수익 +25%',              cost: 8000,     req: null,     click: 0.25 },
+            { id: 'auto1',    name: '자동화 라인',   desc: '자동 생산(SPS) +10%',        cost: 15000,    req: 'dough',  sps: 0.10 },
+            { id: 'oven',     name: '황금 오븐',     desc: '크리티컬 확률 +3%',          cost: 20000,    req: 'dough',  crit: 3 },
+            { id: 'combo',    name: '콤보 마스터',   desc: '콤보 최대치 +50% → +100%',    cost: 30000,    req: 'oven' },
+            { id: 'ferment',  name: '발효 숙성',     desc: '자동 생산(SPS) +15%',        cost: 60000,    req: 'auto1',  sps: 0.15 },
+            { id: 'forecast', name: '날씨 예보',     desc: '날씨 보너스 효과 1.5배',      cost: 80000,    req: 'auto1' },
+            { id: 'lucky',    name: '행운의 상자',   desc: '상자 획득 확률 +50%',        cost: 120000,   req: 'oven' },
+            { id: 'goldres',  name: '황금 연구',     desc: '황금쿠키 지속시간 +5초',      cost: 200000,   req: 'forecast' },
+            { id: 'mass',     name: '대량 생산',     desc: '자동 생산(SPS) +20%',        cost: 400000,   req: 'ferment', sps: 0.20 },
+            { id: 'quantum',  name: '양자 반죽',     desc: '클릭 수익 +60%',              cost: 1500000,  req: 'mass',   click: 0.60 },
+            { id: 'dimen',    name: '차원 오븐',     desc: '자동 생산(SPS) +30%',        cost: 3000000,  req: 'mass',   sps: 0.30 },
+            { id: 'master',   name: '쿠키 마스터',   desc: '클릭·자동 생산 모두 +15%',    cost: 10000000, req: 'dimen',  sps: 0.15, click: 0.15 }
+        ];
+        const petCountNow = () => Object.values(ownedPets || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+        const itemCountNow = () => Object.keys(items).reduce((a, k) => a + (items[k].count || 0), 0);
+        const QUESTS = [
+            { id: 'clk1k',  name: '쿠키 1,000번 클릭',      get: () => totalClicks,        goal: 1000,  box: 'common', score: 500 },
+            { id: 'clk10k', name: '쿠키 10,000번 클릭',     get: () => totalClicks,        goal: 10000, box: 'rare',   score: 3000,  skin: 'donut' },
+            { id: 'clk50k', name: '쿠키 50,000번 클릭',     get: () => totalClicks,        goal: 50000, box: 'legend', score: 20000 },
+            { id: 'bug10',  name: '버그 10마리 퇴치',        get: () => bugsRemovedCount,   goal: 10,    box: 'common', score: 500 },
+            { id: 'bug50',  name: '버그 50마리 퇴치',        get: () => bugsRemovedCount,   goal: 50,    box: 'rare',   score: 3000,  skin: 'cake' },
+            { id: 'bug200', name: '버그 200마리 퇴치',       get: () => bugsRemovedCount,   goal: 200,   box: 'legend', score: 20000 },
+            { id: 'wpn3',   name: '무기 +3강 달성',          get: () => weaponLevel,        goal: 3,     box: 'common', score: 1000 },
+            { id: 'wpn8',   name: '무기 +8강 달성',          get: () => weaponLevel,        goal: 8,     box: 'rare',   score: 8000 },
+            { id: 'wpn15',  name: '무기 +15강 달성',         get: () => weaponLevel,        goal: 15,    box: 'legend', score: 50000 },
+            { id: 'itm50',  name: '자동 생산 시설 50개 보유', get: itemCountNow,             goal: 50,    box: 'common', score: 1000 },
+            { id: 'itm200', name: '자동 생산 시설 200개 보유', get: itemCountNow,            goal: 200,   box: 'rare',   score: 8000 },
+            { id: 'itm500', name: '자동 생산 시설 500개 보유', get: itemCountNow,            goal: 500,   box: 'legend', score: 50000 },
+            { id: 'pet3',   name: '펫 3마리 수집',           get: petCountNow,              goal: 3,     box: 'common', score: 1000 },
+            { id: 'pet10',  name: '펫 10마리 수집',          get: petCountNow,              goal: 10,    box: 'rare',   score: 8000 },
+            { id: 'pre1',   name: '환생 1회',                get: () => prestigeCount,      goal: 1,     box: 'rare',   score: 5000 },
+            { id: 'pre5',   name: '환생 5회',                get: () => prestigeCount,      goal: 5,     box: 'legend', score: 40000 },
+            { id: 'pl1',    name: '새 행성 1개 해금',        get: () => ext.planet,         goal: 1,     box: 'rare',   score: 5000 },
+            { id: 'pl3',    name: '행성 3개 해금',           get: () => ext.planet,         goal: 3,     box: 'legend', score: 40000 },
+            { id: 'box10',  name: '상자 10개 열기',          get: () => ext.opened,         goal: 10,    box: 'common', score: 1000 },
+            { id: 'box50',  name: '상자 50개 열기',          get: () => ext.opened,         goal: 50,    box: 'rare',   score: 8000 },
+            { id: 'gld5',   name: '황금쿠키 5개 잡기',       get: () => ext.goldens,        goal: 5,     box: 'common', score: 1000 },
+            { id: 'gld30',  name: '황금쿠키 30개 잡기',      get: () => ext.goldens,        goal: 30,    box: 'rare',   score: 8000 }
+        ];
+
+        // ---------- 날씨 ----------
+        function weatherNow() {
+            const slot = Math.floor(Date.now() / WEATHER_SLOT_MS);
+            const r = stockHash('weather|' + slot) % 100;
+            let acc = 0, pick = WEATHERS[0];
+            for (const w of WEATHERS) { acc += w.w; if (r < acc) { pick = w; break; } }
+            return Object.assign({}, pick, { endsAt: (slot + 1) * WEATHER_SLOT_MS });
+        }
+        function weatherMult() {
+            const w = weatherNow();
+            return 1 + (w.mult - 1) * (ext.research.forecast ? 1.5 : 1);
+        }
+
+        // ---------- 배율 ----------
+        function activeBuffMult(type) {
+            const now = Date.now(); let m = 1;
+            for (const b of ext.buffs) if (b.t === type && b.until > now) m *= b.m;
+            return m;
+        }
+        function researchSum(field) { return RESEARCH.reduce((a, r) => a + (ext.research[r.id] && r[field] ? r[field] : 0), 0); }
+        function planetBonus() { return PLANETS[Math.min(ext.planet, PLANETS.length - 1)].bonus; }
+        function extSpsMult() {
+            return (1 + researchSum('sps')) * (1 + planetBonus()) * (1 + ext.permSps / 100) * weatherMult() * activeBuffMult('sps');
+        }
+        function extClickMult() { return (1 + researchSum('click')) * (1 + planetBonus()) * activeBuffMult('click'); }
+        function extCritChance(petCrit) { return Math.min(0.6, 0.03 + (Number(petCrit) || 0) + researchSum('crit') / 100 + ext.permCrit / 100); }
+        function extGoldenBonus() { return ext.research.goldres ? 5 : 0; }
+
+        // ---------- 콤보 ----------
+        const COMBO_WINDOW_MS = 1200;
+        let comboCount = 0, lastComboAt = 0;
+        function comboMax() { return ext.research.combo ? 100 : 50; }
+        function extComboTick() {
+            const now = Date.now();
+            comboCount = (now - lastComboAt <= COMBO_WINDOW_MS) ? comboCount + 1 : 1;
+            lastComboAt = now;
+            const el = document.getElementById('extCombo');
+            const bonus = Math.min(comboCount, comboMax());
+            if (el) el.innerText = comboCount >= 2 ? `🔥 콤보 ${comboCount} (+${bonus}%)` : '';
+            return 1 + bonus / 100;
+        }
+        setInterval(() => {
+            if (comboCount > 0 && Date.now() - lastComboAt > COMBO_WINDOW_MS) {
+                comboCount = 0; const el = document.getElementById('extCombo'); if (el) el.innerText = '';
+            }
+        }, 300);
+
+        // ---------- 상자 획득 ----------
+        function luckyMult() { return ext.research.lucky ? 1.5 : 1; }
+        function giveBox(tier, n = 1, silent) {
+            ext.boxes[tier] = (ext.boxes[tier] || 0) + n;
+            if (!silent) showPeperoToast(`🎁 ${EXT_TIERS[tier].name} 상자 획득!`);
+            refreshExtUi();
+        }
+        function extOnClick() {
+            ext.clickCounter++;
+            if (ext.clickCounter >= 500) { ext.clickCounter = 0; giveBox('common'); }
+        }
+        function extOnBug() {
+            const r = Math.random(), L = luckyMult();
+            if (r < 0.0015 * L) giveBox('legend');
+            else if (r < 0.0015 * L + 0.015 * L) giveBox('rare');
+            else if (r < 0.0015 * L + 0.015 * L + 0.06 * L) giveBox('common');
+        }
+        function extOnGolden() {
+            ext.goldens++;
+            const r = Math.random(), L = luckyMult();
+            if (r < 0.06 * L) giveBox('rare'); else if (r < 0.31 * L) giveBox('common');
+        }
+        function extOnMission(allDone, count) {
+            if (count > 0) giveBox('common', allDone ? Math.max(1, count - 1) : count, true);
+            if (allDone) giveBox('rare', 1, true);
+            showPeperoToast(`🎁 미션 보상 상자 획득!${allDone ? ' (희귀 상자 포함)' : ''}`);
+            refreshExtUi();
+        }
+
+        // ---------- 상자 열기 ----------
+        let lastBoxResult = '';
+        function addBuff(type, m, sec) {
+            const until = Date.now() + sec * 1000;
+            const cur = ext.buffs.find(b => b.t === type && b.until > Date.now());
+            if (cur) { cur.m = Math.max(cur.m, m); cur.until = Math.max(cur.until, until); }
+            else ext.buffs.push({ t: type, m, until });
+            return `${type === 'sps' ? '자동 생산' : '클릭'} x${m} 버프 ${sec >= 60 ? Math.round(sec / 60) + '분' : sec + '초'}`;
+        }
+        function giveScoreSecs(min, secs) {
+            const g = Math.floor(Math.max(min, getCurrentSps() * secs));
+            score += g; return `+${formatKo(g)} 시현`;
+        }
+        function permSps(p) { ext.permSps = Math.min(200, ext.permSps + p); return `영구 업그레이드! 자동 생산 +${p}% (누적 +${ext.permSps.toFixed(1)}%)`; }
+        function permCrit(p) { ext.permCrit = Math.min(30, ext.permCrit + p); return `영구 업그레이드! 크리티컬 확률 +${p}% (누적 +${ext.permCrit.toFixed(1)}%)`; }
+        function giveRandomSkin(list) {
+            const left = list.filter(k => !ext.skins[k]);
+            if (!left.length) return giveScoreSecs(30000, 3600) + ' (보유 스킨이라 시현으로 대체)';
+            const k = left[Math.floor(Math.random() * left.length)];
+            ext.skins[k] = true; return `🎨 스킨 획득: ${SKINS[k].icon} ${SKINS[k].name}`;
+        }
+        const BOX_TABLES = {
+            common: [
+                { w: 60, run: () => giveScoreSecs(500, 180) },
+                { w: 25, run: () => addBuff('click', 2, 60) },
+                { w: 10, run: () => permSps(0.5) },
+                { w: 5,  run: () => { giveBox('rare', 1, true); return '✨ 특별 보너스! 희귀 상자 획득'; } }
+            ],
+            rare: [
+                { w: 45, run: () => giveScoreSecs(3000, 600) },
+                { w: 25, run: () => addBuff('sps', 2, 300) },
+                { w: 18, run: () => permSps(1) },
+                { w: 5,  run: () => permCrit(0.5) },
+                { w: 7,  run: () => { giveBox('legend', 1, true); return '✨ 특별 보너스! 전설 상자 획득'; } }
+            ],
+            legend: [
+                { w: 30, run: () => giveScoreSecs(20000, 1800) },
+                { w: 25, run: () => addBuff('sps', 3, 600) },
+                { w: 25, run: () => permSps(3) },
+                { w: 10, run: () => giveRandomSkin(['crown', 'alien', 'rainbow']) },
+                { w: 10, run: () => '💎 특별 대박! ' + giveScoreSecs(100000, 7200) }
+            ]
+        };
+        window.extOpenBox = function(tier) {
+            if (isUserScoreLocked || isUserJailed) return;
+            if (!(ext.boxes[tier] > 0)) return;
+            ext.boxes[tier]--; ext.opened++;
+            const table = BOX_TABLES[tier]; let r = Math.random() * 100, acc = 0, pick = table[0];
+            for (const o of table) { acc += o.w; if (r < acc) { pick = o; break; } }
+            const msg = pick.run();
+            lastBoxResult = `${EXT_TIERS[tier].icon} ${EXT_TIERS[tier].name} 상자 → ${msg}`;
+            showPeperoToast(lastBoxResult);
+            updateDisplay(); saveGameToServer(true); refreshExtUi();
+        };
+
+        // ---------- 연구 ----------
+        window.extBuyResearch = function(id) {
+            const r = RESEARCH.find(x => x.id === id); if (!r || ext.research[id]) return;
+            if (r.req && !ext.research[r.req]) return alert('먼저 앞선 연구를 완료해야 해요.');
+            if (!isAdminAuthenticated && score < r.cost) return alert('시현이 부족해요.');
+            if (!isAdminAuthenticated) score -= r.cost;
+            ext.research[id] = true;
+            updateDisplay(); saveGameToServer(true); refreshExtUi();
+        };
+
+        // ---------- 퀘스트 ----------
+        window.extClaimQuest = function(id) {
+            const q = QUESTS.find(x => x.id === id); if (!q || ext.questClaimed[id]) return;
+            if (q.get() < q.goal) return;
+            ext.questClaimed[id] = true;
+            score += q.score; giveBox(q.box, 1, true);
+            let msg = `📜 퀘스트 완료! +${formatKo(q.score)} 시현 & ${EXT_TIERS[q.box].name} 상자`;
+            if (q.skin) { ext.skins[q.skin] = true; msg += ` & 스킨 ${SKINS[q.skin].icon}`; }
+            showPeperoToast(msg);
+            updateDisplay(); saveGameToServer(true); refreshExtUi();
+        };
+
+        // ---------- 행성 ----------
+        window.extBuyPlanet = function(id) {
+            const p = PLANETS[id]; if (!p || id <= ext.planet) return;
+            if (id !== ext.planet + 1) return alert('행성은 순서대로 해금해야 해요.');
+            if (!isAdminAuthenticated && score < p.cost) return alert('시현이 부족해요.');
+            if (!isAdminAuthenticated) score -= p.cost;
+            ext.planet = id;
+            if (p.skin) ext.skins[p.skin] = true;
+            showPeperoToast(`🚀 ${p.icon} ${p.name} 개척 완료! 모든 수익 +${Math.round(p.bonus * 100)}%`);
+            updateDisplay(); saveGameToServer(true); refreshExtUi();
+        };
+
+        // ---------- 스킨 ----------
+        function skinDataUri(sk) {
+            const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'><defs><radialGradient id='g' cx='35%' cy='30%'><stop offset='0' stop-color='${sk.bg[0]}'/><stop offset='1' stop-color='${sk.bg[1]}'/></radialGradient></defs><circle cx='110' cy='110' r='110' fill='url(#g)'/><text x='110' y='112' font-size='120' text-anchor='middle' dominant-baseline='central'>${sk.icon}</text></svg>`;
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        }
+        function applyExtSkin() {
+            const img = document.getElementById('cookieImg'); if (!img) return;
+            if (ext.skin === 'default' || !SKINS[ext.skin] || !ext.skins[ext.skin]) img.src = '1000000883.jpg';
+            else img.src = skinDataUri(SKINS[ext.skin]);
+        }
+        window.extEquipSkin = function(id) {
+            if (id !== 'default' && !ext.skins[id]) return;
+            ext.skin = id; applyExtSkin(); saveGameToServer(true); refreshExtUi();
+        };
+
+        // ---------- 도감 ----------
+        function codexCategories() {
+            const itemKeys = Object.keys(items);
+            return [
+                { id: 'items',   name: '생산 시설', list: itemKeys.map(k => ({ ok: ext.codex['i_' + k] || items[k].count > 0, icon: items[k].icon, name: items[k].name })) },
+                { id: 'pets',    name: '펫',        list: petCatalog.map(p => ({ ok: !!ownedPets[p.id] || ext.codex['p_' + p.id], icon: p.icon, name: p.name })) },
+                { id: 'weather', name: '날씨',      list: WEATHERS.map(w => ({ ok: !!ext.codex['w_' + w.id], icon: w.icon, name: w.name })) },
+                { id: 'planets', name: '행성',      list: PLANETS.map(p => ({ ok: ext.planet >= p.id, icon: p.icon, name: p.name })) },
+                { id: 'skins',   name: '스킨',      list: Object.keys(SKINS).filter(k => k !== 'default').map(k => ({ ok: !!ext.skins[k], icon: SKINS[k].icon, name: SKINS[k].name })) }
+            ];
+        }
+        function recordCodex() {
+            Object.keys(items).forEach(k => { if (items[k].count > 0) ext.codex['i_' + k] = true; });
+            petCatalog.forEach(p => { if (ownedPets[p.id]) ext.codex['p_' + p.id] = true; });
+            ext.codex['w_' + weatherNow().id] = true;
+        }
+        window.extClaimCodex = function(catId) {
+            const cat = codexCategories().find(c => c.id === catId);
+            if (!cat || ext.codexClaimed[catId] || !cat.list.every(x => x.ok)) return;
+            ext.codexClaimed[catId] = true;
+            giveBox('legend', 1, true);
+            showPeperoToast(`📖 도감 [${cat.name}] 완성! 전설 상자 획득`);
+            saveGameToServer(true); refreshExtUi();
+        };
+
+        // ---------- HUD ----------
+        function fmtMs(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+        function updateExtHud() {
+            try {
+                recordCodex();
+                ext.buffs = ext.buffs.filter(b => b.until > Date.now());
+                const w = weatherNow();
+                const wEl = document.getElementById('extWeather');
+                if (wEl) {
+                    const eff = Math.round((weatherMult() - 1) * 100);
+                    wEl.innerText = `${w.icon} ${w.name}${eff > 0 ? ` 생산 +${eff}%` : ''} · ${fmtMs(w.endsAt - Date.now())}`;
+                }
+                const bEl = document.getElementById('extBuffs');
+                if (bEl) bEl.innerText = ext.buffs.map(b => `⚡${b.t === 'sps' ? '생산' : '클릭'} x${b.m} (${fmtMs(b.until - Date.now())})`).join('  ');
+                const total = ext.boxes.common + ext.boxes.rare + ext.boxes.legend;
+                const btn = document.getElementById('extOpenBtn');
+                if (btn) btn.innerText = `🌌 확장 (상자·연구·퀘스트·도감·스킨·행성)${total > 0 ? ` 🎁${total}` : ''}`;
+                if (document.getElementById('extModal').classList.contains('active') && ext._tab === 'boxes') { /* 상자 탭은 타이머 없음 */ }
+            } catch (_) {}
+        }
+        setInterval(updateExtHud, 1000);
+
+        // ---------- 모달 UI ----------
+        ext._tab = 'boxes';
+        const EXT_TABS = [['boxes', '🎁 상자'], ['research', '🔬 연구'], ['quests', '📜 퀘스트'], ['codex', '📖 도감'], ['skins', '🎨 스킨'], ['planets', '🚀 행성']];
+        window.openExtModal = function(tab) { ext._tab = tab || ext._tab || 'boxes'; document.getElementById('extModal').classList.add('active'); renderExt(); };
+        window.closeExtModal = function() { document.getElementById('extModal').classList.remove('active'); };
+        window.extSetTab = function(t) { ext._tab = t; renderExt(); };
+        function refreshExtUi() { updateExtHud(); if (document.getElementById('extModal') && document.getElementById('extModal').classList.contains('active')) renderExt(); }
+
+        function renderExt() {
+            const tabs = document.getElementById('extTabs'), body = document.getElementById('extBody');
+            if (!tabs || !body) return;
+            tabs.innerHTML = EXT_TABS.map(([id, label]) => `<button class="ext-tab ${ext._tab === id ? 'on' : ''}" onclick="extSetTab('${id}')">${label}</button>`).join('');
+            const sc = `<div class="ext-money">보유 ${formatKo(score)} 시현</div>`;
+            let html = '';
+            if (ext._tab === 'boxes') {
+                html += `<div class="ext-note">상자는 <b>500번 클릭마다 · 버그 처치 · 황금쿠키 · 미션 완료 · 퀘스트</b>에서 얻어요. 등급이 높을수록 좋은 보상(시현·버프·영구 업그레이드·스킨)이 나와요.</div>`;
+                html += Object.keys(EXT_TIERS).map(t => {
+                    const T = EXT_TIERS[t];
+                    return `<div class="ext-card" style="border-color:${T.color};"><div style="font-size:30px;">${T.icon}</div><div style="flex:1;"><b style="color:${T.color};">${T.name} 상자</b> × ${ext.boxes[t]}<div class="ext-sub">${t === 'common' ? '시현 · 클릭버프 · 영구 +0.5% · 희귀상자 5%' : t === 'rare' ? '시현 · 생산버프 · 영구 +1%/크리 · 전설상자 7%' : '큰 시현 · 생산 x3 · 영구 +3% · 전설 스킨 · 대박'}</div></div><button class="ext-btn" ${ext.boxes[t] > 0 ? '' : 'disabled'} onclick="extOpenBox('${t}')">열기</button></div>`;
+                }).join('');
+                html += `<div class="ext-result">${lastBoxResult || '상자를 열어보세요!'}</div>`;
+                html += `<div class="ext-sub">영구 보너스: 생산 +${ext.permSps.toFixed(1)}% · 크리티컬 +${ext.permCrit.toFixed(1)}% · 지금까지 연 상자 ${ext.opened}개</div>`;
+            } else if (ext._tab === 'research') {
+                html += sc + `<div class="ext-note">연구를 완료하면 영구적으로 생산 기술이 해금돼요. (환생해도 유지)</div>`;
+                html += RESEARCH.map(r => {
+                    const done = !!ext.research[r.id], locked = r.req && !ext.research[r.req];
+                    const reqName = r.req ? RESEARCH.find(x => x.id === r.req).name : '';
+                    return `<div class="ext-card ${done ? 'done' : ''}"><div style="flex:1;"><b>${r.name}</b><div class="ext-sub">${r.desc}${locked ? ` · 🔒 선행: ${reqName}` : ''}</div></div>` +
+                        (done ? `<span class="ext-ok">✅ 완료</span>` : `<button class="ext-btn" ${locked ? 'disabled' : ''} onclick="extBuyResearch('${r.id}')">${formatKo(r.cost)}</button>`) + `</div>`;
+                }).join('');
+            } else if (ext._tab === 'quests') {
+                html += `<div class="ext-note">목표를 달성하면 시현과 상자(일부는 스킨)를 받아요.</div>`;
+                html += QUESTS.map(q => {
+                    const cur = Math.min(q.get(), q.goal), pct = Math.floor(cur / q.goal * 100), done = !!ext.questClaimed[q.id], can = !done && q.get() >= q.goal;
+                    return `<div class="ext-card ${done ? 'done' : ''}"><div style="flex:1;"><b>${q.name}</b> <span class="ext-sub">(${formatKo(cur)}/${formatKo(q.goal)})</span><div class="ext-bar"><div style="width:${pct}%;"></div></div><div class="ext-sub">보상: ${formatKo(q.score)} 시현 + ${EXT_TIERS[q.box].icon}${EXT_TIERS[q.box].name} 상자${q.skin ? ' + 스킨 ' + SKINS[q.skin].icon : ''}</div></div>` +
+                        (done ? `<span class="ext-ok">✅</span>` : `<button class="ext-btn" ${can ? '' : 'disabled'} onclick="extClaimQuest('${q.id}')">받기</button>`) + `</div>`;
+                }).join('');
+            } else if (ext._tab === 'codex') {
+                html += `<div class="ext-note">모은 시설·펫·날씨·행성·스킨이 기록돼요. 한 분류를 모두 모으면 전설 상자!</div>`;
+                html += codexCategories().map(c => {
+                    const got = c.list.filter(x => x.ok).length, full = got === c.list.length, claimed = !!ext.codexClaimed[c.id];
+                    return `<div class="ext-card" style="display:block;"><div style="display:flex; justify-content:space-between; align-items:center;"><b>${c.name} ${got}/${c.list.length}</b>` +
+                        (claimed ? `<span class="ext-ok">✅ 보상 수령</span>` : `<button class="ext-btn" ${full ? '' : 'disabled'} onclick="extClaimCodex('${c.id}')">🏆 완성 보상</button>`) + `</div><div class="ext-grid">` +
+                        c.list.map(x => `<div class="ext-dex ${x.ok ? 'got' : ''}" title="${x.ok ? x.name : '???'}"><div style="font-size:24px;">${x.ok ? x.icon : '❔'}</div><div class="ext-sub">${x.ok ? x.name : '???'}</div></div>`).join('') + `</div></div>`;
+                }).join('');
+            } else if (ext._tab === 'skins') {
+                html += `<div class="ext-note">클릭하는 대상의 외형을 바꿔요. (외형만 바뀌고 능력치는 그대로예요)</div><div class="ext-grid">`;
+                html += Object.keys(SKINS).map(k => {
+                    const sk = SKINS[k], own = k === 'default' || !!ext.skins[k], on = ext.skin === k;
+                    return `<div class="ext-dex ${own ? 'got' : ''} ${on ? 'on' : ''}" ${own ? `onclick="extEquipSkin('${k}')" style="cursor:pointer;"` : ''}><div style="font-size:30px;">${own ? sk.icon : '🔒'}</div><div class="ext-sub"><b>${own ? sk.name : '???'}</b></div><div class="ext-sub">${on ? '✅ 장착 중' : (own ? '눌러서 장착' : sk.src)}</div></div>`;
+                }).join('') + `</div>`;
+            } else if (ext._tab === 'planets') {
+                html += sc + `<div class="ext-note">시현을 모아 새 행성을 개척하면 <b>모든 수익(클릭·자동 생산)</b>이 영구적으로 늘고, 새 스킨도 얻어요. 순서대로 해금해요.</div>`;
+                html += PLANETS.map(p => {
+                    const owned = ext.planet >= p.id, next = p.id === ext.planet + 1;
+                    return `<div class="ext-card ${owned ? 'done' : ''}"><div style="font-size:30px;">${p.icon}</div><div style="flex:1;"><b>${p.name}</b><div class="ext-sub">${p.id === 0 ? '고향 행성' : `모든 수익 +${Math.round(p.bonus * 100)}% · 스킨 ${SKINS[p.skin].icon}`}</div></div>` +
+                        (owned ? `<span class="ext-ok">✅ 개척 완료</span>` : `<button class="ext-btn" ${next ? '' : 'disabled'} onclick="extBuyPlanet(${p.id})">${next ? formatKo(p.cost) : '🔒 ' + formatKo(p.cost)}</button>`) + `</div>`;
+                }).join('');
+            }
+            body.innerHTML = html;
+        }
 
         // ===== 일반관리자 차단 가드: 최고관리자 전용 기능을 한 번에 보호 =====
         (function installSuperOnlyGuards() {
