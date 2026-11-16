@@ -342,6 +342,46 @@
             .scroll-container { overflow-y: visible; max-height: none; }
             .modal-box { width: 95%; max-height: 90dvh; }
         }
+
+        /* ===== 이동 링크 광고 (로그아웃 버튼 옆) ===== */
+        #linkAdWrap { display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+        .link-ad-btn {
+            display:inline-flex; align-items:center; gap:4px; text-decoration:none; cursor:pointer;
+            background:linear-gradient(90deg,#7c3aed,#2563eb); color:#fff !important; border:1px solid #a78bfa;
+            padding:6px 12px; font-size:12px; font-weight:bold; border-radius:16px; white-space:nowrap;
+            max-width:60vw; overflow:hidden; text-overflow:ellipsis; animation:linkAdPulse 1.4s infinite alternate;
+        }
+        .link-ad-btn:active { transform:scale(.96); }
+        @keyframes linkAdPulse { from { box-shadow:0 0 0 rgba(167,139,250,0); } to { box-shadow:0 0 10px rgba(167,139,250,.9); } }
+        .adm-link-row { display:flex; align-items:center; gap:6px; background:var(--input-bg); border:1px solid var(--border-color); border-radius:6px; padding:6px 8px; margin-bottom:6px; font-size:12px; color:var(--text-main); }
+        .adm-link-row .adm-link-info { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .adm-link-row button { background:#991b1b; color:#fff; border:none; border-radius:4px; padding:8px 12px; font-weight:bold; cursor:pointer; font-size:12px; }
+
+        /* ===== 갤럭시 탭 S6 Lite 최적화 (10.4", 2000x1200, 가로≈1200 / 세로≈750 CSS px) ===== */
+        html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+        button, .shop-item, .spec-mini-card, .center-toggle-bar, .link-ad-btn, #leftPanel, .bug-entity { touch-action: manipulation; }
+        #leftPanel, #leftPanel * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        input, textarea { -webkit-user-select: text; user-select: text; font-size: 16px; } /* 16px 미만이면 안드로이드 크롬이 확대함 */
+        button { min-height: 36px; }
+        .admin-action-row { flex-wrap: wrap; }
+        .admin-action-btn { min-height: 44px; min-width: 120px; }
+        .modal-box { max-height: 94dvh; }
+        .modal-body { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        #topNavBar { height: auto; min-height: 45px; padding-top: 4px; padding-bottom: 4px; gap: 6px; flex-wrap: wrap; }
+        @media (min-width: 769px) and (max-width: 1400px) and (pointer: coarse) {
+            /* 탭 가로 모드: 3단 레이아웃 유지 + 터치하기 편한 크기 */
+            #leftPanel { width: 30%; }
+            #rightPanel { width: 34%; }
+            .shop-item { padding: 14px 12px; }
+            .nav-logout-btn { padding: 10px 16px; font-size: 13px; }
+            .link-ad-btn { padding: 9px 14px; font-size: 13px; }
+            .modal-box { width: min(680px, 92vw); }
+        }
+        @media (max-width: 768px) and (pointer: coarse) {
+            /* 탭 세로 모드(≈750px) */
+            .nav-logout-btn { padding: 10px 14px; }
+            .shop-item { padding: 14px 12px; }
+        }
     </style>
 </head>
 <body>
@@ -355,6 +395,7 @@
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
             <button id="pwaInstallBtn" onclick="installPWA()" style="display:none; background-color:#00ffcc; color:#000; border:none; padding:6px 12px; font-size:12px; font-weight:bold; border-radius:4px; cursor:pointer;">📲 앱 설치</button>
+            <div id="linkAdWrap"></div>
             <button class="nav-logout-btn" onclick="handleLogout()">로그아웃 (안전저장)</button>
         </div>
     </div>
@@ -375,7 +416,7 @@
         <div id="jailInfoText" style="color:#fca5a5; margin-bottom:12px;">관리자에 의해 수감되었습니다.</div>
         <div id="jailChatArea" style="width:min(420px,90vw); height:180px; overflow:auto; background:#111827; color:#f3f4f6; border:1px solid #374151; border-radius:8px; padding:8px; text-align:left; font-size:13px;"></div>
         <div style="display:flex; gap:6px; width:min(420px,90vw); margin-top:8px;">
-            <input id="jailChatInput" type="text" placeholder="감옥 채팅 (수감자·관리자만 볼 수 있어요)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #374151; background:#0b1220; color:#fff;" onkeydown="if(event.key==='Enter') sendJailChat('jailChatInput')">
+            <input id="jailChatInput" type="text" placeholder="감옥 채팅 (수감자·관리자만 볼 수 있어요)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #374151; background:#0b1220; color:#fff;" onkeydown="jailEnter(event,'jailChatInput')" enterkeyhint="send">
             <button onclick="sendJailChat('jailChatInput')" style="padding:8px 14px; border:none; border-radius:6px; background:#f97316; color:#fff; font-weight:bold; cursor:pointer;">전송</button>
         </div>
         <button id="jailBailBtn" onclick="payJailBail()" style="display:none; margin-top:12px; padding:10px 18px; border:none; border-radius:8px; background:#16a34a; color:#fff; font-weight:bold; cursor:pointer;">💰 보석금 내고 석방</button>
@@ -726,6 +767,30 @@
                     <button class="admin-action-btn btn-unban" onclick="executeAdminStockControl('RESET')">⚖️ 주가 기준가 초기화</button>
                 </div>
 
+                <div class="admin-section-title" style="color:#a78bfa; border-color:#a78bfa;">🔗 이동 링크 광고 (로그아웃 버튼 옆에 전 유저에게 표시)</div>
+                <div style="font-size:11px; color:var(--text-sub); margin-bottom:6px; line-height:1.5;">버튼 문구에 이름만 쓰면 <b>“이름로/으로 이동하세요!”</b> 형태로 표시돼요. 예) 문구 <b>유튜브</b> → 🔗 유튜브로 이동하세요! (최대 5개)</div>
+                <div class="form-group" style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <input type="url" id="admLinkUrlInput" inputmode="url" autocapitalize="off" autocomplete="off" placeholder="URL (예: https://youtube.com)" style="flex:2 1 180px; margin:0;">
+                    <input type="text" id="admLinkLabelInput" maxlength="20" placeholder="버튼 문구 (예: 유튜브)" style="flex:1 1 120px; margin:0;" onkeydown="if((event.key==='Enter'||event.keyCode===13) && !event.isComposing && event.keyCode!==229){event.preventDefault();executeAdminAddLink();}">
+                    <button type="button" class="admin-action-btn btn-plus" style="flex:0 0 auto;" onclick="executeAdminAddLink()">➕ 추가</button>
+                </div>
+                <div id="admLinkListArea"></div>
+
+                <div class="admin-section-title" style="color:#ef4444; border-color:#ef4444;">🛑 진행 중인 이벤트 즉시 종료</div>
+                <div class="admin-action-row">
+                    <button type="button" class="admin-action-btn" style="background:#b45309 !important;" onclick="executeAdminEndAirdrop()">🎁 에어드랍 즉시 종료</button>
+                    <button type="button" class="admin-action-btn" style="background:#4b5563 !important;" onclick="executeAdminControlRaid('STOP')">⚔️ 레이드 즉시 종료</button>
+                    <button type="button" class="admin-action-btn btn-unban" onclick="executeAdminDetonateServer(false)">✅ 서버 폭발 해제</button>
+                </div>
+                <div class="admin-action-row">
+                    <button type="button" class="admin-action-btn btn-unban" onclick="executeAdminStockControl('RESET')">⚖️ 주가 이벤트 종료(초기화)</button>
+                    <button type="button" class="admin-action-btn" style="background:#ca8a04 !important;" onclick="executeAdminResetNotice()">📢 공지 내리기</button>
+                    <button type="button" class="admin-action-btn" style="background:#6d28d9 !important;" onclick="executeAdminClearLinks()">🔗 링크 광고 전체 삭제</button>
+                </div>
+                <div class="admin-action-row">
+                    <button type="button" class="admin-btn-danger" style="margin-top:0;" onclick="executeAdminEndAllEvents()">🧯 모든 이벤트 한 번에 종료</button>
+                </div>
+
                 <div id="adminSectionRanking">
                     <div class="admin-section-title" style="color: #facc15; border-color: #facc15;">💰 랭킹 보상 & 도박 승률 제어</div>
                     <div class="admin-action-row">
@@ -803,8 +868,9 @@
                         <button class="admin-action-btn btn-unban" onclick="executeAdminJail(false)">🔓 석방</button>
                     </div>
                     <div id="adminJailChatArea" style="height:110px; overflow:auto; border-radius:6px; padding:6px; font-size:12px; margin:6px 0;"></div>
-                    <div class="form-group">
-                        <input type="text" id="adminJailChatInput" placeholder="감옥에 메시지 보내기 (Enter)" onkeydown="if(event.key==='Enter') sendJailChat('adminJailChatInput')">
+                    <div class="form-group" style="display:flex; gap:6px;">
+                        <input type="text" id="adminJailChatInput" placeholder="감옥에 메시지 보내기 (Enter 또는 전송 버튼)" style="flex:1; margin:0;" enterkeyhint="send" onkeydown="jailEnter(event,'adminJailChatInput')">
+                        <button type="button" class="admin-action-btn" style="flex:0 0 auto; min-width:80px; background:#f97316 !important;" onclick="sendJailChat('adminJailChatInput')">📨 전송</button>
                     </div>
                 </div>
 
@@ -1843,6 +1909,7 @@
                 const drop = JSON.parse(data.content);
                 drop.claimedBy = Array.isArray(drop.claimedBy) ? drop.claimedBy : [];
 
+                if (drop.ended) { document.getElementById('airdropBanner').style.display = 'none'; return alert("종료된 에어드랍입니다."); }
                 if (drop.claimedBy.includes(currentUserId)) return alert("이미 이번 에어드랍을 수령하셨습니다!");
                 if (drop.claimedBy.length >= drop.maxCount) {
                     document.getElementById('airdropBanner').style.display = 'none';
@@ -2330,10 +2397,154 @@
             }
         };
 
+
+        // ===== ⌨️ 감옥 채팅 Enter (한글 입력 중 중복 전송 방지) =====
+        window.jailEnter = function(e, inputId) {
+            if (e.isComposing || e.keyCode === 229) return;
+            if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); window.sendJailChat(inputId); }
+        };
+
+        // ===== 🔗 이동 링크 광고 =====
+        let _linkAdList = [];
+        function normalizeLinkUrl(raw) {
+            let u = String(raw || '').trim();
+            if (!u) return null;
+            if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) u = 'https://' + u;
+            try {
+                const parsed = new URL(u);
+                if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+                return parsed.href;
+            } catch (_) { return null; }
+        }
+        function withRoJosa(label) {
+            const ch = String(label).trim().slice(-1);
+            const code = ch.charCodeAt(0);
+            if (code >= 0xAC00 && code <= 0xD7A3) {
+                const jong = (code - 0xAC00) % 28;
+                return (jong === 0 || jong === 8) ? '로' : '으로';
+            }
+            return '로';
+        }
+        function parseLinkAds(content) {
+            try {
+                const arr = JSON.parse(content || '[]');
+                return (Array.isArray(arr) ? arr : []).filter(l => l && normalizeLinkUrl(l.url) && l.label).slice(0, 5);
+            } catch (_) { return []; }
+        }
+        function renderLinkAds(row) {
+            _linkAdList = row ? parseLinkAds(row.content) : [];
+            const wrap = document.getElementById('linkAdWrap');
+            if (wrap) {
+                wrap.textContent = '';
+                _linkAdList.forEach(l => {
+                    const a = document.createElement('a');
+                    a.className = 'link-ad-btn';
+                    a.href = normalizeLinkUrl(l.url);
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.textContent = `🔗 ${l.label}${withRoJosa(l.label)} 이동하세요!`;
+                    wrap.appendChild(a);
+                });
+            }
+            renderAdminLinkList();
+        }
+        function renderAdminLinkList() {
+            const box = document.getElementById('admLinkListArea');
+            if (!box) return;
+            if (!_linkAdList.length) { box.innerHTML = '<div style="font-size:11px; color:var(--text-sub); margin-bottom:6px;">등록된 링크가 없어요.</div>'; return; }
+            box.innerHTML = _linkAdList.map(l =>
+                `<div class="adm-link-row"><span class="adm-link-info"><b>${jailEsc(l.label)}</b> · ${jailEsc(l.url)}</span><button type="button" onclick="executeAdminDeleteLink('${jailEsc(String(l.id))}')">🗑️ 삭제</button></div>`
+            ).join('');
+        }
+        async function saveLinkAds(list) {
+            const { error } = await gameDB.from('system_notice').upsert({ id: 'link_ad', content: JSON.stringify(list), updatedBy: currentUserId, timestamp: Date.now() }, { onConflict: 'id' });
+            if (error) { alert('링크 저장 실패: ' + explainError(error)); return false; }
+            _linkAdList = list; renderLinkAds({ content: JSON.stringify(list) });
+            return true;
+        }
+        async function loadLinkAdsFresh() {
+            const { data } = await gameDB.from('system_notice').select('content').eq('id', 'link_ad').maybeSingle();
+            return data ? parseLinkAds(data.content) : [];
+        }
+        window.executeAdminAddLink = async function() {
+            if (!isAdminAuthenticated) return;
+            const urlEl = document.getElementById('admLinkUrlInput'), labelEl = document.getElementById('admLinkLabelInput');
+            const url = normalizeLinkUrl(urlEl.value);
+            const label = labelEl.value.trim();
+            if (!url) return alert('올바른 URL을 입력해줘! (http:// 또는 https:// 주소)');
+            if (!label) return alert('버튼에 쓸 문구를 입력해줘! (예: 유튜브)');
+            const list = await loadLinkAdsFresh();
+            if (list.length >= 5) return alert('링크는 최대 5개까지 추가할 수 있어요. 하나를 삭제하고 다시 추가해줘!');
+            list.push({ id: Date.now(), url, label });
+            if (await saveLinkAds(list)) {
+                urlEl.value = ''; labelEl.value = '';
+                logAdminAction('링크 광고 추가', '', `${label} → ${url}`);
+            }
+        };
+        window.executeAdminDeleteLink = async function(id) {
+            if (!isAdminAuthenticated) return;
+            const list = (await loadLinkAdsFresh()).filter(l => String(l.id) !== String(id));
+            if (await saveLinkAds(list)) logAdminAction('링크 광고 삭제', '', String(id));
+        };
+        window.executeAdminClearLinks = async function() {
+            if (!isAdminAuthenticated) return;
+            if (!confirm('등록된 링크 광고를 모두 삭제할까요?')) return;
+            if (await saveLinkAds([])) alert('🔗 링크 광고를 모두 삭제했어요.');
+        };
+
+        // ===== 🛑 이벤트 즉시 종료 =====
+        async function _endAirdropQuiet() {
+            const { error } = await gameDB.from('system_notice').upsert({ id: 'airdrop_live', content: JSON.stringify({ dropId: Date.now(), reward: 0, maxCount: 0, claimedBy: [], ended: true }), timestamp: Date.now() }, { onConflict: 'id' });
+            currentAirdropData = null;
+            const b = document.getElementById('airdropBanner'); if (b) b.style.display = 'none';
+            return error;
+        }
+        window.executeAdminEndAirdrop = async function() {
+            if (!isAdminAuthenticated) return;
+            const err = await _endAirdropQuiet();
+            if (err) return alert('에어드랍 종료 실패: ' + explainError(err));
+            logAdminAction('에어드랍 즉시 종료', '', '');
+            alert('🎁 에어드랍을 종료했어요. 모든 접속자의 배너가 사라집니다.');
+        };
+        async function _resetNoticeQuiet() {
+            return (await gameDB.from('system_notice').upsert({ id: 'live', content: '시현클리커 시즌2 정식버전 실시간 서버 연동 중...', updatedBy: currentUserId, timestamp: Date.now() }, { onConflict: 'id' })).error;
+        }
+        window.executeAdminResetNotice = async function() {
+            if (!isAdminAuthenticated) return;
+            const err = await _resetNoticeQuiet();
+            if (err) return alert('공지 내리기 실패: ' + explainError(err));
+            await refreshLiveNoticeOnce();
+            alert('📢 공지를 기본 문구로 되돌렸어요.');
+        };
+        window.executeAdminEndAllEvents = async function() {
+            if (!isAdminAuthenticated) return;
+            if (!confirm('에어드랍·레이드·서버 폭발·공지(+주가 초기화)를 모두 종료할까요?\n(레이드는 보상 없이 사라집니다)')) return;
+            const results = [];
+            const err1 = await _endAirdropQuiet(); results.push('에어드랍 ' + (err1 ? '실패' : '종료'));
+            try {
+                const { error } = await gameDB.from('world_raid').delete().eq('id', 'current_boss');
+                if (!error) { try { await gameDB.from('raid_damage').delete().neq('userId', ''); } catch (_) {} globalRaidActive = false; globalRaidHp = 0; pendingRaidDamage = 0; renderRaidBossUI(); }
+                results.push('레이드 ' + (error ? '실패' : '종료'));
+            } catch (_) { results.push('레이드 실패'); }
+            try {
+                const { error } = await gameDB.from('server_status').upsert({ id: 'state', isDetonated: false, triggeredBy: currentUserId, timestamp: Date.now() }, { onConflict: 'id' });
+                await checkServerExplosionOnce();
+                results.push('폭발 ' + (error ? '실패' : '해제'));
+            } catch (_) { results.push('폭발 실패'); }
+            const err4 = await _resetNoticeQuiet(); results.push('공지 ' + (err4 ? '실패' : '초기화'));
+            if (isUserSuperAdmin) {
+                try { const { error } = await gameDB.rpc('admin_stock_event', { p_type: 'RESET' }); results.push('주가 ' + (error ? '실패' : '초기화')); await fetchStockPrices(); } catch (_) { results.push('주가 실패'); }
+            }
+            await refreshLiveNoticeOnce();
+            logAdminAction('모든 이벤트 종료', '', results.join(', '));
+            alert('🧯 처리 결과\n' + results.join('\n'));
+        };
+
         async function refreshLiveNoticeOnce() {
             try {
-                const { data } = await gameDB.from('system_notice').select('*').in('id', ['live', 'gamble_rate', 'airdrop_live', 'stock_event', 'season_info']);
+                const { data } = await gameDB.from('system_notice').select('*').in('id', ['live', 'gamble_rate', 'airdrop_live', 'stock_event', 'season_info', 'link_ad']);
                 if (!data) return;
+                renderLinkAds(data.find(r => r.id === 'link_ad'));
                 const liveRow = data.find(r => r.id === 'live');
                 if (liveRow) document.getElementById('liveNoticeContentText').innerText = liveRow.content || '시현클리커 시즌2 정식버전 실시간 서버 연동 완료.';
 
@@ -2349,11 +2560,15 @@
 
 
                 const dropRow = data.find(r => r.id === 'airdrop_live');
+                if (!dropRow || !dropRow.content) {
+                    currentAirdropData = null;
+                    document.getElementById('airdropBanner').style.display = 'none';
+                }
                 if (dropRow && dropRow.content) {
                     const drop = JSON.parse(dropRow.content);
                     currentAirdropData = drop;
                     const claimed = Array.isArray(drop.claimedBy) ? drop.claimedBy : [];
-                    if (claimed.length < drop.maxCount && !claimed.includes(currentUserId)) {
+                    if (!drop.ended && claimed.length < drop.maxCount && !claimed.includes(currentUserId)) {
                         document.getElementById('airdropText').innerText = `🎁 [선착순 에어드랍] +${formatKo(Number(drop.reward))} 시현! (남은 수량: ${drop.maxCount - claimed.length}/${drop.maxCount}명)`;
                         document.getElementById('airdropBanner').style.display = 'flex';
                     } else {
