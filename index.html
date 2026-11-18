@@ -1704,6 +1704,8 @@
         function renderStockUI() {
             const area = document.getElementById('stockListArea');
             if (!area) return;
+            const ae = document.activeElement;
+            if (ae && ae.classList && ae.classList.contains('stock-qty-input') && area.contains(ae)) return; // 입력 중엔 다시 그리지 않음
             area.innerHTML = '';
             for (const k in stocks) {
                 const st = stocks[k];
@@ -1717,9 +1719,13 @@
                         <strong>${st.name}</strong> <span style="color:${color}; font-weight:bold;">${formatKo(st.price)} 시현 (${sign})</span>
                         <div style="font-size:10px; color:var(--text-sub);">보유: ${formatKo(myCnt)}주</div>
                     </div>
-                    <div style="display:flex; gap:4px;">
+                    <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" class="stock-qty-input" data-key="${k}" placeholder="수량" value="${stockQtyDraft[k] || ''}" style="width:80px; padding:6px; font-size:16px; border-radius:4px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);" oninput="stockQtyChanged(this)" onkeydown="if((event.key==='Enter'||event.keyCode===13)&&!event.isComposing&&event.keyCode!==229){event.preventDefault();buyStockByInput('${k}');}">
+                        <button class="stock-btn" style="background:#0ea5e9;" onclick="buyStockByInput('${k}')">입력수량 매수</button>
+                        <button class="stock-btn" style="background:#6366f1;" onclick="fillMaxStockQty('${k}')">최대</button>
                         <button class="stock-btn" style="background:#10b981;" onclick="tradeStock('${k}', 'BUY', 1)">매수x1</button>
                         <button class="stock-btn" style="background:#059669;" onclick="tradeStock('${k}', 'BUY', 10)">매수x10</button>
+                        <button class="stock-btn" style="background:#f97316;" onclick="sellStockByInput('${k}')">입력수량 매도</button>
                         <button class="stock-btn" style="background:#ef4444;" onclick="tradeStock('${k}', 'SELL', 0)">전량매도</button>
                     </div>
                 `;
@@ -1727,22 +1733,55 @@
             }
         }
 
+        let stockQtyDraft = {};
+        window.stockQtyChanged = function(el) {
+            const v = el.value.replace(/[^0-9]/g, '').slice(0, 12);
+            if (v !== el.value) el.value = v;
+            stockQtyDraft[el.dataset.key] = v;
+        };
+        window.fillMaxStockQty = function(key) {
+            const st = stocks[key];
+            const max = isAdminAuthenticated ? 1000000 : Math.floor(score / Math.max(1, st.price));
+            stockQtyDraft[key] = String(Math.max(0, max));
+            const el = document.querySelector(`.stock-qty-input[data-key="${key}"]`);
+            if (el) el.value = stockQtyDraft[key];
+        };
+        window.buyStockByInput = async function(key) {
+            const el = document.querySelector(`.stock-qty-input[data-key="${key}"]`);
+            const raw = (el ? el.value : stockQtyDraft[key]) || '';
+            const qty = parseInt(raw, 10);
+            if (!qty || qty < 1) return alert('매수할 수량을 입력해줘! (예: 5000)');
+            if (el) el.blur();
+            stockQtyDraft[key] = '';
+            await window.tradeStock(key, 'BUY', qty);
+        };
+        window.sellStockByInput = async function(key) {
+            const el = document.querySelector(`.stock-qty-input[data-key="${key}"]`);
+            const qty = parseInt((el ? el.value : stockQtyDraft[key]) || '', 10);
+            if (!qty || qty < 1) return alert('매도할 수량을 입력해줘! (예: 5000)');
+            if (el) el.blur();
+            stockQtyDraft[key] = '';
+            await window.tradeStock(key, 'SELL', qty);
+        };
         window.tradeStock = async function(key, mode, qty) {
             if (isUserScoreLocked) return alert("🔒 관전자 계정은 주식 거래가 불가합니다.");
             if (!(await fetchStockPrices())) return alert("📉 주식 시세 서버에 연결할 수 없어 거래할 수 없어요.\n(관리자: stock_market SQL 설정이 필요합니다)");
             const st = stocks[key];
             if (mode === 'BUY') {
                 const cost = isAdminAuthenticated ? 0 : st.price * qty;
-                if (!isAdminAuthenticated && score < cost) return alert("시현이 부족합니다.");
+                if (!isAdminAuthenticated && score < cost) return alert(`시현이 부족합니다.\n(지금 최대 ${formatKo(Math.floor(score / Math.max(1, st.price)))}주까지 살 수 있어요)`);
                 if (!isAdminAuthenticated) score -= cost;
                 ownedStocks[key] = (ownedStocks[key] || 0) + qty;
             } else {
                 const myCnt = ownedStocks[key] || 0;
                 if (myCnt <= 0) return alert("보유 중인 주식이 없습니다.");
-                score += Math.floor(myCnt * st.price * (1 - STOCK_SELL_FEE));
-                ownedStocks[key] = 0;
+                const sellCnt = qty > 0 ? qty : myCnt;
+                if (sellCnt > myCnt) return alert(`보유 수량이 부족합니다. (보유: ${formatKo(myCnt)}주)`);
+                score += Math.floor(sellCnt * st.price * (1 - STOCK_SELL_FEE));
+                ownedStocks[key] = myCnt - sellCnt;
             }
             bumpDaily('trades');
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
             renderStockUI(); updateDisplay(); saveGameToServer(true);
         };
 
@@ -3679,6 +3718,7 @@
         }, 300);
 
         // ---------- 상자 획득 ----------
+        const BOX_CLICK_EVERY = 5000; // 클릭 몇 번마다 일반 상자 1개
         function luckyMult() { return ext.research.lucky ? 1.5 : 1; }
         function giveBox(tier, n = 1, silent) {
             ext.boxes[tier] = (ext.boxes[tier] || 0) + n;
@@ -3687,18 +3727,18 @@
         }
         function extOnClick() {
             ext.clickCounter++;
-            if (ext.clickCounter >= 500) { ext.clickCounter = 0; giveBox('common'); }
+            if (ext.clickCounter >= BOX_CLICK_EVERY) { ext.clickCounter = 0; giveBox('common'); }
         }
         function extOnBug() {
             const r = Math.random(), L = luckyMult();
-            if (r < 0.0015 * L) giveBox('legend');
-            else if (r < 0.0015 * L + 0.015 * L) giveBox('rare');
-            else if (r < 0.0015 * L + 0.015 * L + 0.06 * L) giveBox('common');
+            if (r < 0.0003 * L) giveBox('legend');
+            else if (r < 0.0003 * L + 0.004 * L) giveBox('rare');
+            else if (r < 0.0003 * L + 0.004 * L + 0.02 * L) giveBox('common');
         }
         function extOnGolden() {
             ext.goldens++;
             const r = Math.random(), L = luckyMult();
-            if (r < 0.06 * L) giveBox('rare'); else if (r < 0.31 * L) giveBox('common');
+            if (r < 0.01 * L) giveBox('rare'); else if (r < 0.06 * L) giveBox('common');
         }
         function extOnMission(allDone, count) {
             if (count > 0) giveBox('common', allDone ? Math.max(1, count - 1) : count, true);
@@ -3730,17 +3770,17 @@
         }
         const BOX_TABLES = {
             common: [
-                { w: 60, run: () => giveScoreSecs(500, 180) },
+                { w: 63, run: () => giveScoreSecs(500, 180) },
                 { w: 25, run: () => addBuff('click', 2, 60) },
                 { w: 10, run: () => permSps(0.5) },
-                { w: 5,  run: () => { giveBox('rare', 1, true); return '✨ 특별 보너스! 희귀 상자 획득'; } }
+                { w: 2,  run: () => { giveBox('rare', 1, true); return '✨ 특별 보너스! 희귀 상자 획득'; } }
             ],
             rare: [
-                { w: 45, run: () => giveScoreSecs(3000, 600) },
+                { w: 49, run: () => giveScoreSecs(3000, 600) },
                 { w: 25, run: () => addBuff('sps', 2, 300) },
                 { w: 18, run: () => permSps(1) },
                 { w: 5,  run: () => permCrit(0.5) },
-                { w: 7,  run: () => { giveBox('legend', 1, true); return '✨ 특별 보너스! 전설 상자 획득'; } }
+                { w: 3,  run: () => { giveBox('legend', 1, true); return '✨ 특별 보너스! 전설 상자 획득'; } }
             ],
             legend: [
                 { w: 30, run: () => giveScoreSecs(20000, 1800) },
@@ -3873,7 +3913,7 @@
             const sc = `<div class="ext-money">보유 ${formatKo(score)} 시현</div>`;
             let html = '';
             if (ext._tab === 'boxes') {
-                html += `<div class="ext-note">상자는 <b>500번 클릭마다 · 버그 처치 · 황금쿠키 · 미션 완료 · 퀘스트</b>에서 얻어요. 등급이 높을수록 좋은 보상(시현·버프·영구 업그레이드·스킨)이 나와요.</div>`;
+                html += `<div class="ext-note">상자는 <b>${formatKo(BOX_CLICK_EVERY)}번 클릭마다 · 버그 처치 · 황금쿠키 · 미션 완료 · 퀘스트</b>에서 얻어요. 등급이 높을수록 좋은 보상(시현·버프·영구 업그레이드·스킨)이 나와요.</div>`;
                 html += Object.keys(EXT_TIERS).map(t => {
                     const T = EXT_TIERS[t];
                     return `<div class="ext-card" style="border-color:${T.color};"><div style="font-size:30px;">${T.icon}</div><div style="flex:1;"><b style="color:${T.color};">${T.name} 상자</b> × ${ext.boxes[t]}<div class="ext-sub">${t === 'common' ? '시현 · 클릭버프 · 영구 +0.5% · 희귀상자 5%' : t === 'rare' ? '시현 · 생산버프 · 영구 +1%/크리 · 전설상자 7%' : '큰 시현 · 생산 x3 · 영구 +3% · 전설 스킨 · 대박'}</div></div><button class="ext-btn" ${ext.boxes[t] > 0 ? '' : 'disabled'} onclick="extOpenBox('${t}')">열기</button></div>`;
