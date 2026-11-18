@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v1] 시현클리커 시즌2 (Sihyun Clicker Season 2)</title>
+    <title>[v2] 시현클리커 시즌2 (Sihyun Clicker Season 2)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -53,6 +53,17 @@
         .google-auth-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; color:#3c4043; border:1px solid #dadce0; padding:13px; font-size:15px; font-weight:bold; border-radius:10px; cursor:pointer; }
         .google-auth-btn:hover { background:#f7f8f8; }
         .google-auth-btn:disabled { opacity:.6; cursor:wait; }
+
+
+        /* ===== v2 부팅 로딩화면 (Microsoft Store · Windows 10 스타일) ===== */
+        #bootLoader { position:fixed; inset:0; z-index:100000; background:linear-gradient(135deg,#0063b1 0%,#0f4c81 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:'Segoe UI','Malgun Gothic',sans-serif; }
+        #bootLoader .bl-logo { width:96px; height:96px; display:flex; align-items:center; justify-content:center; font-size:64px; margin-bottom:28px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+        #bootLoader .bl-title { font-size:20px; font-weight:300; letter-spacing:.5px; margin-bottom:46px; }
+        .bl-ring { position:relative; width:40px; height:40px; }
+        .bl-ring i { position:absolute; inset:0; animation:blSpin 2.4s infinite cubic-bezier(.4,.1,.6,.9); opacity:0; }
+        .bl-ring i::before { content:''; position:absolute; top:0; left:50%; width:6px; height:6px; margin-left:-3px; border-radius:50%; background:#fff; }
+        .bl-ring i:nth-child(1){animation-delay:0s} .bl-ring i:nth-child(2){animation-delay:.15s} .bl-ring i:nth-child(3){animation-delay:.3s} .bl-ring i:nth-child(4){animation-delay:.45s} .bl-ring i:nth-child(5){animation-delay:.6s}
+        @keyframes blSpin { 0%{transform:rotate(0);opacity:1} 70%{transform:rotate(360deg);opacity:1} 100%{transform:rotate(380deg);opacity:0} }
 
         /* ===== 🌌 확장 시스템 ===== */
         #extHud { display:flex; flex-direction:column; align-items:center; gap:4px; margin:6px 0; font-size:12px; color:var(--text-main); }
@@ -385,11 +396,18 @@
     </style>
 </head>
 <body>
+    <div id="bootLoader">
+        <div class="bl-logo">🛍️</div>
+        <div class="bl-title">시현클리커 시즌2</div>
+        <div class="bl-ring"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <script>setTimeout(function(){ var b=document.getElementById('bootLoader'); if(b) b.parentNode.removeChild(b); }, 500);</script>
+
 
     <div id="topNavBar">
         <div class="nav-left">
             현재 로그인 계정: <span id="navUserId" class="user-highlight">-</span>
-            <span style="margin-left: 6px; color: #38bdf8; font-size: 11px; font-weight: bold;">[Season 2 · v1]</span>
+            <span style="margin-left: 6px; color: #38bdf8; font-size: 11px; font-weight: bold;">[Season 2 · v2]</span>
             <span id="adminCheatBadge" style="display:none; margin-left: 8px; background-color: #ff0055; color: white; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">👑 관리자 치트 ON</span>
             <span id="scoreLockBadge" style="display:none; margin-left: 8px; background-color: #6b7280; color: white; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px;">🔒 관전자 모드</span>
         </div>
@@ -535,14 +553,14 @@
 
     <div id="mainContainer">
         <div id="leftPanel">
-            <div class="left-meta-author">Made by <span>시현, 이수</span> Season 2 v1</div>
+            <div class="left-meta-author">Made by <span>시현, 이수</span> Season 2 v2</div>
             <div class="bakery-title">이시현의 제과점</div>
             <div id="scoreDisplay">0 시현</div>
             <div id="extHud">
                 <div class="ext-line" id="extWeather"></div>
                 <div class="ext-line" id="extCombo"></div>
                 <div class="ext-line" id="extBuffs"></div>
-                <button id="extOpenBtn" onclick="openExtModal()">🌌 확장 (상자·연구·퀘스트·도감·스킨·행성)</button>
+                <button id="extOpenBtn" onclick="openExtModal()">🌌 확장 (상자·암시장·연구·퀘스트·도감·스킨·행성)</button>
             </div>
             
             <div id="cookieContainer" onclick="handleCookieClick(event)">
@@ -687,7 +705,7 @@
     <div class="modal-overlay" id="adminModal">
         <div class="modal-box">
             <div class="modal-header">
-                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (Season 2 v1)</div>
+                <div class="modal-title">⚙️ ADMINISTRATOR HYPER CONTROL CONSOLE (Season 2 v2)</div>
                 <button onclick="exitAdminConsole(true)" style="background:none; border:none; color:white; font-size:16px; cursor:pointer; font-weight:bold;">✕</button>
             </div>
             <div class="modal-body" id="adminModalBody">
@@ -2859,6 +2877,7 @@
         }
 
         window.handleCookieClick = async function(e) {
+            if (typeof v2ClickBlocked === 'function' && v2ClickBlocked()) return;
             if (!currentUserSession || isUserScoreLocked || isUserJailed) return;
             let isGoldenActive = goldenCookieBuffTimer > 0;
             let baseGain = (ownedCookieUpgrade ? COOKIE_UPGRADE_MULT : 1) * Math.pow(WEAPON_CLICK_MULT, weaponLevel) * extClickMult();
@@ -3657,7 +3676,7 @@
         // 🌌 확장 시스템: 랜덤 상자 · 크리티컬 · 콤보 · 날씨 · 퀘스트 · 도감 · 연구 · 스킨 · 행성
         // =====================================================================
         function newExt() {
-            return { boxes: { common: 0, rare: 0, legend: 0 }, opened: 0, buffs: [], permSps: 0, permCrit: 0,
+            return { boxes: { common: 0, rare: 0, legend: 0 }, opened: 0, buffs: [], permSps: 0, permCrit: 0, marketSps: 0, marketCrit: 0, market: { slot: -1, bought: false },
                      research: {}, questClaimed: {}, codex: {}, codexClaimed: {}, skins: { cookie: true }, skin: 'default',
                      planet: 0, goldens: 0, clickCounter: 0 };
         }
@@ -3676,6 +3695,9 @@
             e.skin = typeof raw.skin === 'string' ? raw.skin : 'default';
             e.permSps = Math.min(200, Math.max(0, Number(raw.permSps) || 0));
             e.permCrit = Math.min(30, Math.max(0, Number(raw.permCrit) || 0));
+            e.marketSps = Math.min(100, Math.max(0, Number(raw.marketSps) || 0));
+            e.marketCrit = Math.min(15, Math.max(0, Number(raw.marketCrit) || 0));
+            e.market = Object.assign({ slot: -1, bought: false }, (raw.market && typeof raw.market === 'object') ? raw.market : {});
             e.planet = Math.max(0, Math.min(5, Number(raw.planet) || 0));
             e.opened = Math.max(0, Number(raw.opened) || 0);
             e.goldens = Math.max(0, Number(raw.goldens) || 0);
@@ -3783,10 +3805,10 @@
         function researchSum(field) { return RESEARCH.reduce((a, r) => a + (ext.research[r.id] && r[field] ? r[field] : 0), 0); }
         function planetBonus() { return PLANETS[Math.min(ext.planet, PLANETS.length - 1)].bonus; }
         function extSpsMult() {
-            return (1 + researchSum('sps')) * (1 + planetBonus()) * (1 + ext.permSps / 100) * weatherMult() * activeBuffMult('sps');
+            return (1 + researchSum('sps')) * (1 + planetBonus()) * (1 + ext.permSps / 100) * (1 + ext.marketSps / 100) * weatherMult() * activeBuffMult('sps') * (typeof v2Mult === 'function' ? v2Mult('sps') : 1);
         }
-        function extClickMult() { return (1 + researchSum('click')) * (1 + planetBonus()) * activeBuffMult('click'); }
-        function extCritChance(petCrit) { return Math.min(0.6, 0.03 + (Number(petCrit) || 0) + researchSum('crit') / 100 + ext.permCrit / 100); }
+        function extClickMult() { return (1 + researchSum('click')) * (1 + planetBonus()) * activeBuffMult('click') * (typeof v2Mult === 'function' ? v2Mult('click') : 1); }
+        function extCritChance(petCrit) { return Math.min(0.6, 0.03 + (Number(petCrit) || 0) + researchSum('crit') / 100 + ext.permCrit / 100 + ext.marketCrit / 100 + (typeof v2Mult === 'function' ? v2Mult('crit') / 100 : 0)); }
         function extGoldenBonus() { return ext.research.goldres ? 5 : 0; }
 
         // ---------- 콤보 ----------
@@ -3859,26 +3881,27 @@
             const k = left[Math.floor(Math.random() * left.length)];
             ext.skins[k] = true; return `🎨 스킨 획득: ${SKINS[k].icon} ${SKINS[k].name}`;
         }
+        // v2 확률표(w는 %) — 남는 확률은 모두 기본 보상(시현)으로 들어감
         const BOX_TABLES = {
             common: [
-                { w: 63, run: () => giveScoreSecs(500, 180) },
-                { w: 25, run: () => addBuff('click', 2, 60) },
-                { w: 10, run: () => permSps(0.5) },
-                { w: 2,  run: () => { giveBox('rare', 1, true); return '✨ 특별 보너스! 희귀 상자 획득'; } }
+                { w: 0.001, run: () => permSps(0.5) },
+                { w: 0.1,   run: () => { giveBox('rare', 1, true); return '✨ 특별 보너스! 희귀 상자 획득'; } },
+                { w: 25,    run: () => addBuff('click', 2, 60) },
+                { w: 74.899, run: () => giveScoreSecs(500, 180) }
             ],
             rare: [
-                { w: 49, run: () => giveScoreSecs(3000, 600) },
-                { w: 25, run: () => addBuff('sps', 2, 300) },
-                { w: 18, run: () => permSps(1) },
-                { w: 5,  run: () => permCrit(0.5) },
-                { w: 3,  run: () => { giveBox('legend', 1, true); return '✨ 특별 보너스! 전설 상자 획득'; } }
+                { w: 0.07,   run: () => { giveBox('legend', 1, true); return '✨ 특별 보너스! 전설 상자 획득'; } },
+                { w: 0.0005, run: () => permSps(1) },
+                { w: 0.0005, run: () => permCrit(0.5) },
+                { w: 25,     run: () => addBuff('sps', 2, 300) },
+                { w: 74.929, run: () => giveScoreSecs(3000, 600) }
             ],
             legend: [
-                { w: 30, run: () => giveScoreSecs(20000, 1800) },
-                { w: 25, run: () => addBuff('sps', 3, 600) },
-                { w: 25, run: () => permSps(3) },
-                { w: 10, run: () => giveRandomSkin(['crown', 'alien', 'rainbow']) },
-                { w: 10, run: () => '💎 특별 대박! ' + giveScoreSecs(100000, 7200) }
+                { w: 0.0001, run: () => permSps(3) },
+                { w: 10,     run: () => giveRandomSkin(['crown', 'alien', 'rainbow']) },
+                { w: 10,     run: () => '💎 특별 대박! ' + giveScoreSecs(100000, 7200) },
+                { w: 25,     run: () => addBuff('sps', 3, 600) },
+                { w: 54.9999, run: () => giveScoreSecs(20000, 1800) }
             ]
         };
         window.extOpenBox = function(tier) {
@@ -3892,6 +3915,45 @@
             showPeperoToast(lastBoxResult);
             updateDisplay(); saveGameToServer(true); refreshExtUi();
         };
+
+
+        // ---------- 🕶️ 시현 암시장 (72시간마다 상품 1개) ----------
+        const MARKET_PERIOD_MS = 72 * 3600 * 1000;
+        const MARKET_ITEMS = [
+            { id: 'core',   icon: '🔮', name: '암흑 증폭 코어',   desc: '자동 생산 영구 +3%',                base: 5000000,  apply: () => { ext.marketSps = Math.min(100, ext.marketSps + 3); return '자동 생산 영구 +3%'; } },
+            { id: 'glove',  icon: '🧤', name: '도둑의 장갑',      desc: '크리티컬 확률 영구 +0.5%',          base: 8000000,  apply: () => { ext.marketCrit = Math.min(15, ext.marketCrit + 0.5); return '크리티컬 영구 +0.5%'; } },
+            { id: 'recipe', icon: '📜', name: '금지된 레시피',    desc: '즉시 시현 대량 획득 (생산 2시간분)', base: 3000000,  apply: () => giveScoreSecs(100000, 7200) },
+            { id: 'glass',  icon: '⏳', name: '시간의 모래시계',  desc: '자동 생산 x2 버프 30분',            base: 2000000,  apply: () => addBuff('sps', 2, 1800) },
+            { id: 'ticket', icon: '🎫', name: '희귀 거래권',      desc: '희귀 상자 1개',                    base: 4000000,  apply: () => { giveBox('rare', 1, true); return '희귀 상자 1개 획득'; } },
+            { id: 'vip',    icon: '👑', name: '암시장 VIP 증서',  desc: '전설 상자 1개',                    base: 20000000, apply: () => { giveBox('legend', 1, true); return '전설 상자 1개 획득'; } }
+        ];
+        function marketSlot() { return Math.floor((window.srvNow ? srvNow() : Date.now()) / MARKET_PERIOD_MS); }
+        function marketItem() { return MARKET_ITEMS[marketSlot() % MARKET_ITEMS.length]; }
+        function marketCost(it) { return Math.max(it.base, Math.floor(getCurrentSps() * 3600)); }
+        function marketSync() { const s = marketSlot(); if (ext.market.slot !== s) ext.market = { slot: s, bought: false }; }
+        window.extBuyMarket = function() {
+            if (isUserScoreLocked || isUserJailed) return;
+            marketSync();
+            if (ext.market.bought) return alert('이번 암시장 상품은 이미 구매했어요. 다음 상품을 기다려주세요.');
+            const it = marketItem(), cost = marketCost(it);
+            if (!isAdminAuthenticated && score < cost) return alert('시현이 부족해요.');
+            if (!isAdminAuthenticated) score -= cost;
+            ext.market.bought = true;
+            const msg = it.apply();
+            lastBoxResult = `🕶️ 암시장 구매 → ${it.name}: ${msg}`;
+            showPeperoToast(lastBoxResult);
+            updateDisplay(); saveGameToServer(true); refreshExtUi();
+        };
+        function fmtMarketLeft() {
+            const left = (marketSlot() + 1) * MARKET_PERIOD_MS - (window.srvNow ? srvNow() : Date.now());
+            const h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
+            return `${h}시간 ${m}분 ${s}초`;
+        }
+        setInterval(() => {
+            const el = document.getElementById('mktTimer');
+            if (!el) return;
+            if (ext.market.slot !== marketSlot()) renderExt(); else el.innerText = fmtMarketLeft();
+        }, 1000);
 
         // ---------- 연구 ----------
         window.extBuyResearch = function(id) {
@@ -3983,7 +4045,7 @@
                 if (bEl) bEl.innerText = ext.buffs.map(b => `⚡${b.t === 'sps' ? '생산' : '클릭'} x${b.m} (${fmtMs(b.until - Date.now())})`).join('  ');
                 const total = ext.boxes.common + ext.boxes.rare + ext.boxes.legend;
                 const btn = document.getElementById('extOpenBtn');
-                if (btn) btn.innerText = `🌌 확장 (상자·연구·퀘스트·도감·스킨·행성)${total > 0 ? ` 🎁${total}` : ''}`;
+                if (btn) btn.innerText = `🌌 확장 (상자·암시장·연구·퀘스트·도감·스킨·행성)${total > 0 ? ` 🎁${total}` : ''}`;
                 if (document.getElementById('extModal').classList.contains('active') && ext._tab === 'boxes') { /* 상자 탭은 타이머 없음 */ }
             } catch (_) {}
         }
@@ -3991,7 +4053,7 @@
 
         // ---------- 모달 UI ----------
         ext._tab = 'boxes';
-        const EXT_TABS = [['boxes', '🎁 상자'], ['research', '🔬 연구'], ['quests', '📜 퀘스트'], ['codex', '📖 도감'], ['skins', '🎨 스킨'], ['planets', '🚀 행성']];
+        const EXT_TABS = [['boxes', '🎁 상자'], ['market', '🕶️ 암시장'], ['research', '🔬 연구'], ['quests', '📜 퀘스트'], ['codex', '📖 도감'], ['skins', '🎨 스킨'], ['planets', '🚀 행성']];
         window.openExtModal = function(tab) { ext._tab = tab || ext._tab || 'boxes'; document.getElementById('extModal').classList.add('active'); renderExt(); };
         window.closeExtModal = function() { document.getElementById('extModal').classList.remove('active'); };
         window.extSetTab = function(t) { ext._tab = t; renderExt(); };
@@ -4007,10 +4069,17 @@
                 html += `<div class="ext-note">상자는 <b>${formatKo(BOX_CLICK_EVERY)}번 클릭마다 · 버그 처치 · 황금쿠키 · 미션 완료 · 퀘스트</b>에서 얻어요. 등급이 높을수록 좋은 보상(시현·버프·영구 업그레이드·스킨)이 나와요.</div>`;
                 html += Object.keys(EXT_TIERS).map(t => {
                     const T = EXT_TIERS[t];
-                    return `<div class="ext-card" style="border-color:${T.color};"><div style="font-size:30px;">${T.icon}</div><div style="flex:1;"><b style="color:${T.color};">${T.name} 상자</b> × ${ext.boxes[t]}<div class="ext-sub">${t === 'common' ? '시현 · 클릭버프 · 영구 +0.5% · 희귀상자 5%' : t === 'rare' ? '시현 · 생산버프 · 영구 +1%/크리 · 전설상자 7%' : '큰 시현 · 생산 x3 · 영구 +3% · 전설 스킨 · 대박'}</div></div><button class="ext-btn" ${ext.boxes[t] > 0 ? '' : 'disabled'} onclick="extOpenBox('${t}')">열기</button></div>`;
+                    return `<div class="ext-card" style="border-color:${T.color};"><div style="font-size:30px;">${T.icon}</div><div style="flex:1;"><b style="color:${T.color};">${T.name} 상자</b> × ${ext.boxes[t]}<div class="ext-sub">${t === 'common' ? '시현 · 클릭버프 · 영구 0.001% · 희귀상자 0.1%' : t === 'rare' ? '시현 · 생산버프 · 영구 0.001% · 전설상자 0.07%' : '큰 시현 · 생산 x3 · 영구 0.0001% · 전설 스킨 · 대박'}</div></div><button class="ext-btn" ${ext.boxes[t] > 0 ? '' : 'disabled'} onclick="extOpenBox('${t}')">열기</button></div>`;
                 }).join('');
                 html += `<div class="ext-result">${lastBoxResult || '상자를 열어보세요!'}</div>`;
                 html += `<div class="ext-sub">영구 보너스: 생산 +${ext.permSps.toFixed(1)}% · 크리티컬 +${ext.permCrit.toFixed(1)}% · 지금까지 연 상자 ${ext.opened}개</div>`;
+            } else if (ext._tab === 'market') {
+                marketSync();
+                const it = marketItem(), cost = marketCost(it), bought = ext.market.bought;
+                html += sc + `<div class="ext-note">일반 상점에 없는 희귀 상품이 <b>72시간마다 단 하나</b> 입고돼요. 다음 입고까지 <b id="mktTimer">${fmtMarketLeft()}</b></div>`;
+                html += `<div class="ext-card ${bought ? 'done' : ''}" style="border-color:#7c3aed;"><div style="font-size:34px;">${it.icon}</div><div style="flex:1;"><b>${it.name}</b><div class="ext-sub">${it.desc}</div></div>` +
+                    (bought ? `<span class="ext-ok">✅ 구매 완료</span>` : `<button class="ext-btn" onclick="extBuyMarket()">${formatKo(cost)}</button>`) + `</div>`;
+                html += `<div class="ext-sub">암시장 영구 보너스: 생산 +${ext.marketSps.toFixed(1)}% · 크리티컬 +${ext.marketCrit.toFixed(1)}%</div>`;
             } else if (ext._tab === 'research') {
                 html += sc + `<div class="ext-note">연구를 완료하면 영구적으로 생산 기술이 해금돼요. (환생해도 유지)</div>`;
                 html += RESEARCH.map(r => {
@@ -4099,5 +4168,260 @@
             if (installBtn) installBtn.style.display = 'none';
         });
     </script>
+<script>
+/* ===== 🌟 시현클리커 v2 콘텐츠 팩 (대출·경매·복권·속성·연구트리·특성·장비·진화·차원·침공·미니게임·복권기계·비밀연구실·엔딩·시간왜곡·도전·유물) ===== */
+(function () {
+'use strict';
+const HOUR = 3600000;
+let _off = 0, _synced = 0;
+const srvNow = () => Date.now() + _off; window.srvNow = srvNow;
+async function syncClock() {
+    try { const r = await gameDB.rpc('clicker_now'); if (!r.error && r.data != null) { _off = Number(r.data) - Date.now(); _synced = Date.now(); } } catch (e) { }
+}
+setInterval(() => { if (typeof isGameLoaded !== 'undefined' && isGameLoaded && (!_synced || Date.now() - _synced > 600000)) { _synced = Date.now(); syncClock(); } }, 3000);
+const defaults = () => ({ loan: 0, trades: 0, auc: { slot: -1, done: false }, el: 'fire', elLv: { fire: 1, water: 0, thunder: 0, dark: 0 }, spec: '', tree: {}, traits: {}, tEq: [], eq: { weapon: 0, oven: 0, charm: 0 }, evo: 0, dim: 0, dimOwn: { 0: true }, inv: { slot: -1, hp: 0, done: false }, lab: {}, labOpen: false, endings: {}, shards: 0, relics: {}, rEq: [], chal: null, chalDone: 0, perm: 0, mgCool: 0, tab: 'fin' });
+function V() {
+    if (!ext.v2 || typeof ext.v2 !== 'object') ext.v2 = {};
+    const d = defaults();
+    for (const k in d) { if (ext.v2[k] === undefined || ext.v2[k] === null || (typeof d[k] === 'object' && typeof ext.v2[k] !== 'object')) ext.v2[k] = d[k]; }
+    return ext.v2;
+}
+const U = () => Math.max(100000, Math.floor((typeof getCurrentSps === 'function' ? getCurrentSps() : 0) * 600));
+const fk = n => formatKo(n);
+
+// ---------- 데이터 ----------
+const EL = { fire: ['🔥', '불', '자동 생산 +8%/Lv'], water: ['💧', '물', '크리티컬 +1%/Lv'], thunder: ['⚡', '번개', '클릭 +10%/Lv'], dark: ['🌑', '어둠', '생산·클릭 +4%/Lv'] };
+const TREE = [['p1', '생산 I', 'prod', 'sps', 10, ''], ['p2', '생산 II', 'prod', 'sps', 20, 'p1'], ['p3', '생산 III', 'prod', 'sps', 40, 'p2'],
+    ['c1', '클릭 I', 'click', 'click', 15, ''], ['c2', '클릭 II', 'click', 'click', 30, 'c1'], ['c3', '클릭 III', 'click', 'click', 60, 'c2'],
+    ['l1', '행운 I', 'luck', 'crit', 2, ''], ['l2', '행운 II', 'luck', 'crit', 4, 'l1'], ['l3', '행운 III', 'luck', 'crit', 8, 'l2']];
+const BR = { prod: '🏭 생산', click: '👆 클릭', luck: '🍀 행운' };
+const TRAITS = [['dil', '근면', 'sps', 10, '생산 +10%'], ['luck', '행운', 'crit', 3, '크리티컬 +3%'], ['blast', '폭발', 'click', 20, '클릭 +20%'], ['calm', '침착', 'both', 5, '생산·클릭 +5%'], ['mad', '광기', 'sps', 25, '생산 +25%'], ['greed', '탐욕', 'both', 10, '생산·클릭 +10%']];
+const SYN = [['dil', 'blast', 'sps', 15, '생산 +15%'], ['luck', 'calm', 'crit', 2, '크리 +2%'], ['mad', 'greed', 'sps', 20, '생산 +20%']];
+const EQ = [['weapon', '🗡️ 쿠키 검', 'click', 5, '클릭 +5%/Lv'], ['oven', '🔥 마법 오븐', 'sps', 4, '생산 +4%/Lv'], ['charm', '🍀 행운 부적', 'crit', 0.4, '크리 +0.4%/Lv']];
+const EVO = [['🍪', '시현'], ['🔥', '불꽃 시현'], ['⚡', '번개 시현'], ['🌟', '신화 시현']];
+const evoReq = [
+    [() => totalClicks >= 5000 && eqSum() >= 5, '클릭 5,000회 + 장비 합계 Lv5'],
+    [() => bugsRemovedCount >= 30 && elSum() >= 6, '버그 30마리 + 속성 합계 Lv6'],
+    [() => prestigeCount >= 1 && relicCount() >= 1, '환생 1회 + 유물 1개']];
+const DIMS = [['🌍', '기본 차원', '변화 없음', 1, 1], ['🪞', '거울 차원', '생산 +50% · 클릭 -30%', 1.5, 0.7], ['🌋', '용암 차원', '생산 +120% · 클릭 -10%', 2.2, 0.9], ['🕳️', '허공 차원', '클릭 +150% · 생산 -40%', 0.6, 2.5]];
+const LAB = [['l1', '🧪 금지된 반죽', '생산 +30%', 'sps', 30], ['l2', '⚗️ 시공 오븐', '클릭 +50%', 'click', 50], ['l3', '💗 시현의 심장', '생산 +100% · 파편 +3', 'sps', 100]];
+const RELICS = [['sun', '☀️', '태양의 파편', 'sps', 15, '생산 +15%'], ['moon', '🌙', '달의 눈물', 'crit', 3, '크리 +3%'], ['star', '⭐', '별의 심장', 'click', 20, '클릭 +20%'], ['crown', '👑', '왕의 인장', 'both', 10, '생산·클릭 +10%'], ['eye', '👁️', '진실의 눈', 'crit', 5, '크리 +5%'], ['heart', '💎', '시현의 결정', 'sps', 25, '생산 +25%']];
+const ENDINGS = { merchant: ['💰', '상인 엔딩', '시현은 마침내 거대한 제과 상회의 주인이 되었다.'], clicker: ['👆', '장인 엔딩', '수없이 반죽을 두드린 손끝에서 전설의 쿠키가 완성되었다.'], factory: ['🏭', '공장장 엔딩', '멈추지 않는 오븐이 온 세상에 쿠키를 퍼뜨렸다.'], scholar: ['🔬', '연구자 엔딩', '쿠키의 비밀을 푼 시현은 새로운 차원의 문을 열었다.'] };
+const CHALS = { noclick: ['🚫👆', '클릭 금지 5분', '5분 동안 클릭이 먹히지 않아요. 버티면 성공!'], noauto: ['🚫🏭', '자동 생산 금지 5분', '5분 동안 자동 생산 0. 클릭 250회를 채우면 성공!'] };
+
+// ---------- 계산 ----------
+const eqSum = () => { const e = V().eq; return (e.weapon | 0) + (e.oven | 0) + (e.charm | 0); };
+const elSum = () => { const l = V().elLv; return ['fire', 'water', 'thunder', 'dark'].reduce((a, k) => a + (l[k] | 0), 0); };
+const relicCount = () => Object.keys(V().relics).filter(k => V().relics[k]).length;
+const hour = () => Math.floor(srvNow() / 60000) % 24;
+function phase() { const h = hour(); return h < 6 ? ['🌌', '새벽', 'crit', 3, '크리 +3%'] : h < 12 ? ['🌅', '아침', 'click', 10, '클릭 +10%'] : h < 18 ? ['☀️', '낮', 'sps', 10, '생산 +10%'] : ['🌙', '밤', 'sps', 20, '생산 +20%']; }
+function chalActive(id) { const c = V().chal; return !!(c && c.id === id && srvNow() < c.until); }
+window.v2ClickBlocked = () => chalActive('noclick');
+window.v2Mult = function (kind) {
+    const v = V(); let s = 1, c = 1, k = 0;
+    const add = (t, p) => { if (t === 'sps' || t === 'both') s *= 1 + p / 100; if (t === 'click' || t === 'both') c *= 1 + p / 100; if (t === 'crit') k += p; };
+    if (kind === 'sps' && chalActive('noauto')) return 0;
+    const lv = v.elLv[v.el] | 0;
+    if (v.el === 'fire') add('sps', 8 * lv); else if (v.el === 'water') add('crit', lv); else if (v.el === 'thunder') add('click', 10 * lv); else add('both', 4 * lv);
+    TREE.forEach(n => { if (v.tree[n[0]]) add(n[3], n[4] * (n[2] === (v.spec === 'prod' ? 'prod' : v.spec === 'click' ? 'click' : v.spec === 'luck' ? 'luck' : '-') ? 1.3 : 1)); });
+    v.tEq.forEach(id => { const t = TRAITS.find(x => x[0] === id); if (t) add(t[2], t[3]); });
+    SYN.forEach(y => { if (v.tEq.includes(y[0]) && v.tEq.includes(y[1])) add(y[2], y[3]); });
+    EQ.forEach(e => add(e[2], e[3] * (v.eq[e[0]] | 0)));
+    s *= 1 + 0.5 * v.evo;
+    s *= DIMS[v.dim][3]; c *= DIMS[v.dim][4];
+    LAB.forEach(l => { if (v.lab[l[0]]) add(l[3], l[4]); });
+    v.rEq.forEach(id => { const r = RELICS.find(x => x[0] === id); if (r) add(r[3], r[4]); });
+    s *= 1 + v.perm / 100;
+    const ph = phase(); add(ph[2], ph[3]);
+    if (hour() === 12) s *= 2;
+    if (v.loan > 0) s *= 0.9;
+    return kind === 'sps' ? s : kind === 'click' ? c : k;
+};
+
+// ---------- 공통 ----------
+let msg = '', mg = { s: 'idle', t: 0, to: null, txt: '' };
+const blocked = () => (typeof isUserScoreLocked !== 'undefined' && isUserScoreLocked) || (typeof isUserJailed !== 'undefined' && isUserJailed);
+function pay(cost) {
+    if (blocked()) return false;
+    if (!isAdminAuthenticated && score < cost) { alert('시현이 부족해요.'); return false; }
+    if (!isAdminAuthenticated) score -= cost;
+    return true;
+}
+function fin(m) { if (m) { msg = m; showPeperoToast(m); } updateDisplay(); saveGameToServer(true); render(); }
+const sh = n => { V().shards += n; };
+
+// ---------- 행동 ----------
+const A = window.v2A = {
+    tab(t) { V().tab = t; render(); },
+    // 금융
+    borrow(i) { const v = V(); if (v.loan > 0) return alert('먼저 기존 대출을 갚아야 해요.'); if (blocked()) return; const amt = U() * [3, 10, 30][i]; score += amt; v.loan = Math.ceil(amt * 1.25); v.trades++; fin(`🏦 ${fk(amt)} 시현 대출! (상환액 ${fk(v.loan)} · 갚기 전까지 생산 -10%)`); },
+    repay() { const v = V(); const p = Math.min(Math.floor(score), v.loan); if (p <= 0) return alert('갚을 시현이 없어요.'); if (blocked()) return; score -= p; v.loan -= p; fin(v.loan <= 0 ? '🏦 대출을 모두 갚았어요!' : `🏦 ${fk(p)} 상환 (남은 빚 ${fk(v.loan)})`); },
+    bid(m) {
+        const v = V(), slot = Math.floor(srvNow() / (6 * HOUR)); if (v.auc.slot !== slot) v.auc = { slot, done: false };
+        if (v.auc.done) return; const tier = slot % 3 === 2 ? 'legend' : 'rare', cost = U() * (tier === 'legend' ? 12 : 4) * m;
+        if (!pay(cost)) return; v.auc.done = true; v.trades++;
+        const win = Math.random() < ({ 1: .35, 2: .65, 4: .95 })[m];
+        if (win) { giveBox(tier, 1, true); fin(`🔨 낙찰! ${EXT_TIERS[tier].name} 상자 획득`); } else { score += Math.floor(cost / 2); fin(`🔨 유찰... 입찰금의 절반(${fk(Math.floor(cost / 2))})만 돌려받았어요`); }
+    },
+    lotto() { const c = U(); if (!pay(c)) return; V().trades++; const r = Math.random(); const m = r < .55 ? 0 : r < .85 ? 1.5 : r < .97 ? 4 : r < .999 ? 20 : 200; score += Math.floor(c * m); fin(m === 0 ? '🎟️ 꽝!' : `🎟️ 당첨! x${m} (+${fk(Math.floor(c * m))})`); },
+    machine() {
+        const c = U() * 3; if (!pay(c)) return; const r = Math.random() * 100; let t;
+        if (r < 30) t = addBuff('sps', 2, 600); else if (r < 55) t = addBuff('click', 3, 180); else if (r < 75) { giveBox('rare', 1, true); t = '희귀 상자 획득'; }
+        else if (r < 90) { const g = U() * 5; score += g; t = `+${fk(g)} 시현`; } else if (r < 98) { V().perm = Math.min(50, V().perm + 0.2); t = '영구 생산 +0.2%'; } else { giveBox('legend', 1, true); t = '전설 상자 획득!!'; }
+        fin('🎰 복권 기계: ' + t);
+    },
+    // 속성
+    elBuy(id) { const v = V(), lv = v.elLv[id] | 0; if (lv >= 20) return; if (!pay(U() * (lv + 1) * 3)) return; v.elLv[id] = lv + 1; if (!lv) v.el = id; fin(); },
+    elEquip(id) { if ((V().elLv[id] | 0) > 0) { V().el = id; fin(); } },
+    // 연구 트리
+    spec(b) { const v = V(); if (v.spec === b) return; if (v.spec && !pay(U() * 2)) return; v.spec = b; fin(); },
+    tree(id) { const v = V(), n = TREE.find(x => x[0] === id); if (!n || v.tree[id] || (n[5] && !v.tree[n[5]])) return; const tier = +n[1].length ? ['I', 'II', 'III'].indexOf(n[1].split(' ')[1]) : 0; if (!pay(Math.floor(U() * [1, 3, 8][tier] * (v.spec === n[2] ? .5 : 1)))) return; v.tree[id] = true; fin(); },
+    // 특성
+    trUnlock(id) { const v = V(); if (v.traits[id]) return; if (!pay(U() * 5)) return; v.traits[id] = true; fin(); },
+    trEquip(id) { const v = V(); if (!v.traits[id]) return; const i = v.tEq.indexOf(id); if (i >= 0) v.tEq.splice(i, 1); else { if (v.tEq.length >= 3) return alert('특성은 최대 3개까지 장착할 수 있어요.'); v.tEq.push(id); } fin(); },
+    // 장비
+    eq(id) { const v = V(), lv = v.eq[id] | 0; if (lv >= 20) return; if (!pay(U() * (lv + 1) * 2)) return; v.eq[id] = lv + 1; fin(); },
+    // 진화
+    evolve() { const v = V(); if (v.evo >= 3 || !evoReq[v.evo][0]()) return; if (!pay(U() * 10 * (v.evo + 1))) return; v.evo++; fin(`${EVO[v.evo][0]} ${EVO[v.evo][1]}(으)로 진화했어요! 생산 +50% 추가`); },
+    // 차원
+    dim(i) { const v = V(); if (v.dimOwn[i]) { v.dim = i; return fin(); } if (!pay(U() * 25 * i)) return; v.dimOwn[i] = true; v.dim = i; fin(`${DIMS[i][0]} ${DIMS[i][1]}(으)로 이동!`); },
+    // 침공
+    attack() {
+        const v = V(), slot = Math.floor(srvNow() / 1800000); if (v.inv.slot !== slot) v.inv = { slot, hp: 150, done: false };
+        if (!invActive()) return alert('지금은 침공이 없어요.'); if (v.inv.done || blocked()) return;
+        v.inv.hp -= 1 + Math.floor((v.eq.weapon | 0) / 5);
+        if (v.inv.hp <= 0) { v.inv.hp = 0; v.inv.done = true; const g = U() * 4; score += g; sh(1); giveBox('rare', 1, true); fin(`👾 침공 격퇴! +${fk(g)} 시현 · 유물 파편 1 · 희귀 상자`); } else render();
+    },
+    // 미니게임
+    mgStart() {
+        if (srvNow() < V().mgCool) return alert('잠시 후에 다시 도전할 수 있어요.'); if (blocked()) return;
+        mg = { s: 'wait', t: 0, to: setTimeout(() => { mg.s = 'go'; mg.t = performance.now(); render(); }, 1000 + Math.random() * 2000), txt: '' }; render();
+    },
+    mgHit() {
+        if (mg.s === 'wait') { clearTimeout(mg.to); mg = { s: 'res', txt: '❌ 너무 빨랐어요!' }; V().mgCool = srvNow() + 10000; return render(); }
+        if (mg.s !== 'go') return; const ms = Math.round(performance.now() - mg.t), m = ms < 400 ? 1 : ms < 700 ? .5 : .2, g = Math.floor(U() * m);
+        score += g; V().mgCool = srvNow() + 20000; mg = { s: 'res', txt: `⚡ ${ms}ms → +${fk(g)} 시현` }; fin(mg.txt);
+    },
+    // 비밀 연구실
+    lab(i) { const v = V(), l = LAB[i]; if (v.lab[l[0]] || (i > 0 && !v.lab[LAB[i - 1][0]])) return; if (!pay(U() * 12 * (i + 1))) return; v.lab[l[0]] = true; if (i === 2) sh(3); fin(`🔬 ${l[1]} 완성!`); },
+    // 유물
+    gacha() { const v = V(); if (v.shards < 3) return alert('유물 파편이 부족해요. (3개 필요)'); const left = RELICS.filter(r => !v.relics[r[0]]); v.shards -= 3; if (!left.length) { score += U() * 3; return fin('모든 유물을 모아서 시현으로 바꿨어요.'); } const r = left[Math.floor(Math.random() * left.length)]; v.relics[r[0]] = true; fin(`🏺 유물 획득: ${r[1]} ${r[2]}`); },
+    rEquip(id) { const v = V(); if (!v.relics[id]) return; const i = v.rEq.indexOf(id); if (i >= 0) v.rEq.splice(i, 1); else { if (v.rEq.length >= 3) return alert('유물은 최대 3개까지 장착할 수 있어요.'); v.rEq.push(id); } fin(); },
+    // 도전
+    chal(id) { const v = V(); if (v.chal) return alert('이미 도전 중이에요.'); v.chal = { id, until: srvNow() + 300000, start: totalClicks }; fin(`🏁 도전 시작: ${CHALS[id][1]}`); },
+    chalCancel() { V().chal = null; fin('도전을 포기했어요.'); },
+    // 엔딩
+    ending() {
+        const v = V(); if (v.evo < 3) return;
+        const sc = { merchant: v.trades / 15, clicker: totalClicks / 100000, factory: ((v.eq.oven | 0) + v.dim * 5) / 15, scholar: Object.keys(v.tree).length / 8 + Object.keys(v.lab).length / 3 };
+        const k = Object.keys(sc).sort((a, b) => sc[b] - sc[a])[0], e = ENDINGS[k];
+        let extra = ''; if (!v.endings[k]) { v.endings[k] = true; sh(2); extra = ' (첫 엔딩 보상: 유물 파편 +2)'; }
+        msg = `${e[0]} ${e[1]} — ${e[2]}${extra}`; fin();
+    }
+};
+function invActive() { return srvNow() % 1800000 < 300000; }
+
+// ---------- 화면 ----------
+const btn = (label, fn, dis) => `<button class="ext-btn" ${dis ? 'disabled' : ''} onclick="v2A.${fn}">${label}</button>`;
+const card = (ic, t, d, b, done) => `<div class="ext-card ${done ? 'done' : ''}"><div style="font-size:28px;">${ic}</div><div style="flex:1;"><b>${t}</b><div class="ext-sub">${d}</div></div>${b || ''}</div>`;
+const note = t => `<div class="ext-note">${t}</div>`;
+const TABS = [['fin', '💰 금융'], ['str', '⚔️ 속성·연구'], ['gear', '🛠️ 특성·장비'], ['evo', '🧬 진화·차원'], ['inv', '👾 침공·게임'], ['lab', '🧪 연구실·유물'], ['time', '⏳ 시간·도전·엔딩']];
+function labOk() { const v = V(); if (!v.labOpen && totalClicks >= 30000 && bugsRemovedCount >= 50 && ext.opened >= 3) v.labOpen = true; return v.labOpen; }
+function fmt(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}분 ${s % 60}초`; }
+
+function render() {
+    const tabs = document.getElementById('v2Tabs'), body = document.getElementById('v2Body'); if (!tabs || !body) return;
+    const v = V(); tabs.innerHTML = TABS.map(([id, l]) => `<button class="ext-tab ${v.tab === id ? 'on' : ''}" onclick="v2A.tab('${id}')">${l}</button>`).join('');
+    let h = `<div class="ext-money">보유 ${fk(score)} 시현 · 🏺 유물 파편 ${v.shards}${v.loan > 0 ? ` · 🏦 빚 ${fk(v.loan)}` : ''}</div>` + (msg ? `<div class="ext-result">${msg}</div>` : '');
+    const u = U();
+    if (v.tab === 'fin') {
+        h += note('가격은 현재 생산력에 맞춰 올라가요.');
+        h += v.loan > 0 ? card('🏦', '시현 대출', `상환액 ${fk(v.loan)} (갚기 전까지 생산 -10%)`, btn('갚기', 'repay()')) :
+            card('🏦', '시현 대출 (이자 25%)', '미리 빌리고 나중에 갚아요', [0, 1, 2].map(i => btn(fk(u * [3, 10, 30][i]), `borrow(${i})`)).join(' '));
+        const slot = Math.floor(srvNow() / (6 * HOUR)), tier = slot % 3 === 2 ? 'legend' : 'rare', done = v.auc.slot === slot && v.auc.done, base = u * (tier === 'legend' ? 12 : 4);
+        h += card('🔨', `시현 경매장 — ${EXT_TIERS[tier].icon} ${EXT_TIERS[tier].name} 상자`, `6시간마다 매물 교체 · 많이 걸수록 낙찰 확률↑ (35/65/95%) · 유찰 시 절반 환불`, done ? '<span class="ext-ok">✅ 참여 완료</span>' : [1, 2, 4].map(m => btn(fk(base * m), `bid(${m})`)).join(' '), done);
+        h += card('🎟️', '시현 복권', `꽝55% · x1.5 30% · x4 12% · x20 2.9% · x200 0.1%`, btn(fk(u), 'lotto()'));
+        h += card('🎰', '시현 복권 기계', '랜덤 효과: 버프·상자·시현·영구 보너스(+0.2%)', btn(fk(u * 3), 'machine()'));
+    } else if (v.tab === 'str') {
+        h += note('<b>속성</b>: 하나를 장착해 효과를 받아요. 레벨 최대 20.');
+        h += Object.keys(EL).map(id => { const lv = v.elLv[id] | 0, e = EL[id]; return card(e[0], `${e[1]} 시현 Lv${lv}${v.el === id ? ' (장착중)' : ''}`, e[2], (lv ? btn('장착', `elEquip('${id}')`, v.el === id) + ' ' : '') + btn(lv >= 20 ? 'MAX' : fk(u * (lv + 1) * 3), `elBuy('${id}')`, lv >= 20), v.el === id); }).join('');
+        h += note(`<b>연구 트리</b>: 특화 방향을 고르면 그 계열은 비용 -50%, 효과 +30%. (바꿀 때 ${fk(u * 2)})`);
+        h += `<div style="display:flex;gap:6px;margin-bottom:6px;">${Object.keys(BR).map(b => btn(BR[b] + (v.spec === b ? ' ✅' : ''), `spec('${b}')`)).join('')}</div>`;
+        h += TREE.map(n => { const own = v.tree[n[0]], lock = n[5] && !v.tree[n[5]], tier = ['I', 'II', 'III'].indexOf(n[1].split(' ')[1]), c = Math.floor(u * [1, 3, 8][tier] * (v.spec === n[2] ? .5 : 1)); return card('🔬', `${BR[n[2]]} ${n[1]}`, `${n[3] === 'sps' ? '생산' : n[3] === 'click' ? '클릭' : '크리티컬'} +${n[4]}%${lock ? ' · 🔒 선행 필요' : ''}`, own ? '<span class="ext-ok">✅</span>' : btn(fk(c), `tree('${n[0]}')`, lock), own); }).join('');
+    } else if (v.tab === 'gear') {
+        h += note('<b>특성 조합</b>: 최대 3개 장착. 특정 조합은 시너지 보너스! — ' + SYN.map(y => `${TRAITS.find(t => t[0] === y[0])[1]}+${TRAITS.find(t => t[0] === y[1])[1]}(${y[4]})`).join(' · '));
+        h += TRAITS.map(t => card('🧩', `${t[1]}${v.tEq.includes(t[0]) ? ' (장착중)' : ''}`, t[4], v.traits[t[0]] ? btn(v.tEq.includes(t[0]) ? '해제' : '장착', `trEquip('${t[0]}')`) : btn(fk(u * 5), `trUnlock('${t[0]}')`), v.tEq.includes(t[0]))).join('');
+        h += note('<b>장비</b>: 레벨 최대 20.');
+        h += EQ.map(e => { const lv = v.eq[e[0]] | 0; return card('🛡️', `${e[1]} Lv${lv}`, e[4], btn(lv >= 20 ? 'MAX' : fk(u * (lv + 1) * 2), `eq('${e[0]}')`, lv >= 20)); }).join('');
+    } else if (v.tab === 'evo') {
+        const nx = v.evo < 3 ? evoReq[v.evo] : null, ok = nx && nx[0]();
+        h += card(EVO[v.evo][0], `현재 형태: ${EVO[v.evo][1]}`, nx ? `다음 진화 조건: ${nx[1]} ${ok ? '✅' : '❌'}` : '최종 형태예요!', nx ? btn(fk(u * 10 * (v.evo + 1)), 'evolve()', !ok) : '', !nx);
+        h += note('<b>차원 이동</b>: 차원마다 생산 방식이 달라요. 해금하면 자유롭게 이동!');
+        h += DIMS.map((d, i) => card(d[0], `${d[1]}${v.dim === i ? ' (현재)' : ''}`, d[2], v.dimOwn[i] ? btn('이동', `dim(${i})`, v.dim === i) : btn(fk(u * 25 * i), `dim(${i})`), v.dim === i)).join('');
+    } else if (v.tab === 'inv') {
+        const slot = Math.floor(srvNow() / 1800000), cur = v.inv.slot === slot ? v.inv : { hp: 150, done: false }, act = invActive();
+        h += card('👾', '시현 침공', act ? `침공 중! 남은 시간 <b id="v2InvLeft">${fmt(300000 - srvNow() % 1800000)}</b> · 체력 ${cur.hp}/150` : `다음 침공까지 <b id="v2InvLeft">${fmt(1800000 - srvNow() % 1800000)}</b> (30분마다 5분간 등장)`, btn(cur.done ? '격퇴 완료' : '⚔️ 공격', 'attack()', !act || cur.done), cur.done);
+        const cd = Math.max(0, V().mgCool - srvNow());
+        h += card('⚡', '반응속도 미니게임', mg.s === 'go' ? '<b style="color:#16a34a;">지금!!</b>' : mg.s === 'wait' ? '초록색이 되면 눌러요...' : (mg.txt || `빠를수록 보상↑${cd ? ` · 쿨타임 ${Math.ceil(cd / 1000)}초` : ''}`),
+            mg.s === 'wait' || mg.s === 'go' ? `<button class="ext-btn" style="background:${mg.s === 'go' ? '#16a34a' : '#dc2626'};" onclick="v2A.mgHit()">${mg.s === 'go' ? 'CLICK!' : '대기...'}</button>` : btn('시작', 'mgStart()'));
+    } else if (v.tab === 'lab') {
+        h += labOk() ? note('🔬 비밀 연구실에 입장했어요! 순서대로 연구해요.') + LAB.map((l, i) => card('🧪', l[1], l[2], v.lab[l[0]] ? '<span class="ext-ok">✅</span>' : btn(fk(u * 12 * (i + 1)), `lab(${i})`, i > 0 && !v.lab[LAB[i - 1][0]]), v.lab[l[0]])).join('')
+            : card('🔒', '???', '숨겨진 조건을 만족하면 문이 열린다고 한다... (많이 두드리고, 벌레를 잡고, 상자를 열어보자)', '');
+        h += note(`<b>유물</b>: 파편 3개로 뽑고, 최대 3개 영구 장착. (파편: 침공·도전·엔딩·연구실) — 보유 ${relicCount()}/${RELICS.length}`);
+        h += `<div style="margin-bottom:6px;">${btn('🏺 유물 뽑기 (파편 3)', 'gacha()', v.shards < 3)}</div>`;
+        h += RELICS.map(r => card(r[1], `${r[2]}${v.rEq.includes(r[0]) ? ' (장착중)' : ''}`, v.relics[r[0]] ? r[5] : '미획득', v.relics[r[0]] ? btn(v.rEq.includes(r[0]) ? '해제' : '장착', `rEquip('${r[0]}')`) : '', v.rEq.includes(r[0]))).join('');
+    } else if (v.tab === 'time') {
+        const ph = phase();
+        h += card(ph[0], `시간 왜곡 — <span id="v2Clock">${hour()}시 (${ph[1]})</span>`, `현실 1분 = 게임 1시간 · 현재 ${ph[4]} · 정오(12시)엔 <b>황금 시간: 생산 x2</b>`, '');
+        h += note('날씨 효과는 기존 🌌 확장 시스템의 날씨가 그대로 작동해요.');
+        h += v.chal ? card('🏁', `도전 중: ${CHALS[v.chal.id][1]}`, `남은 시간 <b id="v2ChalLeft">${fmt(v.chal.until - srvNow())}</b>${v.chal.id === 'noauto' ? ` · 클릭 ${totalClicks - v.chal.start}/250` : ''}`, btn('포기', 'chalCancel()'))
+            : Object.keys(CHALS).map(k => card(CHALS[k][0], CHALS[k][1], CHALS[k][2] + ' (보상: 시현 + 유물 파편 2)', btn('도전', `chal('${k}')`))).join('');
+        h += `<div class="ext-sub">완료한 도전 ${v.chalDone}회</div>`;
+        h += note(`<b>멀티 엔딩</b> (${Object.keys(v.endings).length}/4) — 진화를 끝내면 플레이 방식(거래·클릭·공장·연구)에 따라 결말이 달라져요.`);
+        h += `<div>${btn('🎬 엔딩 보기', 'ending()', v.evo < 3)}</div>`;
+    }
+    body.innerHTML = h;
+}
+
+// ---------- 타이머/알림 ----------
+let lastNote = -1;
+setInterval(() => {
+    try {
+        const v = V();
+        if (v.chal && srvNow() >= v.chal.until) {
+            const c = v.chal, ok = c.id === 'noclick' || totalClicks - c.start >= 250; v.chal = null;
+            if (ok) { v.chalDone++; sh(2); score += U() * 3; fin(`🏁 도전 성공! 시현 +${fk(U() * 3)} · 유물 파편 2`); } else fin('🏁 도전 실패... 클릭이 부족했어요.');
+        }
+        const slot = Math.floor(srvNow() / 1800000);
+        if (invActive() && lastNote !== slot) { lastNote = slot; showPeperoToast('👾 시현 침공 발생! 🌟v2 → 침공 탭에서 5분 안에 격퇴하세요!'); }
+        const m = document.getElementById('v2Modal'); if (!m || !m.classList.contains('active')) return;
+        const set = (id, t) => { const e = document.getElementById(id); if (e) e.innerHTML = t; };
+        set('v2Clock', `${hour()}시 (${phase()[1]})`);
+        if (v.chal) set('v2ChalLeft', fmt(v.chal.until - srvNow()));
+        set('v2InvLeft', invActive() ? fmt(300000 - srvNow() % 1800000) : fmt(1800000 - srvNow() % 1800000));
+        if (v.tab === 'inv' && (invActive() !== !!document.querySelector('#v2Body .ext-card button[onclick="v2A.attack()"]:not([disabled])'))) render();
+    } catch (e) { }
+}, 1000);
+
+// ---------- 모달/버튼 설치 ----------
+function install() {
+    const src = document.getElementById('extModal'); if (!src || document.getElementById('v2Modal')) return;
+    const m = document.createElement('div'); m.className = src.className; m.id = 'v2Modal';
+    m.setAttribute('onclick', 'if(event.target===this) closeV2Modal()');
+    m.innerHTML = src.innerHTML.replace(/extTabs/g, 'v2Tabs').replace(/extBody/g, 'v2Body').replace(/closeExtModal/g, 'closeV2Modal').replace('🌌 확장 시스템', '🌟 v2 콘텐츠');
+    src.parentNode.insertBefore(m, src.nextSibling);
+    const ob = document.getElementById('extOpenBtn');
+    if (ob && !document.getElementById('v2OpenBtn')) {
+        const b = document.createElement('button'); b.id = 'v2OpenBtn'; b.innerText = '🌟 v2 콘텐츠 (금융·전략·침공·유물·엔딩)';
+        b.style.cssText = 'background:linear-gradient(90deg,#f59e0b,#ef4444);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:bold;font-size:13px;cursor:pointer;margin-top:6px;';
+        b.onclick = () => window.openV2Modal(); ob.parentNode.insertBefore(b, ob.nextSibling);
+    }
+}
+window.openV2Modal = () => { install(); document.getElementById('v2Modal').classList.add('active'); render(); };
+window.closeV2Modal = () => { const m = document.getElementById('v2Modal'); if (m) m.classList.remove('active'); };
+install();
+})();
+
+</script>
 </body>
 </html>
