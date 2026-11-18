@@ -868,7 +868,7 @@
                     <div class="admin-action-row">
                         <button class="admin-action-btn btn-purple" onclick="loadAdminLogs()">🔄 기록 새로고침</button>
                     </div>
-                    <div id="adminLogBox" style="max-height:220px; overflow:auto; background:#111827; border-radius:6px; padding:6px; font-size:11px; line-height:1.5;"></div>
+                    <div id="adminLogBox" style="max-height:220px; overflow:auto; background:#111827; color:#e5e7eb; border-radius:6px; padding:6px; font-size:11px; line-height:1.5;"></div>
                 </div>
 
                 <div id="adminSectionJail" class="adm-normal-ok">
@@ -1404,7 +1404,7 @@
             if (error) { box.innerText = '기록을 불러오지 못했어요: ' + explainError(error); return; }
             box.innerHTML = (data || []).map(r => {
                 const ts = new Date(Number(r.timestamp)).toLocaleString('ko-KR', { hour12: false });
-                return `<div style="border-bottom:1px solid #1f2937; padding:2px 0;"><span style="color:#9ca3af;">${jailEsc(ts)}</span> <b style="color:#f87171;">${jailEsc(r.admin)}</b> · ${jailEsc(r.action)}`
+                return `<div style="border-bottom:1px solid #1f2937; padding:2px 0;"><span style="color:#9ca3af;">${jailEsc(ts)}</span> <b style="color:#f87171;">${jailEsc(r.admin)}</b> · <span style=\"color:#e5e7eb;\">${jailEsc(r.action)}</span>`
                     + (r.targets ? ` → <span style="color:#93c5fd;">${jailEsc(r.targets)}</span>` : '')
                     + (r.detail ? ` <span style="color:#fbbf24;">(${jailEsc(r.detail)})</span>` : '') + '</div>';
             }).join('') || '<div style="color:#9ca3af;">아직 기록이 없어요.</div>';
