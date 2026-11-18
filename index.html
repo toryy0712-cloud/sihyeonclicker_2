@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>[v2] 시현클리커 시즌2 (Sihyun Clicker Season 2)</title>
+    <title>[v2.1] 시현클리커 시즌2 (Sihyun Clicker Season 2)</title>
     
     <link rel="icon" type="image/jpeg" href="1000000883.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="1000000883.jpg">
@@ -170,6 +170,10 @@
         .left-meta-author { font-size: 12px; color: var(--text-sub); align-self: flex-start; margin-bottom: 20px; }
         .left-meta-author span { color: #00ffcc; font-weight: bold; }
         .bakery-title { font-size: 24px; font-weight: bold; color: var(--text-main); margin-bottom: 8px; }
+        .bakery-title-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+        .bakery-title-row .bakery-title { margin-bottom:0; }
+        .guild-collect-btn { background:#7c3aed; color:#fff; border:none; border-radius:8px; padding:10px 16px; min-height:44px; font-weight:bold; font-size:14px; cursor:pointer; touch-action:manipulation; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; }
+        .guild-collect-btn:active { transform:scale(0.96); }
         #scoreDisplay { font-size: 28px; font-weight: bold; color: #38bdf8; margin-bottom: 15px; }
         #cookieContainer { position: relative; cursor: pointer; transition: transform 0.05s; margin-top: 10px; }
         #cookieContainer:active { transform: scale(0.95); }
@@ -542,7 +546,10 @@
     <div id="mainContainer">
         <div id="leftPanel">
             <div class="left-meta-author">Made by <span>시현, 이수</span> Season 2 v2</div>
-            <div class="bakery-title">이시현의 제과점</div>
+            <div class="bakery-title-row">
+                <div class="bakery-title">이시현의 제과점</div>
+                <button id="guildCollectBtn" class="guild-collect-btn" onclick="guildCollectPoint()">🏰 길드점수 모으기</button>
+            </div>
             <div id="scoreDisplay">0 시현</div>
             <div id="extHud">
                 <div class="ext-line" id="extWeather"></div>
@@ -2464,7 +2471,7 @@
         function guildErr(e) {
             const m = (e && (e.message || e.msg)) || String(e);
             if (/guild|relation .* does not exist|schema cache|function .* does not exist/i.test(m) && /does not exist|schema cache|Could not find/i.test(m))
-                return '길드 DB가 아직 준비되지 않았어요. (관리자: guild_setup.sql 을 Supabase에서 실행해주세요)';
+                return '길드 DB가 아직 준비되지 않았어요. (관리자: guild_setup.sql 과 guild_points.sql 을 Supabase에서 실행해주세요)';
             return m;
         }
         window.openGuildModal = function() { document.getElementById('guildModal').classList.add('active'); renderGuild(); };
@@ -2476,15 +2483,18 @@
                 const { data: my, error } = await gameDB.from('guild_members').select('guild_id, role, guilds(id, name, description, owner_id, max_members)').eq('user_id', currentUserId).maybeSingle();
                 if (error) throw error;
                 _guildMy = my;
+                if (!(my && my.guilds)) { _guildInfo = null; updateGuildCollectBtn(); }
                 if (my && my.guilds) await renderMyGuild(body, my); else await renderGuildBrowse(body);
             } catch (e) { body.innerHTML = `<div style="padding:16px; color:#f87171; line-height:1.6;">${_gEsc(guildErr(e))}</div>`; }
         }
         async function renderMyGuild(body, my) {
             const g = my.guilds, isOwner = my.role === 'owner';
+            await loadGuildInfo(); await loadGuildContrib(g.id);
+            const pointsPanel = guildPanelHtml();
             const { data: mem, error } = await gameDB.from('guild_members').select('user_id, role, joined_at').eq('guild_id', g.id).order('joined_at', { ascending: true });
             if (error) throw error;
             const rows = (mem || []).map(m => `<div style="display:flex; align-items:center; gap:6px; padding:8px 4px; border-bottom:1px solid var(--border-color);">
-                <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">${m.role === 'owner' ? '👑 ' : '👤 '}<b>${_gEsc(m.user_id)}</b>${m.user_id === currentUserId ? ' <span style="color:#38bdf8;">(나)</span>' : ''}</span>
+                <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">${m.role === 'owner' ? '👑 ' : '👤 '}<b>${_gEsc(m.user_id)}</b>${_guildContrib[m.user_id] != null ? ` <span style="font-size:11px; color:var(--text-sub);">(기여 ${formatKo(_guildContrib[m.user_id])})</span>` : ''}${m.user_id === currentUserId ? ' <span style="color:#38bdf8;">(나)</span>' : ''}</span>
                 ${isOwner && m.user_id !== currentUserId ? `<button style="background:#991b1b; color:#fff; border:none; border-radius:4px; padding:8px 12px; font-weight:bold; cursor:pointer;" onclick="guildKick(this.dataset.u)" data-u="${_gEsc(m.user_id)}">추방</button>` : ''}
             </div>`).join('');
             body.innerHTML = `
@@ -2493,6 +2503,7 @@
                     <div style="margin-top:4px; color:var(--text-sub);">${_gEsc(g.description) || '소개가 없어요.'}</div>
                     <div style="margin-top:6px; font-size:12px;">인원 ${(mem || []).length} / ${g.max_members} · 길드장 ${_gEsc(g.owner_id)}</div>
                 </div>
+                ${pointsPanel}
                 <div style="font-weight:bold; margin:8px 0 2px;">멤버</div>
                 <div>${rows}</div>
                 <div style="margin-top:12px;">${isOwner
@@ -2539,6 +2550,152 @@
         window.guildLeave = async function() { if (confirm('길드에서 탈퇴할까요?')) await guildCall('leave_guild', {}, '길드를 탈퇴했어요.'); };
         window.guildKick = async function(uid) { if (confirm(`${uid} 님을 추방할까요?`)) await guildCall('kick_guild_member', { p_user_id: uid }); };
         window.guildDisband = async function() { if (confirm('정말 길드를 해산할까요? 모든 멤버가 탈퇴 처리돼요.')) await guildCall('disband_guild', {}, '길드를 해산했어요.'); };
+
+        // ===== 💎 길드점수 (guild_points.sql 필요) =====
+        const GUILD_SCORE_RATE = 100;   // 내 점수 100 시현 = 길드점수 1점 (내 점수 → 길드 이동 비율)
+        const GUILD_BUFFS = [           // ※ 비용·시간은 guild_points.sql 의 guild_spend_points 와 같아야 해요
+            { kind: 'sps',   name: '⚡ 길드 SPS 부스트 (+30%)',  cost: 2000, mins: 30 },
+            { kind: 'click', name: '👆 길드 클릭 부스트 (+50%)', cost: 2000, mins: 30 }
+        ];
+        var _guildInfo = null, _guildInfoErr = null, _guildPending = 0, _guildFlushTimer = null, _guildContrib = {}, _guildErrShown = false;
+        function guildSpsMult() { return (_guildInfo && Date.now() < _guildInfo.spsUntil) ? 1.3 : 1; }
+        function guildClickMult() { return (_guildInfo && Date.now() < _guildInfo.clickUntil) ? 1.5 : 1; }
+        function updateGuildCollectBtn() {
+            const b = document.getElementById('guildCollectBtn');
+            if (!b) return;
+            let t = '🏰 길드점수 모으기';
+            if (_guildInfo) {
+                t += ' · ' + formatKo(_guildInfo.points + _guildPending);
+                if (guildSpsMult() > 1) t += ' ⚡';
+                if (guildClickMult() > 1) t += ' 👆';
+            }
+            b.innerText = t;
+        }
+        async function loadGuildInfo() {
+            if (!currentUserId) return;
+            try {
+                const { data, error } = await gameDB.from('guild_members').select('guild_id, role, contrib, guilds(id, name, points, sps_buff_until, click_buff_until)').eq('user_id', currentUserId).maybeSingle();
+                if (error) throw error;
+                _guildInfoErr = null;
+                const g = data && data.guilds;
+                _guildInfo = g ? { id: g.id, name: g.name, points: Number(g.points) || 0, spsUntil: Number(g.sps_buff_until) || 0, clickUntil: Number(g.click_buff_until) || 0, contrib: Number(data.contrib) || 0 } : null;
+            } catch (e) { _guildInfo = null; _guildInfoErr = e; }
+            updateGuildCollectBtn();
+        }
+        async function loadGuildContrib(gid) {
+            _guildContrib = {};
+            try {
+                const { data } = await gameDB.from('guild_members').select('user_id, contrib').eq('guild_id', gid);
+                (data || []).forEach(r => { _guildContrib[r.user_id] = Number(r.contrib) || 0; });
+            } catch (_) {}
+        }
+        function guildBuffStatus() {
+            if (!_guildInfo) return '';
+            const now = Date.now(), parts = [];
+            if (_guildInfo.spsUntil > now) parts.push(`⚡ SPS +30% (${Math.ceil((_guildInfo.spsUntil - now) / 60000)}분 남음)`);
+            if (_guildInfo.clickUntil > now) parts.push(`👆 클릭 +50% (${Math.ceil((_guildInfo.clickUntil - now) / 60000)}분 남음)`);
+            return parts.length ? ' · ' + parts.join(' · ') : ' · 적용 중인 버프가 없어요';
+        }
+        function guildPanelHtml() {
+            const btn = 'border:none; border-radius:8px; padding:12px 16px; min-height:44px; font-weight:bold; font-size:14px; cursor:pointer; color:#fff; touch-action:manipulation;';
+            if (!_guildInfo) return `<div style="background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px; margin-bottom:10px; color:var(--text-sub); font-size:12px; line-height:1.6;">💎 길드점수 기능을 쓰려면 관리자가 <b>guild_points.sql</b> 을 Supabase에서 실행해야 해요.${_guildInfoErr ? '<br>' + _gEsc(guildErr(_guildInfoErr)) : ''}</div>`;
+            const buffBtns = GUILD_BUFFS.map(b => `<button style="${btn} background:#7c3aed; width:100%; margin-top:6px; text-align:left;" onclick="guildSpend('${b.kind}')">${b.name} — ${formatKo(b.cost)}점 · ${b.mins}분</button>`).join('');
+            return `
+                <div style="background:var(--input-bg); border:1px solid #38bdf8; border-radius:8px; padding:12px; margin-bottom:10px;">
+                    <div style="font-size:17px; font-weight:bold; color:#38bdf8;">💎 길드점수 ${formatKo(_guildInfo.points + _guildPending)}</div>
+                    <div style="font-size:12px; color:var(--text-sub); margin-top:2px;">내 기여 ${formatKo(_guildInfo.contrib)}점${guildBuffStatus()}</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+                        <button style="${btn} background:#0ea5e9;" onclick="guildToggleBox('guildSpendBox')">🧰 길드점수 쓰기</button>
+                        <button style="${btn} background:#16a34a;" onclick="guildToggleBox('guildDonateBox')">📥 내 점수 길드로 이동</button>
+                    </div>
+                    <div id="guildSpendBox" style="display:none; margin-top:8px;">${buffBtns}</div>
+                    <div id="guildDonateBox" style="display:none; margin-top:8px;">
+                        <div style="font-size:12px; color:var(--text-sub); margin-bottom:6px;">${formatKo(GUILD_SCORE_RATE)} 시현 = 길드점수 1점 · 한 번 옮기면 되돌릴 수 없어요 · 내 시현: ${formatKo(score)}</div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <input id="guildDonateInput" type="number" min="0" placeholder="옮길 시현" style="flex:1 1 140px; padding:10px; font-size:16px; border-radius:4px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main);">
+                            <button style="${btn} background:#475569;" onclick="guildFillAll()">전부</button>
+                            <button style="${btn} background:#16a34a;" onclick="guildDonate()">이동</button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        window.guildToggleBox = function(id) {
+            const el = document.getElementById(id);
+            if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+        };
+        window.guildFillAll = function() {
+            const el = document.getElementById('guildDonateInput');
+            if (el) el.value = String(Math.floor(score / GUILD_SCORE_RATE) * GUILD_SCORE_RATE);
+        };
+
+        // 🏰 길드점수 모으기: 누를 때마다 +1점 (서버에는 1.5초마다 모아서 전송)
+        window.guildCollectPoint = function() {
+            if (!currentUserSession || !isGameLoaded) return;
+            if (isUserJailed) return alert('🚔 감옥에서는 길드점수를 모을 수 없어요.');
+            if (isUserScoreLocked) return alert('관전자·관리자 계정은 길드점수를 모을 수 없어요.');
+            if (!_guildInfo) {
+                if (_guildInfoErr) return alert(guildErr(_guildInfoErr));
+                alert('길드에 가입해야 길드점수를 모을 수 있어요! 길드 화면을 열어줄게요.');
+                openGuildModal();
+                return;
+            }
+            _guildPending += 1;
+            updateGuildCollectBtn();
+            if (!_guildFlushTimer) _guildFlushTimer = setTimeout(flushGuildPoints, 1500);
+        };
+        async function flushGuildPoints() {
+            _guildFlushTimer = null;
+            if (_guildPending <= 0 || !currentUserId) return;
+            const amt = _guildPending;
+            _guildPending = 0;
+            const { data, error } = await gameDB.rpc('guild_add_points', { p_user_id: currentUserId, p_amount: amt });
+            if (error) {
+                if (!_guildErrShown) { _guildErrShown = true; alert(guildErr(error)); }
+            } else if (_guildInfo) {
+                _guildInfo.points = Number(data) || _guildInfo.points;
+                _guildInfo.contrib += amt;
+            }
+            updateGuildCollectBtn();
+        }
+        document.addEventListener('visibilitychange', () => { if (document.hidden) flushGuildPoints(); });
+        setInterval(() => { if (currentUserSession && isGameLoaded) loadGuildInfo(); }, 20000);
+
+        // 🧰 길드점수 쓰기: 길드 버프 구입 (길드원 전체에게 적용)
+        window.guildSpend = async function(kind) {
+            const b = GUILD_BUFFS.find(x => x.kind === kind);
+            if (!b || !_guildInfo) return;
+            await flushGuildPoints();
+            if (_guildInfo.points < b.cost) return alert(`길드점수가 부족해요. (필요 ${formatKo(b.cost)}점 / 현재 ${formatKo(_guildInfo.points)}점)`);
+            if (!confirm(`${b.name}\n길드점수 ${formatKo(b.cost)}점을 써서 ${b.mins}분 동안 길드원 모두에게 적용할까요?`)) return;
+            const { data, error } = await gameDB.rpc('guild_spend_points', { p_user_id: currentUserId, p_kind: kind });
+            if (error) return alert(guildErr(error));
+            if (!data || data.ok === false) return alert((data && data.msg) || '길드점수를 쓰지 못했어요.');
+            await loadGuildInfo();
+            await renderGuild();
+            alert(`✅ ${b.name} 적용! (${b.mins}분)`);
+        };
+
+        // 📥 내 점수 → 길드점수 이동
+        window.guildDonate = async function() {
+            if (!_guildInfo) return;
+            if (isUserScoreLocked || isUserJailed) return alert('지금은 점수를 옮길 수 없어요.');
+            const input = document.getElementById('guildDonateInput');
+            const v = parseFloat(input && input.value);
+            if (!isFinite(v) || v < GUILD_SCORE_RATE) return alert(`최소 ${formatKo(GUILD_SCORE_RATE)} 시현부터 옮길 수 있어요.`);
+            const pts = Math.min(Math.floor(v / GUILD_SCORE_RATE), 1e15);
+            const amount = pts * GUILD_SCORE_RATE;
+            if (score < amount) return alert('시현이 부족해요.');
+            if (!confirm(`내 점수 ${formatKo(amount)} 시현을 길드점수 ${formatKo(pts)}점으로 옮길까요?\n(되돌릴 수 없어요)`)) return;
+            score -= amount; updateDisplay();
+            const { error } = await gameDB.rpc('guild_deposit_points', { p_user_id: currentUserId, p_amount: pts });
+            if (error) { score += amount; updateDisplay(); return alert(guildErr(error)); }
+            saveGameToServer(true);
+            await loadGuildInfo();
+            await renderGuild();
+            alert(`✅ ${formatKo(amount)} 시현 → 길드점수 ${formatKo(pts)}점으로 옮겼어요!`);
+        };
+        // ===== 💎 길드점수 끝 =====
+
 
         // ===== 🔗 이동 링크 광고 =====
         let _linkAdList = [];
@@ -2847,7 +3004,7 @@
             for (const key in items) sps += items[key].count * items[key].spsValue;
             if(ownedScrollUpgrade) sps += SCROLL_UPGRADE_SPS;
             const petBonus = getPetBonuses();
-            sps = sps * (1 + petBonus.spsMult) * (1 + prestigeCount * PRESTIGE_SPS_BONUS) * extSpsMult();
+            sps = sps * (1 + petBonus.spsMult) * (1 + prestigeCount * PRESTIGE_SPS_BONUS) * extSpsMult() * guildSpsMult();
             sps += cheatBonusSps;
             if (isPeperoEvent()) sps *= PEPERO_SPS_MULT;
             return Math.max(0, sps);
@@ -2889,7 +3046,7 @@
             if (typeof v2ClickBlocked === 'function' && v2ClickBlocked()) return;
             if (!currentUserSession || isUserScoreLocked || isUserJailed) return;
             let isGoldenActive = goldenCookieBuffTimer > 0;
-            let baseGain = (ownedCookieUpgrade ? COOKIE_UPGRADE_MULT : 1) * Math.pow(WEAPON_CLICK_MULT, weaponLevel) * extClickMult();
+            let baseGain = (ownedCookieUpgrade ? COOKIE_UPGRADE_MULT : 1) * Math.pow(WEAPON_CLICK_MULT, weaponLevel) * extClickMult() * guildClickMult();
             const petBonus = getPetBonuses();
             const isCrit = Math.random() < extCritChance(petBonus.critChance);
             const comboMult = extComboTick();
@@ -3666,6 +3823,7 @@
                 startRealtimeAndPollingSync();
                 grantOfflineScore();
                 claimAttendance(); ensureDailyDay(); renderDailyPanel();
+                loadGuildInfo();
                 updatePeperoBanner();
                 if (!_gameEngineStarted) {
                     _gameEngineStarted = true;
