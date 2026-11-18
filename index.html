@@ -395,6 +395,7 @@
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
             <button id="pwaInstallBtn" onclick="installPWA()" style="display:none; background-color:#00ffcc; color:#000; border:none; padding:6px 12px; font-size:12px; font-weight:bold; border-radius:4px; cursor:pointer;">📲 앱 설치</button>
+            <button id="guildNavBtn" onclick="openGuildModal()" style="background:#7c3aed; color:#fff; border:none; padding:8px 12px; font-size:12px; font-weight:bold; border-radius:4px; cursor:pointer;">🏰 길드</button>
             <div id="linkAdWrap"></div>
             <button class="nav-logout-btn" onclick="handleLogout()">로그아웃 (안전저장)</button>
         </div>
@@ -502,6 +503,13 @@
             </div>
         </div>
         <div id="adminSecretShield" onclick="showAdminLoginModal()" style="position: absolute; bottom: 25px; right: 25px; font-size: 45px; cursor: pointer; z-index: 10001;" title="System Core">☢️🛡️</div>
+    </div>
+
+    <div class="modal-overlay user-screen" id="guildModal" onclick="if(event.target===this) closeGuildModal()">
+        <div class="modal-box" style="border-color:#7c3aed; width:min(560px,95vw);">
+            <div class="modal-header"><div class="modal-title" style="color:#a78bfa;">🏰 길드</div><button onclick="closeGuildModal()" style="background:none; border:none; font-size:20px; color:var(--text-main); cursor:pointer;">✕</button></div>
+            <div class="modal-body" id="guildBody" style="color:var(--text-main); font-size:13px;"></div>
+        </div>
     </div>
 
     <div class="modal-overlay user-screen" id="extModal" onclick="if(event.target===this) closeExtModal()">
@@ -2442,6 +2450,89 @@
             if (e.isComposing || e.keyCode === 229) return;
             if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); window.sendJailChat(inputId); }
         };
+
+
+        // ===== 🏰 길드 (guild_setup.sql 필요) =====
+        let _guildMy = null; // { guild_id, role, guilds:{...} }
+        const _gEsc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        function guildErr(e) {
+            const m = (e && (e.message || e.msg)) || String(e);
+            if (/guild|relation .* does not exist|schema cache|function .* does not exist/i.test(m) && /does not exist|schema cache|Could not find/i.test(m))
+                return '길드 DB가 아직 준비되지 않았어요. (관리자: guild_setup.sql 을 Supabase에서 실행해주세요)';
+            return m;
+        }
+        window.openGuildModal = function() { document.getElementById('guildModal').classList.add('active'); renderGuild(); };
+        window.closeGuildModal = function() { document.getElementById('guildModal').classList.remove('active'); };
+        async function renderGuild() {
+            const body = document.getElementById('guildBody');
+            body.innerHTML = '<div style="padding:16px; color:var(--text-sub);">불러오는 중...</div>';
+            try {
+                const { data: my, error } = await gameDB.from('guild_members').select('guild_id, role, guilds(id, name, description, owner_id, max_members)').eq('user_id', currentUserId).maybeSingle();
+                if (error) throw error;
+                _guildMy = my;
+                if (my && my.guilds) await renderMyGuild(body, my); else await renderGuildBrowse(body);
+            } catch (e) { body.innerHTML = `<div style="padding:16px; color:#f87171; line-height:1.6;">${_gEsc(guildErr(e))}</div>`; }
+        }
+        async function renderMyGuild(body, my) {
+            const g = my.guilds, isOwner = my.role === 'owner';
+            const { data: mem, error } = await gameDB.from('guild_members').select('user_id, role, joined_at').eq('guild_id', g.id).order('joined_at', { ascending: true });
+            if (error) throw error;
+            const rows = (mem || []).map(m => `<div style="display:flex; align-items:center; gap:6px; padding:8px 4px; border-bottom:1px solid var(--border-color);">
+                <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;">${m.role === 'owner' ? '👑 ' : '👤 '}<b>${_gEsc(m.user_id)}</b>${m.user_id === currentUserId ? ' <span style="color:#38bdf8;">(나)</span>' : ''}</span>
+                ${isOwner && m.user_id !== currentUserId ? `<button style="background:#991b1b; color:#fff; border:none; border-radius:4px; padding:8px 12px; font-weight:bold; cursor:pointer;" onclick="guildKick(this.dataset.u)" data-u="${_gEsc(m.user_id)}">추방</button>` : ''}
+            </div>`).join('');
+            body.innerHTML = `
+                <div style="background:var(--input-bg); border:1px solid #7c3aed; border-radius:8px; padding:12px; margin-bottom:10px;">
+                    <div style="font-size:18px; font-weight:bold; color:#a78bfa;">🏰 ${_gEsc(g.name)}</div>
+                    <div style="margin-top:4px; color:var(--text-sub);">${_gEsc(g.description) || '소개가 없어요.'}</div>
+                    <div style="margin-top:6px; font-size:12px;">인원 ${(mem || []).length} / ${g.max_members} · 길드장 ${_gEsc(g.owner_id)}</div>
+                </div>
+                <div style="font-weight:bold; margin:8px 0 2px;">멤버</div>
+                <div>${rows}</div>
+                <div style="margin-top:12px;">${isOwner
+                    ? '<button style="background:#991b1b; color:#fff; border:none; border-radius:6px; padding:12px 16px; font-weight:bold; cursor:pointer;" onclick="guildDisband()">💥 길드 해산</button>'
+                    : '<button style="background:#4b5563; color:#fff; border:none; border-radius:6px; padding:12px 16px; font-weight:bold; cursor:pointer;" onclick="guildLeave()">🚪 길드 탈퇴</button>'}</div>`;
+        }
+        async function renderGuildBrowse(body) {
+            const { data: list, error } = await gameDB.from('guilds').select('id, name, description, owner_id, max_members, guild_members(count)').order('created_at', { ascending: false }).limit(50);
+            if (error) throw error;
+            const items = (list || []).map(g => {
+                const cnt = (g.guild_members && g.guild_members[0] && g.guild_members[0].count) || 0;
+                const full = cnt >= g.max_members;
+                return `<div style="display:flex; align-items:center; gap:8px; padding:10px 4px; border-bottom:1px solid var(--border-color);">
+                    <div style="flex:1; min-width:0;"><b>🏰 ${_gEsc(g.name)}</b> <span style="font-size:11px; color:var(--text-sub);">(${cnt}/${g.max_members} · ${_gEsc(g.owner_id)})</span><div style="font-size:12px; color:var(--text-sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${_gEsc(g.description)}</div></div>
+                    <button ${full ? 'disabled' : ''} style="background:${full ? '#4b5563' : '#10b981'}; color:#fff; border:none; border-radius:6px; padding:10px 14px; font-weight:bold; cursor:pointer;" onclick="guildJoin(${Number(g.id)})">${full ? '가득 참' : '가입'}</button>
+                </div>`;
+            }).join('') || '<div style="padding:12px; color:var(--text-sub);">아직 길드가 없어요. 첫 길드를 만들어보세요!</div>';
+            body.innerHTML = `
+                <div style="background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px; margin-bottom:10px;">
+                    <div style="font-weight:bold; margin-bottom:6px;">➕ 길드 만들기 <span style="font-size:11px; color:var(--text-sub);">(한 사람당 1개만 만들 수 있어요)</span></div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <input id="guildNameInput" type="text" maxlength="12" placeholder="길드 이름 (2~12자)" style="flex:1 1 140px; padding:10px; font-size:16px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main);">
+                        <input id="guildDescInput" type="text" maxlength="60" placeholder="한 줄 소개 (선택)" style="flex:2 1 180px; padding:10px; font-size:16px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main);" onkeydown="if((event.key==='Enter'||event.keyCode===13)&&!event.isComposing&&event.keyCode!==229){event.preventDefault();guildCreate();}">
+                        <button style="background:#7c3aed; color:#fff; border:none; border-radius:6px; padding:10px 16px; font-weight:bold; cursor:pointer;" onclick="guildCreate()">만들기</button>
+                    </div>
+                </div>
+                <div style="font-weight:bold; margin:8px 0 2px;">길드 목록</div>
+                <div>${items}</div>`;
+        }
+        async function guildCall(fn, args, okMsg) {
+            const { error } = await gameDB.rpc(fn, args || {});
+            if (error) { alert(guildErr(error)); return false; }
+            if (okMsg) alert(okMsg);
+            await renderGuild();
+            return true;
+        }
+        window.guildCreate = async function() {
+            const name = (document.getElementById('guildNameInput').value || '').trim();
+            const desc = (document.getElementById('guildDescInput').value || '').trim();
+            if (name.length < 2) return alert('길드 이름을 2자 이상 입력해줘요.');
+            await guildCall('create_guild', { p_name: name, p_desc: desc }, '🏰 길드를 만들었어요!');
+        };
+        window.guildJoin = async function(id) { await guildCall('join_guild', { p_guild_id: id }, '길드에 가입했어요!'); };
+        window.guildLeave = async function() { if (confirm('길드에서 탈퇴할까요?')) await guildCall('leave_guild', {}, '길드를 탈퇴했어요.'); };
+        window.guildKick = async function(uid) { if (confirm(`${uid} 님을 추방할까요?`)) await guildCall('kick_guild_member', { p_user_id: uid }); };
+        window.guildDisband = async function() { if (confirm('정말 길드를 해산할까요? 모든 멤버가 탈퇴 처리돼요.')) await guildCall('disband_guild', {}, '길드를 해산했어요.'); };
 
         // ===== 🔗 이동 링크 광고 =====
         let _linkAdList = [];
