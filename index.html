@@ -2262,6 +2262,17 @@
             await refreshAdminTicketsNow();
         };
 
+        async function isDeletedId(id) {
+            try {
+                const r = await gameDB.from('deleted_accounts').select('user_id').eq('user_id', id).maybeSingle();
+                return !r.error && !!r.data;
+            } catch (e) { return false; }
+        }
+        async function kickDeletedAccount() {
+            alert('🚫 삭제된 계정이에요. 다른 아이디로 가입해주세요.');
+            try { await gameDB.auth.signOut(); } catch (e) { }
+            location.reload();
+        }
         window.handleLogin = async function() {
             let id = document.getElementById('loginId').value.trim().toLowerCase().replace(/\s+/g, '');
             const pw = document.getElementById('loginPw').value.trim();
@@ -2269,6 +2280,7 @@
             if(!id || !pw || id === 'undefined' || id === 'null') return alert("아이디와 비밀번호를 정확히 입력하세요.");
             if (id === SUPER_ADMIN_USER_ID) return alert("🔐 최고관리자 계정은 일반 로그인을 사용할 수 없어요.\n오른쪽 아래 ☢️🛡️ 버튼에서 구글 인증으로 들어오세요.");
 
+            if (await isDeletedId(id)) return alert('🚫 삭제된 계정이에요. 다른 아이디로 가입해주세요.');
             const authEmail = idToAuthEmail(id);
             const authPassword = pwToAuthPw(pw);
             loginBtn.innerText = "접속 중...";
@@ -2314,6 +2326,7 @@
                 const { data: ud, error: udErr } = await gameDB.from('users').select('*').eq('userId', id).maybeSingle();
                 if (udErr) throw udErr;
                 if (!ud) { 
+                    if (await isDeletedId(id)) { await gameDB.auth.signOut(); loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false; return alert('🚫 삭제된 계정이에요. 다른 아이디로 가입해주세요.'); }
                     await gameDB.from('users').upsert({
                         userId: id, password: pw,
                         gameSave: { score: 0, totalClicks: 0, prestigeCount: 0, itemCounts: {}, adminUpdatedAt: Date.now() }
@@ -2466,6 +2479,7 @@
                 const { data: updated, error: saveErr } = await gameDB.from('users').update({ gameSave: payload }).eq('userId', currentUserId).select('userId');
                 if (saveErr) throw saveErr;
                 if (!updated || updated.length === 0) {
+                    if (await isDeletedId(currentUserId)) { isGameLoaded = false; return kickDeletedAccount(); }
                     // users 행이 없으면(가입 도중 실패 등) 새로 만들어 저장
                     const { error: upErr } = await gameDB.from('users').upsert({ userId: currentUserId, gameSave: payload }, { onConflict: 'userId' });
                     if (upErr) throw upErr;
@@ -3658,8 +3672,14 @@
             if (!isUserSuperAdmin) return alert('최고관리자 전용 권한입니다.');
             const ids = getCheckedUserIds(false);
             if (!ids.length || !confirm(`🔥 ${ids.length}명의 계정을 영구 삭제하시겠습니까?`)) return;
-            await gameDB.from('users').delete().in('userId', ids);
-            alert(`🔥 ${ids.length}개 계정 삭제 완료.`); await loadUserBulkList();
+            const rr = await gameDB.rpc('admin_delete_accounts', { p_ids: ids });
+            if (rr.error) {
+                await gameDB.from('users').delete().in('userId', ids);
+                alert(`⚠️ ${ids.length}개 계정의 게임 데이터만 삭제했어요.\n로그인 계정까지 완전히 지우려면 Supabase 에서 delete_account.sql 을 실행해주세요.\n(사유: ${rr.error.message || rr.error})`);
+            } else {
+                alert(`🔥 ${Number(rr.data) || 0}개 계정 삭제 완료. (같은 아이디로는 다시 가입·로그인할 수 없어요)`);
+            }
+            await loadUserBulkList();
         };
 
         window.executeAdminUserPasswordOverride = async function() {
