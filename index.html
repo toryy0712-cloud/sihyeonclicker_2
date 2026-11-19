@@ -3421,6 +3421,7 @@
                 msgArea.innerHTML = '';
                 docs.slice().reverse().forEach(m => {
                     if(m.receiver === JAIL_ROOM) return;
+                    if(m.isDM && String(m.text || '').charAt(0) === '\u2063') return;   // 메시지창(DM)에서 보낸 글은 커뮤니티에 안 보임
                     if(m.isDM && m.sender !== currentUserId && m.receiver !== currentUserId) return;
                     const row = document.createElement('div');
                     row.className = 'chat-msg-row';
@@ -4747,6 +4748,10 @@ let peer = null, sum = {}, users = [], filter = '';
 const me = () => (typeof currentUserId !== 'undefined' ? currentUserId : null);
 const $ = id => document.getElementById(id);
 const q = s => '"' + String(s).replace(/"/g, '') + '"';
+const MARK = '\u2063';
+const SYS = ['시스템', '결투장', '__jail__'];
+const isSys = id => SYS.includes(id);
+const clean = s => String(s == null ? '' : s).replace(/^\u2063/, '');
 const readKey = () => 'dmRead:' + me();
 function readMap() { try { return JSON.parse(localStorage.getItem(readKey()) || '{}'); } catch (e) { return {}; } }
 function setRead(p, ts) { try { const m = readMap(); m[p] = Math.max(m[p] || 0, ts || Date.now()); localStorage.setItem(readKey(), JSON.stringify(m)); } catch (e) { } }
@@ -4774,7 +4779,7 @@ function close() { const o = $('dmOverlay'); if (o) o.classList.remove('on'); pe
 async function loadUsers() {
     try {
         const r = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin');
-        users = (r.data || []).filter(u => u.userId && u.userId !== 'undefined' && u.userId !== 'null' && u.userId !== me());
+        users = (r.data || []).filter(u => u.userId && u.userId !== 'undefined' && u.userId !== 'null' && u.userId !== me() && !isSys(u.userId));
     } catch (e) { }
 }
 async function loadSummary() {
@@ -4784,8 +4789,8 @@ async function loadSummary() {
             .or(`sender.eq.${q(m)},receiver.eq.${q(m)}`).order('timestamp', { ascending: false }).limit(300);
         const rd = readMap(); const s = {};
         (r.data || []).forEach(x => {
-            const p = x.sender === m ? x.receiver : x.sender; if (!p) return;
-            if (!s[p]) s[p] = { last: x.text, ts: x.timestamp, mine: x.sender === m, unread: 0 };
+            const p = x.sender === m ? x.receiver : x.sender; if (!p || isSys(p) || isSys(x.sender)) return;
+            if (!s[p]) s[p] = { last: clean(x.text), ts: x.timestamp, mine: x.sender === m, unread: 0 };
             if (x.sender !== m && (x.timestamp || 0) > (rd[p] || 0)) s[p].unread++;
         });
         sum = s;
@@ -4825,9 +4830,10 @@ async function loadThread() {
         const data = r.data || [];
         if (!data.length) box.innerHTML = '<div class="dm-empty">첫 메시지를 보내보세요 👋</div>';
         data.forEach(x => {
+            if (isSys(x.sender)) return;
             const d = new Date(Number(x.timestamp) || 0), day = `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
             if (day !== lastDay) { lastDay = day; const dv = document.createElement('div'); dv.className = 'dm-day'; dv.textContent = day; box.appendChild(dv); }
-            const mine = x.sender === m, b = document.createElement('div'); b.className = 'dm-b ' + (mine ? 'me' : 'you'); b.textContent = x.text;
+            const mine = x.sender === m, b = document.createElement('div'); b.className = 'dm-b ' + (mine ? 'me' : 'you'); b.textContent = clean(x.text);
             const t = document.createElement('div'); t.className = 'dm-t ' + (mine ? 'me' : 'you'); t.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
             box.appendChild(b); box.appendChild(t);
         });
@@ -4850,7 +4856,7 @@ async function send() {
         if (r.data && r.data.isDMBanned) return alert('🔒 귓속말이 차단되었습니다.');
     } catch (e) { }
     inp.value = '';
-    const x = await gameDB.from('chat_messages').insert([{ sender: m, receiver: peer, text: text.slice(0, 300), isDM: true, timestamp: Date.now() }]);
+    const x = await gameDB.from('chat_messages').insert([{ sender: m, receiver: peer, text: MARK + text.slice(0, 300), isDM: true, timestamp: Date.now() }]);
     if (x.error) { inp.value = text; return alert('메시지를 보내지 못했어요: ' + (x.error.message || x.error)); }
     loadThread();
 }
@@ -4867,9 +4873,9 @@ function startRealtime() {
     try {
         gameDB.channel('dm_s2').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, p => {
             const x = p.new || {}, m = me();
-            if (!x.isDM || (x.receiver !== m && x.sender !== m)) return;
+            if (!x.isDM || isSys(x.sender) || (x.receiver !== m && x.sender !== m)) return;
             if (peer && (x.sender === peer || x.receiver === peer)) loadThread();
-            else { loadSummary().then(() => { if ($('dmOverlay') && $('dmOverlay').classList.contains('on') && !peer) renderList(); }); if (x.receiver === m && typeof showPeperoToast === 'function') showPeperoToast(`✉️ ${x.sender}: ${String(x.text).slice(0, 20)}`); }
+            else { loadSummary().then(() => { if ($('dmOverlay') && $('dmOverlay').classList.contains('on') && !peer) renderList(); }); if (x.receiver === m && typeof showPeperoToast === 'function') showPeperoToast(`✉️ ${x.sender}: ${clean(x.text).slice(0, 20)}`); }
         }).subscribe();
     } catch (e) { }
 }
