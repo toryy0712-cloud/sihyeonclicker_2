@@ -434,10 +434,13 @@
         <button onclick="handleLogout()" style="margin-top:14px; padding:8px 16px; border:1px solid #4b5563; border-radius:6px; background:transparent; color:#9ca3af; cursor:pointer;">로그아웃</button>
     </div>
 
-    <details id="dailyPanel" style="margin:6px auto; max-width:900px; background:#111827; border:1px solid #374151; border-radius:8px; padding:6px 12px; color:#e5e7eb; font-size:13px;">
+    <div id="dailyRow" style="display:flex; gap:6px; align-items:flex-start; max-width:900px; margin:6px auto; padding:0 4px; box-sizing:border-box;">
+    <button id="dmOpenBtn" onclick="dmOpen()">✉️ 메시지<span id="dmBadge"></span></button>
+    <details id="dailyPanel" style="margin:0; flex:1; min-width:0; background:#111827; border:1px solid #374151; border-radius:8px; padding:6px 12px; color:#e5e7eb; font-size:13px;">
         <summary id="dailyPanelSummary" style="cursor:pointer; font-weight:bold;">📅 출석 · 일일 미션</summary>
         <div id="dailyPanelBody" style="margin-top:6px;"></div>
     </details>
+    </div>
 
     <div id="peperoBanner" style="display:none; margin:6px auto; max-width:900px; background:linear-gradient(90deg,#7c2d12,#b45309); color:#fff; padding:8px 12px; border-radius:8px; align-items:center; justify-content:space-between; gap:8px; font-size:13px; flex-wrap:wrap;">
         <span>🍫 <b>빼빼로데이 기념 이벤트</b> — SPS +11.11% · 🍫 빼빼로를 잡으면 보너스! <span id="peperoCountText"></span></span>
@@ -4698,6 +4701,188 @@ function install() {
 window.openV2Modal = () => { install(); document.getElementById('v2Modal').classList.add('active'); render(); };
 window.closeV2Modal = () => { const m = document.getElementById('v2Modal'); if (m) m.classList.remove('active'); };
 install();
+})();
+
+</script>
+<script>
+/* ===== ✉️ 메시지(DM) — 인스타그램 DM 스타일 ===== */
+(function () {
+'use strict';
+const css = `
+#dmOpenBtn{flex-shrink:0;position:relative;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:bold;font-size:13px;cursor:pointer;touch-action:manipulation;white-space:nowrap}
+#dmBadge{display:none;position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font-size:11px;line-height:18px;text-align:center;box-sizing:border-box}
+#dmOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100002;align-items:center;justify-content:center}
+#dmOverlay.on{display:flex}
+#dmBox{background:#0b1220;color:#e5e7eb;border:1px solid #1f2937;border-radius:14px;width:min(440px,96vw);height:min(660px,90vh);display:flex;flex-direction:column;overflow:hidden;font-family:inherit}
+#dmHead{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #1f2937;font-weight:bold}
+#dmHead button{background:none;border:none;color:#e5e7eb;font-size:20px;cursor:pointer;padding:0 4px}
+#dmTitle{flex:1;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dmListView,#dmThreadView{flex:1;min-height:0;display:flex;flex-direction:column}
+#dmSearch{margin:10px 14px;padding:9px 12px;border-radius:10px;border:1px solid #1f2937;background:#111827;color:#e5e7eb;font-size:14px;outline:none}
+#dmList{flex:1;overflow-y:auto;padding:0 6px 10px}
+.dm-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px}
+.dm-row:hover{background:#111827}
+.dm-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ec4899,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#fff;font-size:17px;flex-shrink:0}
+.dm-info{flex:1;min-width:0}
+.dm-name{font-weight:bold;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-prev{font-size:12px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dm-prev.unread{color:#fff;font-weight:bold}
+.dm-chat{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-weight:bold;font-size:12px;cursor:pointer;position:relative;flex-shrink:0}
+.dm-dot{display:inline-block;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font-size:10px;line-height:16px;text-align:center;margin-left:4px;padding:0 4px;box-sizing:border-box}
+#dmMsgs{flex:1;overflow-y:auto;padding:12px 12px 4px;display:flex;flex-direction:column;gap:4px}
+.dm-day{align-self:center;font-size:11px;color:#6b7280;margin:8px 0}
+.dm-b{max-width:75%;padding:8px 13px;border-radius:18px;font-size:14px;line-height:1.4;word-break:break-word;white-space:pre-wrap}
+.dm-b.me{align-self:flex-end;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;border-bottom-right-radius:5px}
+.dm-b.you{align-self:flex-start;background:#262c3a;color:#e5e7eb;border-bottom-left-radius:5px}
+.dm-t{font-size:10px;color:#6b7280;margin:0 6px 4px}
+.dm-t.me{align-self:flex-end}.dm-t.you{align-self:flex-start}
+#dmInputRow{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #1f2937}
+#dmInput{flex:1;padding:10px 14px;border-radius:20px;border:1px solid #374151;background:#111827;color:#e5e7eb;font-size:14px;outline:none;min-width:0}
+#dmSend{background:none;border:none;color:#60a5fa;font-weight:bold;font-size:14px;cursor:pointer}
+.dm-empty{color:#6b7280;text-align:center;font-size:13px;padding:30px 10px}
+`;
+const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+let peer = null, sum = {}, users = [], filter = '';
+const me = () => (typeof currentUserId !== 'undefined' ? currentUserId : null);
+const $ = id => document.getElementById(id);
+const q = s => '"' + String(s).replace(/"/g, '') + '"';
+const readKey = () => 'dmRead:' + me();
+function readMap() { try { return JSON.parse(localStorage.getItem(readKey()) || '{}'); } catch (e) { return {}; } }
+function setRead(p, ts) { try { const m = readMap(); m[p] = Math.max(m[p] || 0, ts || Date.now()); localStorage.setItem(readKey(), JSON.stringify(m)); } catch (e) { } }
+
+function build() {
+    if ($('dmOverlay')) return;
+    const o = document.createElement('div'); o.id = 'dmOverlay';
+    o.innerHTML = `<div id="dmBox">
+        <div id="dmHead"><button id="dmBack" style="display:none">‹</button><span id="dmTitle">✉️ 메시지</span><button id="dmClose">✕</button></div>
+        <div id="dmListView"><input id="dmSearch" placeholder="유저 검색" autocomplete="off"><div id="dmList"></div></div>
+        <div id="dmThreadView" style="display:none"><div id="dmMsgs"></div>
+            <div id="dmInputRow"><input id="dmInput" placeholder="메시지 보내기..." maxlength="300" autocomplete="off"><button id="dmSend">전송</button></div></div>
+    </div>`;
+    document.body.appendChild(o);
+    o.addEventListener('click', e => { if (e.target === o) close(); });
+    $('dmClose').onclick = close;
+    $('dmBack').onclick = () => { peer = null; showList(); loadSummary().then(renderList); };
+    $('dmSearch').oninput = e => { filter = e.target.value.trim().toLowerCase(); renderList(); };
+    $('dmSend').onclick = send;
+    $('dmInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); send(); } });
+}
+function showList() { $('dmListView').style.display = 'flex'; $('dmThreadView').style.display = 'none'; $('dmBack').style.display = 'none'; $('dmTitle').textContent = '✉️ 메시지'; }
+function close() { const o = $('dmOverlay'); if (o) o.classList.remove('on'); peer = null; }
+
+async function loadUsers() {
+    try {
+        const r = await gameDB.from('users').select('userId, isAdmin, isSuperAdmin');
+        users = (r.data || []).filter(u => u.userId && u.userId !== 'undefined' && u.userId !== 'null' && u.userId !== me());
+    } catch (e) { }
+}
+async function loadSummary() {
+    const m = me(); if (!m) return;
+    try {
+        const r = await gameDB.from('chat_messages').select('sender,receiver,text,timestamp').eq('isDM', true)
+            .or(`sender.eq.${q(m)},receiver.eq.${q(m)}`).order('timestamp', { ascending: false }).limit(300);
+        const rd = readMap(); const s = {};
+        (r.data || []).forEach(x => {
+            const p = x.sender === m ? x.receiver : x.sender; if (!p) return;
+            if (!s[p]) s[p] = { last: x.text, ts: x.timestamp, mine: x.sender === m, unread: 0 };
+            if (x.sender !== m && (x.timestamp || 0) > (rd[p] || 0)) s[p].unread++;
+        });
+        sum = s;
+        const tot = Object.keys(s).reduce((a, k) => a + s[k].unread, 0), b = $('dmBadge');
+        if (b) { b.style.display = tot ? 'block' : 'none'; b.textContent = tot > 99 ? '99+' : tot; }
+    } catch (e) { }
+}
+function renderList() {
+    const box = $('dmList'); if (!box) return; box.innerHTML = '';
+    const list = users.filter(u => !filter || u.userId.toLowerCase().includes(filter))
+        .sort((a, b) => ((sum[b.userId] ? sum[b.userId].ts : 0) - (sum[a.userId] ? sum[a.userId].ts : 0)) || a.userId.localeCompare(b.userId));
+    if (!list.length) { box.innerHTML = '<div class="dm-empty">유저가 없어요.</div>'; return; }
+    list.forEach(u => {
+        const s = sum[u.userId], row = document.createElement('div'); row.className = 'dm-row';
+        const av = document.createElement('div'); av.className = 'dm-av'; av.textContent = Array.from(u.userId)[0].toUpperCase();
+        const info = document.createElement('div'); info.className = 'dm-info';
+        const nm = document.createElement('div'); nm.className = 'dm-name'; nm.textContent = (u.isSuperAdmin || u.isAdmin ? '🛡️ ' : '') + u.userId;
+        const pv = document.createElement('div'); pv.className = 'dm-prev' + (s && s.unread ? ' unread' : '');
+        pv.textContent = s ? (s.mine ? '나: ' : '') + s.last : '대화를 시작해보세요';
+        info.appendChild(nm); info.appendChild(pv);
+        const bt = document.createElement('button'); bt.className = 'dm-chat'; bt.textContent = '💬 채팅';
+        if (s && s.unread) { const d = document.createElement('span'); d.className = 'dm-dot'; d.textContent = s.unread; bt.appendChild(d); }
+        bt.onclick = () => openThread(u.userId);
+        row.appendChild(av); row.appendChild(info); row.appendChild(bt); box.appendChild(row);
+    });
+}
+const pad = n => String(n).padStart(2, '0');
+async function loadThread() {
+    const m = me(), p = peer; if (!m || !p) return;
+    try {
+        const r = await gameDB.from('chat_messages').select('sender,receiver,text,timestamp').eq('isDM', true)
+            .or(`and(sender.eq.${q(m)},receiver.eq.${q(p)}),and(sender.eq.${q(p)},receiver.eq.${q(m)})`)
+            .order('timestamp', { ascending: true }).limit(200);
+        if (peer !== p) return;
+        const box = $('dmMsgs'), atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+        box.innerHTML = ''; let lastDay = '';
+        const data = r.data || [];
+        if (!data.length) box.innerHTML = '<div class="dm-empty">첫 메시지를 보내보세요 👋</div>';
+        data.forEach(x => {
+            const d = new Date(Number(x.timestamp) || 0), day = `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+            if (day !== lastDay) { lastDay = day; const dv = document.createElement('div'); dv.className = 'dm-day'; dv.textContent = day; box.appendChild(dv); }
+            const mine = x.sender === m, b = document.createElement('div'); b.className = 'dm-b ' + (mine ? 'me' : 'you'); b.textContent = x.text;
+            const t = document.createElement('div'); t.className = 'dm-t ' + (mine ? 'me' : 'you'); t.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            box.appendChild(b); box.appendChild(t);
+        });
+        if (atBottom || box.dataset.first !== p) { box.scrollTop = box.scrollHeight; box.dataset.first = p; }
+        const last = data.length ? Number(data[data.length - 1].timestamp) || Date.now() : Date.now();
+        setRead(p, last); loadSummary();
+    } catch (e) { }
+}
+async function openThread(p) {
+    peer = p; $('dmListView').style.display = 'none'; $('dmThreadView').style.display = 'flex';
+    $('dmBack').style.display = 'inline'; $('dmTitle').textContent = p; $('dmMsgs').dataset.first = '';
+    $('dmMsgs').innerHTML = '<div class="dm-empty">불러오는 중...</div>';
+    await loadThread(); $('dmInput').focus();
+}
+async function send() {
+    const inp = $('dmInput'), text = inp.value.trim(), m = me();
+    if (!text || !peer || !m) return;
+    try {
+        const r = await gameDB.from('users').select('isDMBanned').eq('userId', m).maybeSingle();
+        if (r.data && r.data.isDMBanned) return alert('🔒 귓속말이 차단되었습니다.');
+    } catch (e) { }
+    inp.value = '';
+    const x = await gameDB.from('chat_messages').insert([{ sender: m, receiver: peer, text: text.slice(0, 300), isDM: true, timestamp: Date.now() }]);
+    if (x.error) { inp.value = text; return alert('메시지를 보내지 못했어요: ' + (x.error.message || x.error)); }
+    loadThread();
+}
+window.dmOpen = async function () {
+    build(); $('dmOverlay').classList.add('on'); peer = null; filter = ''; $('dmSearch').value = ''; showList();
+    $('dmList').innerHTML = '<div class="dm-empty">불러오는 중...</div>';
+    await Promise.all([loadUsers(), loadSummary()]); renderList();
+};
+
+// 실시간 + 폴링
+let rt = false, tick = 0;
+function startRealtime() {
+    if (rt) return; rt = true;
+    try {
+        gameDB.channel('dm_s2').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, p => {
+            const x = p.new || {}, m = me();
+            if (!x.isDM || (x.receiver !== m && x.sender !== m)) return;
+            if (peer && (x.sender === peer || x.receiver === peer)) loadThread();
+            else { loadSummary().then(() => { if ($('dmOverlay') && $('dmOverlay').classList.contains('on') && !peer) renderList(); }); if (x.receiver === m && typeof showPeperoToast === 'function') showPeperoToast(`✉️ ${x.sender}: ${String(x.text).slice(0, 20)}`); }
+        }).subscribe();
+    } catch (e) { }
+}
+setInterval(() => {
+    try {
+        if (typeof isGameLoaded === 'undefined' || !isGameLoaded || !me()) return;
+        startRealtime(); tick++;
+        const open = $('dmOverlay') && $('dmOverlay').classList.contains('on');
+        if (open && peer) loadThread();
+        else if (open) loadSummary().then(renderList);
+        else if (tick % 4 === 1) loadSummary();
+    } catch (e) { }
+}, 8000);
 })();
 
 </script>
