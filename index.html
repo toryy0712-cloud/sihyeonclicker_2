@@ -767,6 +767,16 @@
                             <option value="item7">👹 괴물시현</option>
                             <option value="item8">👑 보스시현</option>
                             <option value="item9">☠️ 불가능보스</option>
+                            <option value="item10">🌠 초월</option>
+                            <option value="item11">👁️ 절대자의 영역</option>
+                            <option value="item12">🌀 인과율 붕괴</option>
+                            <option value="item13">♾️ 무한의 경계</option>
+                            <option value="item14">💫 존재 초월</option>
+                            <option value="item15">🎛️ 현실 조작</option>
+                            <option value="item16">🛡️ 절대 불가침</option>
+                            <option value="item17">🔱 창조주의 권능</option>
+                            <option value="item18">🕳️ 개념 소멸</option>
+                            <option value="item19">🌌 전지전능</option>
                         </select>
                         <input type="number" id="admItemCountInput" placeholder="개수 (예: 10)" style="flex:1; margin:0;">
                     </div>
@@ -1617,7 +1627,17 @@
             item6: { name: "Temple", cost: 20000000, count: 0, spsValue: 800, baseCost: 20000000, icon: "🏛️" },
             item7: { name: "괴물시현", cost: 500000000, count: 0, spsValue: 5000, baseCost: 500000000, icon: "👹" },
             item8: { name: "보스시현", cost: 20000000000, count: 0, spsValue: 40000, baseCost: 20000000000, icon: "👑" },
-            item9: { name: "불가능보스", cost: 1000000000000000, count: 0, spsValue: 500000, baseCost: 1000000000000000, icon: "☠️" }
+            item9: { name: "불가능보스", cost: 1000000000000000, count: 0, spsValue: 500000, baseCost: 1000000000000000, icon: "☠️" },
+            item10: { name: "초월", cost: 1e20, count: 0, spsValue: 7.50e+10, baseCost: 1e20, icon: "🌠" },
+            item11: { name: "절대자의 영역", cost: 1e26, count: 0, spsValue: 1.10e+17, baseCost: 1e26, icon: "👁️" },
+            item12: { name: "인과율 붕괴", cost: 1e32, count: 0, spsValue: 1.70e+23, baseCost: 1e32, icon: "🌀" },
+            item13: { name: "무한의 경계", cost: 1e38, count: 0, spsValue: 2.50e+29, baseCost: 1e38, icon: "♾️" },
+            item14: { name: "존재 초월", cost: 1e44, count: 0, spsValue: 3.80e+35, baseCost: 1e44, icon: "💫" },
+            item15: { name: "현실 조작", cost: 1e50, count: 0, spsValue: 5.70e+41, baseCost: 1e50, icon: "🎛️" },
+            item16: { name: "절대 불가침", cost: 1e56, count: 0, spsValue: 8.50e+47, baseCost: 1e56, icon: "🛡️" },
+            item17: { name: "창조주의 권능", cost: 1e60, count: 0, spsValue: 1.30e+52, baseCost: 1e60, icon: "🔱" },
+            item18: { name: "개념 소멸", cost: 1e64, count: 0, spsValue: 1.90e+56, baseCost: 1e64, icon: "🕳️" },
+            item19: { name: "전지전능", cost: 1e68, count: 0, spsValue: 2.90e+60, baseCost: 1e68, icon: "🌌" }
         };
 
         const achievementData = [
@@ -3975,7 +3995,7 @@
             return (1 + researchSum('sps')) * (1 + planetBonus()) * (1 + ext.permSps / 100) * (1 + ext.marketSps / 100) * weatherMult() * activeBuffMult('sps') * (typeof v2Mult === 'function' ? v2Mult('sps') : 1);
         }
         function extClickMult() { return (1 + researchSum('click')) * (1 + planetBonus()) * activeBuffMult('click') * (typeof v2Mult === 'function' ? v2Mult('click') : 1); }
-        function extCritChance(petCrit) { return Math.min(0.6, 0.03 + (Number(petCrit) || 0) + researchSum('crit') / 100 + ext.permCrit / 100 + ext.marketCrit / 100 + (typeof v2Mult === 'function' ? v2Mult('crit') / 100 : 0)); }
+        function extCritChance(petCrit) { return Math.min(0.6, 0.03 + (Number(petCrit) || 0) + researchSum('crit') / 100 + ext.permCrit / 100 + ext.marketCrit / 100 + (window.__iAmThief ? 0.005 : 0) + (typeof v2Mult === 'function' ? v2Mult('crit') / 100 : 0)); }
         function extGoldenBonus() { return ext.research.goldres ? 5 : 0; }
 
         // ---------- 콤보 ----------
@@ -4088,7 +4108,7 @@
         const MARKET_PERIOD_MS = 72 * 3600 * 1000;
         const MARKET_ITEMS = [
             { id: 'core',   icon: '🔮', name: '암흑 증폭 코어',   desc: '자동 생산 영구 +3%',                base: 5000000,  apply: () => { ext.marketSps = Math.min(100, ext.marketSps + 3); return '자동 생산 영구 +3%'; } },
-            { id: 'glove',  icon: '🧤', name: '도둑의 장갑',      desc: '크리티컬 확률 영구 +0.5%',          base: 8000000,  apply: () => { ext.marketCrit = Math.min(15, ext.marketCrit + 0.5); return '크리티컬 영구 +0.5%'; } },
+            { id: 'glove',  icon: '🧤', name: '도둑의 장갑 (전 서버 1개)', desc: '구매하면 도둑 능력 해금 + 크리티컬 +0.5%. 다른 유저의 시현을 훔칠 수 있어요!', base: 3000000000, fixed: true, apply: () => '도둑 능력 해금' },
             { id: 'recipe', icon: '📜', name: '금지된 레시피',    desc: '즉시 시현 대량 획득 (생산 2시간분)', base: 3000000,  apply: () => giveScoreSecs(100000, 7200) },
             { id: 'glass',  icon: '⏳', name: '시간의 모래시계',  desc: '자동 생산 x2 버프 30분',            base: 2000000,  apply: () => addBuff('sps', 2, 1800) },
             { id: 'ticket', icon: '🎫', name: '희귀 거래권',      desc: '희귀 상자 1개',                    base: 4000000,  apply: () => { giveBox('rare', 1, true); return '희귀 상자 1개 획득'; } },
@@ -4096,13 +4116,14 @@
         ];
         function marketSlot() { return Math.floor((window.srvNow ? srvNow() : Date.now()) / MARKET_PERIOD_MS); }
         function marketItem() { return MARKET_ITEMS[marketSlot() % MARKET_ITEMS.length]; }
-        function marketCost(it) { return Math.max(it.base, Math.floor(getCurrentSps() * 3600)); }
+        function marketCost(it) { return it.fixed ? it.base : Math.max(it.base, Math.floor(getCurrentSps() * 3600)); }
         function marketSync() { const s = marketSlot(); if (ext.market.slot !== s) ext.market = { slot: s, bought: false }; }
         window.extBuyMarket = function() {
             if (isUserScoreLocked || isUserJailed) return;
             marketSync();
             if (ext.market.bought) return alert('이번 암시장 상품은 이미 구매했어요. 다음 상품을 기다려주세요.');
             const it = marketItem(), cost = marketCost(it);
+            if (it.id === 'glove') return buyGlove(it, cost);
             if (!isAdminAuthenticated && score < cost) return alert('시현이 부족해요.');
             if (!isAdminAuthenticated) score -= cost;
             ext.market.bought = true;
@@ -4111,6 +4132,71 @@
             showPeperoToast(lastBoxResult);
             updateDisplay(); saveGameToServer(true); refreshExtUi();
         };
+        // ---------- 🧤 도둑의 장갑 (전 서버 1개) ----------
+        window.__gloveOwner = undefined;   // undefined=확인 전/DB 없음, null=주인 없음, 문자열=주인
+        window.__iAmThief = false;
+        window.__thiefTargets = null;
+        async function refreshGlove() {
+            try {
+                const r = await gameDB.from('thief_glove').select('owner_id').eq('id', 1).maybeSingle();
+                if (r.error) { window.__gloveOwner = undefined; window.__iAmThief = false; }
+                else { window.__gloveOwner = r.data ? (r.data.owner_id || null) : undefined; window.__iAmThief = !!r.data && r.data.owner_id === currentUserId; }
+                if (typeof ext !== 'undefined' && ext._tab === 'market') refreshExtUi();
+            } catch (e) { }
+        }
+        window.refreshGlove = refreshGlove;
+        async function buyGlove(it, cost) {
+            if (!isAdminAuthenticated && score < cost) return alert('시현이 부족해요. (30억 필요)');
+            await refreshGlove();
+            if (window.__gloveOwner === undefined) return alert('도둑의 장갑 DB가 아직 준비되지 않았어요. (관리자: thief_glove.sql 을 Supabase에서 실행해주세요)');
+            if (window.__gloveOwner) return alert(`도둑의 장갑은 이미 ${window.__gloveOwner} 님이 가지고 있어요.`);
+            const r = await gameDB.rpc('claim_thief_glove');
+            if (r.error) return alert('구매 실패: ' + (r.error.message || r.error));
+            if (!r.data) { await refreshGlove(); return alert('아쉽게도 방금 다른 사람이 먼저 샀어요!'); }
+            if (!isAdminAuthenticated) score -= cost;
+            ext.market.bought = true; window.__gloveOwner = currentUserId; window.__iAmThief = true;
+            showPeperoToast('🧤 도둑의 장갑을 손에 넣었어요! 이제 암시장 탭에서 훔칠 수 있어요.');
+            updateDisplay(); saveGameToServer(true); refreshExtUi();
+        }
+        window.loadThiefTargets = async function() {
+            const r = await gameDB.rpc('thief_targets');
+            window.__thiefTargets = r.error ? { error: r.error.message || String(r.error) } : (r.data || []);
+            refreshExtUi();
+        };
+        window.thiefSteal = async function(id) {
+            if (isUserScoreLocked || isUserJailed || !window.__iAmThief) return;
+            if (!confirm(`${id} 님의 시현을 훔칠까요? (대상 점수의 3%, 하루에 1번)`)) return;
+            const r = await gameDB.rpc('thief_steal', { p_target: id });
+            if (r.error) return alert(r.error.message || String(r.error));
+            const amt = Number(r.data) || 0; score += amt;
+            showPeperoToast(`🧤 ${id} 님에게서 ${formatKo(amt)} 시현을 훔쳤어요!`);
+            updateDisplay(); saveGameToServer(true); window.loadThiefTargets();
+        };
+        function thiefPanelHtml() {
+            if (!window.__iAmThief) return '';
+            const tg = window.__thiefTargets;
+            let h = '<div class="ext-note" style="border-color:#7c3aed;">🧤 <b>도둑 모드</b> — 하루에 한 번, 대상 시현의 3%를 훔쳐요. (관리자·점수 100만 미만 유저 제외)</div>';
+            h += '<div style="margin:6px 0;"><button class="ext-btn" onclick="loadThiefTargets()">🔍 대상 목록 불러오기</button></div>';
+            if (tg && tg.error) h += `<div class="ext-sub" style="color:#f87171;">${tg.error}</div>`;
+            else if (tg) h += tg.length ? tg.map(u => `<div class="ext-card"><div style="flex:1;"><b>${String(u.user_id).replace(/[<>&]/g, '')}</b><div class="ext-sub">보유 ${formatKo(Number(u.score) || 0)} 시현</div></div><button class="ext-btn" onclick="thiefSteal(${JSON.stringify(String(u.user_id)).replace(/"/g, '&quot;')})">🧤 훔치기</button></div>`).join('') : '<div class="ext-sub">훔칠 수 있는 대상이 없어요.</div>';
+            return h;
+        }
+        // 피해자 쪽: 도난 금액 반영 (30초마다 확인) + 장갑 주인 확인 (60초마다)
+        let _thiefTick = 0;
+        setInterval(async () => {
+            try {
+                if (typeof isGameLoaded === 'undefined' || !isGameLoaded || !currentUserId) return;
+                _thiefTick++;
+                if (_thiefTick === 1 || _thiefTick % 2 === 0) refreshGlove();
+                const r = await gameDB.rpc('thief_collect_losses');
+                const sum = r && !r.error ? Number(r.data) || 0 : 0;
+                if (sum > 0) {
+                    const lose = Math.min(score, sum); score -= lose;
+                    showPeperoToast(`🧤 도둑에게 ${formatKo(lose)} 시현을 도둑맞았어요!`);
+                    updateDisplay(); saveGameToServer(true);
+                }
+            } catch (e) { }
+        }, 30000);
         function fmtMarketLeft() {
             const left = (marketSlot() + 1) * MARKET_PERIOD_MS - (window.srvNow ? srvNow() : Date.now());
             const h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
@@ -4242,11 +4328,16 @@
                 html += `<div class="ext-sub">영구 보너스: 생산 +${ext.permSps.toFixed(1)}% · 크리티컬 +${ext.permCrit.toFixed(1)}% · 지금까지 연 상자 ${ext.opened}개</div>`;
             } else if (ext._tab === 'market') {
                 marketSync();
+                if (typeof refreshGlove === 'function' && !window.__gloveChecked) { window.__gloveChecked = true; refreshGlove(); }
                 const it = marketItem(), cost = marketCost(it), bought = ext.market.bought;
+                const gOwner = window.__gloveOwner, isGlove = it.id === 'glove';
+                const soldOut = isGlove && !!gOwner;
                 html += sc + `<div class="ext-note">일반 상점에 없는 희귀 상품이 <b>72시간마다 단 하나</b> 입고돼요. 다음 입고까지 <b id="mktTimer">${fmtMarketLeft()}</b></div>`;
-                html += `<div class="ext-card ${bought ? 'done' : ''}" style="border-color:#7c3aed;"><div style="font-size:34px;">${it.icon}</div><div style="flex:1;"><b>${it.name}</b><div class="ext-sub">${it.desc}</div></div>` +
-                    (bought ? `<span class="ext-ok">✅ 구매 완료</span>` : `<button class="ext-btn" onclick="extBuyMarket()">${formatKo(cost)}</button>`) + `</div>`;
+                const act = soldOut ? `<span class="ext-ok">${gOwner === currentUserId ? '✅ 내가 소유 중' : '🚫 판매 완료 (주인: ' + String(gOwner).replace(/[<>&]/g, '') + ')'}</span>`
+                    : bought ? `<span class="ext-ok">✅ 구매 완료</span>` : `<button class="ext-btn" onclick="extBuyMarket()">${formatKo(cost)}</button>`;
+                html += `<div class="ext-card ${bought || soldOut ? 'done' : ''}" style="border-color:#7c3aed;"><div style="font-size:34px;">${it.icon}</div><div style="flex:1;"><b>${it.name}</b><div class="ext-sub">${it.desc}</div></div>` + act + `</div>`;
                 html += `<div class="ext-sub">암시장 영구 보너스: 생산 +${ext.marketSps.toFixed(1)}% · 크리티컬 +${ext.marketCrit.toFixed(1)}%</div>`;
+                html += thiefPanelHtml();
             } else if (ext._tab === 'research') {
                 html += sc + `<div class="ext-note">연구를 완료하면 영구적으로 생산 기술이 해금돼요. (환생해도 유지)</div>`;
                 html += RESEARCH.map(r => {
