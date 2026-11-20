@@ -883,6 +883,14 @@
                     <div style="font-size:11px; color:#9ca3af;">1위 환생+5 · 2위 +3 · 3위 +2 · 4~10위 +1 / 1~3위는 🏆 / 일반 유저 점수는 모두 0으로 초기화 (관리자·관전자 제외)</div>
                 </div>
 
+                <div id="adminSectionMarket">
+                    <div class="admin-section-title" style="color:#c084fc; border-color:#c084fc;">🕶️ 암시장 입고</div>
+                    <div class="admin-action-row">
+                        <button class="admin-action-btn btn-purple" onclick="adminStockMarket()">🕶️ 암시장 무작위 입고</button>
+                    </div>
+                    <div style="font-size:11px; color:#9ca3af; margin-bottom:10px;">6개 상품(도둑의 장갑 포함) 중 하나가 무작위로 입고돼요. 입고 후 72시간 동안 판매되고, 장갑은 주인이 있으면 제외돼요.</div>
+                </div>
+
                 <div id="adminSectionLogs">
                     <div class="admin-section-title" style="color:#a78bfa; border-color:#a78bfa;">📜 관리자 행동 기록 (최근 100건)</div>
                     <div class="admin-action-row">
@@ -2215,6 +2223,7 @@
         // 초기 자금 0 시현으로 계정 생성
         async function createAccountInternal(id, pw) {
             const cleanId = String(id || '').trim().toLowerCase().replace(/\s+/g, '');
+            try { await gameDB.rpc('admin_allow_account', { p_id: cleanId }); } catch (e) { }
             const authEmail = idToAuthEmail(cleanId);
             const authPassword = pwToAuthPw(pw);
 
@@ -2304,36 +2313,22 @@
                     }
                 }
 
-                if (authErr && (authErr.message.includes('Invalid login credentials') || authErr.message.includes('not found') || authErr.message.includes('Invalid'))) {
-                    const { error: signUpError } = await gameDB.auth.signUp({
-                        email: authEmail, password: authPassword, options: { data: { userId: id } }
-                    });
-                    if (signUpError && !signUpError.message.includes('already registered')) throw signUpError;
-
-                    const { data: existingRow } = await gameDB.from('users').select('*').eq('userId', id).maybeSingle();
-                    if (!existingRow) {
-                        await gameDB.from('users').upsert({
-                            userId: id,
-                            password: pw,
-                            gameSave: { score: 0, totalClicks: 0, prestigeCount: 0, itemCounts: {}, adminUpdatedAt: Date.now() }
-                        }, { onConflict: 'userId' });
+                if (authErr) {
+                    // 자동 가입 금지: 관리자가 가입요청을 승인해서 만든 계정만 로그인할 수 있어요.
+                    if (/invalid|not found|not confirmed/i.test(authErr.message || '')) {
+                        loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false;
+                        return alert("❌ 아이디/비밀번호가 틀렸거나, 아직 관리자가 가입을 승인하지 않은 계정이에요.\n처음이라면 \"가입요청\" 탭에서 관리자에게 요청을 보내주세요.");
                     }
-
-                    const retry = await gameDB.auth.signInWithPassword({ email: authEmail, password: authPassword });
-                    if (retry.error) throw retry.error;
-                    signInData = retry.data;
-                } else if (authErr) {
                     throw authErr;
                 }
                 
                 const { data: ud, error: udErr } = await gameDB.from('users').select('*').eq('userId', id).maybeSingle();
                 if (udErr) throw udErr;
                 if (!ud) { 
-                    if (await isDeletedId(id)) { await gameDB.auth.signOut(); loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false; return alert('🚫 삭제된 계정이에요. 다른 아이디로 가입해주세요.'); }
-                    await gameDB.from('users').upsert({
-                        userId: id, password: pw,
-                        gameSave: { score: 0, totalClicks: 0, prestigeCount: 0, itemCounts: {}, adminUpdatedAt: Date.now() }
-                    }, { onConflict: 'userId' });
+                    // 게임 계정(users 행)이 없으면 승인되지 않은 계정 → 자동 생성하지 않고 로그아웃
+                    const deleted = await isDeletedId(id);
+                    await gameDB.auth.signOut(); loginBtn.innerText = "게임 접속하기"; loginBtn.disabled = false;
+                    return alert(deleted ? '🚫 삭제된 계정이에요. 다른 아이디로 가입해주세요.' : '⏳ 아직 관리자가 가입을 승인하지 않았어요.\n"가입요청" 탭에서 요청을 보내고 승인을 기다려주세요.');
                 } else {
                     if (ud.isPermanentBan) {
                         alert("🔴 영구 정지된 계정입니다.");
@@ -3907,7 +3902,7 @@
             e.permSps = Math.min(200, Math.max(0, Number(raw.permSps) || 0));
             e.permCrit = Math.min(30, Math.max(0, Number(raw.permCrit) || 0));
             e.marketSps = Math.min(100, Math.max(0, Number(raw.marketSps) || 0));
-            e.marketCrit = Math.min(15, Math.max(0, Number(raw.marketCrit) || 0));
+            e.marketCrit = 0;   // 장갑 효과는 서버에서 확인한 '현재 주인'만 받음 (예전에 산 사람의 영구 보너스 제거)
             e.market = Object.assign({ slot: -1, bought: false }, (raw.market && typeof raw.market === 'object') ? raw.market : {});
             e.planet = Math.max(0, Math.min(5, Number(raw.planet) || 0));
             e.opened = Math.max(0, Number(raw.opened) || 0);
@@ -4138,15 +4133,33 @@
             { id: 'ticket', icon: '🎫', name: '희귀 거래권',      desc: '희귀 상자 1개',                    base: 4000000,  apply: () => { giveBox('rare', 1, true); return '희귀 상자 1개 획득'; } },
             { id: 'vip',    icon: '👑', name: '암시장 VIP 증서',  desc: '전설 상자 1개',                    base: 20000000, apply: () => { giveBox('legend', 1, true); return '전설 상자 1개 획득'; } }
         ];
-        function marketSlot() { return Math.floor((window.srvNow ? srvNow() : Date.now()) / MARKET_PERIOD_MS); }
-        function marketItem() { return MARKET_ITEMS[marketSlot() % MARKET_ITEMS.length]; }
-        function marketCost(it) { return it.fixed ? it.base : Math.max(it.base, Math.floor(getCurrentSps() * 3600)); }
+        const nowMs = () => (window.srvNow ? srvNow() : Date.now());
+        window.__mkt = undefined;   // 관리자가 입고한 현재 상품 {no, id, at}. undefined = DB 미적용(자동 추첨 방식으로 대체)
+        function marketSlot() { return window.__mkt ? window.__mkt.no : Math.floor(nowMs() / MARKET_PERIOD_MS); }
+        // 72시간 입고 때마다 상품을 무작위로 추첨 (같은 시간대면 모든 유저가 똑같은 결과가 나오도록 시간대 번호로 시드 고정)
+        function mrand(slot, salt) { let x = (Math.imul(slot, 2654435761) + Math.imul(salt, 40503)) >>> 0; x ^= x >>> 15; x = Math.imul(x, 2246822519) >>> 0; x ^= x >>> 13; x = Math.imul(x, 3266489917) >>> 0; x ^= x >>> 16; return x >>> 0; }
+        function marketItem() {
+            if (window.__mkt) {   // 관리자 입고 방식: 입고 후 72시간 동안만 판매
+                const m = window.__mkt;
+                if (!m.id || nowMs() >= m.at + MARKET_PERIOD_MS) return null;
+                return MARKET_ITEMS.find(x => x.id === m.id) || null;
+            }
+            const s = marketSlot(), i = mrand(s, 1) % MARKET_ITEMS.length;
+            // 도둑의 장갑이 뽑혔는데 이미 주인이 있으면, 같은 방식으로 다른 상품 중에서 다시 추첨
+            if (MARKET_ITEMS[i].id === 'glove' && window.__gloveOwner) {
+                const others = MARKET_ITEMS.filter(x => x.id !== 'glove');
+                return others[mrand(s, 2) % others.length];
+            }
+            return MARKET_ITEMS[i];
+        }
+        function marketCost(it) { if (!it) return 0; return it.fixed ? it.base : Math.max(it.base, Math.floor(getCurrentSps() * 3600)); }
         function marketSync() { const s = marketSlot(); if (ext.market.slot !== s) ext.market = { slot: s, bought: false }; }
         window.extBuyMarket = function() {
             if (isUserScoreLocked || isUserJailed) return;
             marketSync();
             if (ext.market.bought) return alert('이번 암시장 상품은 이미 구매했어요. 다음 상품을 기다려주세요.');
             const it = marketItem(), cost = marketCost(it);
+            if (!it) return alert('지금은 입고된 상품이 없어요. 관리자가 입고할 때까지 기다려주세요.');
             if (it.id === 'glove') return buyGlove(it, cost);
             if (!isAdminAuthenticated && score < cost) return alert('시현이 부족해요.');
             if (!isAdminAuthenticated) score -= cost;
@@ -4169,6 +4182,26 @@
             } catch (e) { }
         }
         window.refreshGlove = refreshGlove;
+        async function refreshMarket() {
+            try {
+                const r = await gameDB.from('market_stock').select('stock_no,item_id,stocked_at').eq('id', 1).maybeSingle();
+                if (r.error || !r.data) { window.__mkt = undefined; return; }
+                const prev = window.__mkt, d = r.data;
+                window.__mkt = { no: Number(d.stock_no) || 0, id: d.item_id || null, at: d.stocked_at ? Date.parse(d.stocked_at) : 0 };
+                if (prev && prev.no !== window.__mkt.no && window.__mkt.id && typeof showPeperoToast === 'function') showPeperoToast('🕶️ 암시장에 새 상품이 입고됐어요!');
+                if (typeof ext !== 'undefined' && ext._tab === 'market') refreshExtUi();
+            } catch (e) { }
+        }
+        window.refreshMarket = refreshMarket;
+        window.adminStockMarket = async function() {
+            if (!isUserSuperAdmin && !isUserAdminPrivilege) return alert('관리자 권한이 필요합니다.');
+            if (!confirm('암시장에 새 상품을 무작위로 입고할까요?\n(현재 올라온 상품은 교체되고, 입고 후 72시간 동안 판매돼요)')) return;
+            const r = await gameDB.rpc('admin_stock_market');
+            if (r.error) return alert('입고 실패: ' + (r.error.message || r.error) + '\n(sihyun_all.sql 을 실행했는지 확인해주세요)');
+            const it = MARKET_ITEMS.find(x => x.id === r.data);
+            alert('🕶️ 입고 완료: ' + (it ? it.icon + ' ' + it.name : r.data));
+            refreshMarket();
+        };
         async function buyGlove(it, cost) {
             if (!isAdminAuthenticated && score < cost) return alert('시현이 부족해요. (30억 필요)');
             await refreshGlove();
@@ -4212,6 +4245,7 @@
                 if (typeof isGameLoaded === 'undefined' || !isGameLoaded || !currentUserId) return;
                 _thiefTick++;
                 if (_thiefTick === 1 || _thiefTick % 2 === 0) refreshGlove();
+                refreshMarket();
                 const r = await gameDB.rpc('thief_collect_losses');
                 const sum = r && !r.error ? Number(r.data) || 0 : 0;
                 if (sum > 0) {
@@ -4222,7 +4256,9 @@
             } catch (e) { }
         }, 30000);
         function fmtMarketLeft() {
-            const left = (marketSlot() + 1) * MARKET_PERIOD_MS - (window.srvNow ? srvNow() : Date.now());
+            let left;
+            if (window.__mkt) { left = window.__mkt.id ? window.__mkt.at + MARKET_PERIOD_MS - nowMs() : 0; if (left <= 0) return '입고 대기 중'; }
+            else left = (marketSlot() + 1) * MARKET_PERIOD_MS - nowMs();
             const h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
             return `${h}시간 ${m}분 ${s}초`;
         }
@@ -4352,15 +4388,20 @@
                 html += `<div class="ext-sub">영구 보너스: 생산 +${ext.permSps.toFixed(1)}% · 크리티컬 +${ext.permCrit.toFixed(1)}% · 지금까지 연 상자 ${ext.opened}개</div>`;
             } else if (ext._tab === 'market') {
                 marketSync();
-                if (typeof refreshGlove === 'function' && !window.__gloveChecked) { window.__gloveChecked = true; refreshGlove(); }
-                const it = marketItem(), cost = marketCost(it), bought = ext.market.bought;
-                const gOwner = window.__gloveOwner, isGlove = it.id === 'glove';
-                const soldOut = isGlove && !!gOwner;
-                html += sc + `<div class="ext-note">일반 상점에 없는 희귀 상품이 <b>72시간마다 단 하나</b> 입고돼요. 다음 입고까지 <b id="mktTimer">${fmtMarketLeft()}</b></div>`;
-                const act = soldOut ? `<span class="ext-ok">${gOwner === currentUserId ? '✅ 내가 소유 중' : '🚫 판매 완료 (주인: ' + String(gOwner).replace(/[<>&]/g, '') + ')'}</span>`
-                    : bought ? `<span class="ext-ok">✅ 구매 완료</span>` : `<button class="ext-btn" onclick="extBuyMarket()">${formatKo(cost)}</button>`;
-                html += `<div class="ext-card ${bought || soldOut ? 'done' : ''}" style="border-color:#7c3aed;"><div style="font-size:34px;">${it.icon}</div><div style="flex:1;"><b>${it.name}</b><div class="ext-sub">${it.desc}</div></div>` + act + `</div>`;
-                html += `<div class="ext-sub">암시장 영구 보너스: 생산 +${ext.marketSps.toFixed(1)}% · 크리티컬 +${ext.marketCrit.toFixed(1)}%</div>`;
+                if (!window.__gloveChecked) { window.__gloveChecked = true; if (typeof refreshGlove === 'function') refreshGlove(); if (typeof refreshMarket === 'function') refreshMarket(); }
+                const it = marketItem();
+                html += sc + `<div class="ext-note">일반 상점에 없는 희귀 상품이 <b>관리자가 입고할 때마다 단 하나</b> 올라와요. (입고 후 72시간 판매) 남은 시간: <b id="mktTimer">${fmtMarketLeft()}</b></div>`;
+                if (!it) {
+                    html += `<div class="ext-card" style="border-color:#7c3aed;"><div style="font-size:34px;">🕶️</div><div style="flex:1;"><b>입고 대기 중</b><div class="ext-sub">아직 새 상품이 입고되지 않았어요. 관리자가 입고하면 알려드려요!</div></div></div>`;
+                } else {
+                    const cost = marketCost(it), bought = ext.market.bought;
+                    const gOwner = window.__gloveOwner, isGlove = it.id === 'glove';
+                    const soldOut = isGlove && !!gOwner;
+                    const act = soldOut ? `<span class="ext-ok">${gOwner === currentUserId ? '✅ 내가 소유 중' : '🚫 판매 완료 (주인: ' + String(gOwner).replace(/[<>&]/g, '') + ')'}</span>`
+                        : bought ? `<span class="ext-ok">✅ 구매 완료</span>` : `<button class="ext-btn" onclick="extBuyMarket()">${formatKo(cost)}</button>`;
+                    html += `<div class="ext-card ${bought || soldOut ? 'done' : ''}" style="border-color:#7c3aed;"><div style="font-size:34px;">${it.icon}</div><div style="flex:1;"><b>${it.name}</b><div class="ext-sub">${it.desc}</div></div>` + act + `</div>`;
+                }
+                html += `<div class="ext-sub">암시장 영구 보너스: 생산 +${ext.marketSps.toFixed(1)}%</div>`;
                 html += thiefPanelHtml();
             } else if (ext._tab === 'research') {
                 html += sc + `<div class="ext-note">연구를 완료하면 영구적으로 생산 기술이 해금돼요. (환생해도 유지)</div>`;
